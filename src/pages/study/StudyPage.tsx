@@ -1,4 +1,4 @@
-import { NavLink, useParams } from 'react-router-dom';
+import { Navigate, NavLink, useParams } from 'react-router-dom';
 
 const tabs = [
   { id: 'knowledge', label: '지식 구조' },
@@ -16,8 +16,18 @@ const tabDescriptions: Record<string, string> = {
   questions: '질문 게시글, 답글, 이미지 첨부를 관리합니다.',
 };
 
+interface StudyRouteParams extends Record<string, string | undefined> {
+  studyId: string;
+  tab?: string;
+}
+
 export const StudyPage = () => {
-  const { studyId, tab = 'knowledge' } = useParams();
+  const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
+
+  if (!studyId) {
+    return <Navigate to="/" replace />;
+  }
+
   const activeTab = tabs.some((item) => item.id === tab) ? tab : 'knowledge';
 
   return (
