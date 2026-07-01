@@ -25,5 +25,8 @@ build
 # Vercel
 .vercel
 
+# Vite
+.vite
+
 # TypeScript
 *.tsbuildinfo
