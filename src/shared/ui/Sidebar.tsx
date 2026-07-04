@@ -72,7 +72,7 @@ const SidebarSection = ({ section }: { section: SidebarSection }) => (
 );
 
 export const Sidebar = ({ sections }: SidebarProps) => (
-  <aside className="flex h-[1200px] w-[260px] shrink-0 flex-col border-r border-stology-border-light bg-stology-off-white px-4 py-6">
+  <aside className="flex min-h-screen w-[260px] shrink-0 flex-col overflow-y-auto border-r border-stology-border-light bg-stology-off-white px-4 py-6">
     <SidebarLogo />
     <nav className="mt-10 flex flex-col gap-8">
       {sections.map((section, index) => (
