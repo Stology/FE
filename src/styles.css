@@ -1,9 +1,9 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color: #0f172a;
+  color: #1f2937;
   background: #f8fafc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
