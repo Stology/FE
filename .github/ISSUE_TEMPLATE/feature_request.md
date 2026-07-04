@@ -1,10 +1,9 @@
 ---
 name: Feature request
 about: Stology 프론트엔드 기능 개발
-title: "[Feat] "
+title: '[Feat] '
 labels: ''
 assignees: ''
-
 ---
 
 ## ✨ 기능 설명
