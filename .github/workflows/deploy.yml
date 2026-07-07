@@ -2,7 +2,7 @@ name: Frontend Deploy
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: ['main', 'dev']
     paths:
       - 'FE/**'
   workflow_dispatch:
@@ -33,5 +33,5 @@ jobs:
               echo "Deploying STAGING frontend..."
               docker compose -f docker-compose.staging.yml up -d --build frontend-staging
             fi
-            
+
             docker image prune -f
