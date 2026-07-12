@@ -26,16 +26,18 @@ export const ProgressBar = ({
   value,
   variant = 'primary',
 }: ProgressBarProps) => {
-  const percent = Math.min(Math.max((value / max) * 100, 0), 100);
+  const safeMax = max > 0 ? max : 1;
+  const clampedValue = Math.min(Math.max(value, 0), safeMax);
+  const percent = (clampedValue / safeMax) * 100;
 
   return (
     <div className={cn('grid grid-cols-[auto_1fr_auto] items-center gap-4', className)}>
       {label ? <span className="min-w-12 text-body text-stology-text-light">{label}</span> : null}
       <div
         aria-label={label}
-        aria-valuemax={max}
-        aria-valuemin={0}
-        aria-valuenow={value}
+        aria-valuemax={safeMax}
+        aria-valuemin={0.1}
+        aria-valuenow={clampedValue}
         className="h-3 overflow-hidden rounded-full bg-stology-light-blue/50"
         role="progressbar"
       >

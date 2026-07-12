@@ -42,7 +42,9 @@ export const Toast = ({
       typeClass[type],
       className,
     )}
-    role="status"
+    aria-atomic="true"
+    aria-live={type === 'error' ? 'assertive' : 'polite'}
+    role={type === 'error' ? 'alert' : 'status'}
   >
     <span className="mt-0.5 shrink-0">{iconMap[type]}</span>
     <div className="min-w-0 flex-1">

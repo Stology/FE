@@ -35,7 +35,7 @@ export const SearchInput = ({
       )}
       onChange={(event) => onChange(event.target.value)}
       onKeyDown={(event) => {
-        if (event.key === 'Enter') onSearch?.(value);
+        if (event.key === 'Enter') onSearch?.(event.currentTarget.value);
         onKeyDown?.(event);
       }}
       placeholder={placeholder}
