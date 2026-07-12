@@ -11,34 +11,22 @@ import {
   Card,
   Checkbox,
   ConfirmDialog,
-  DataTable,
   EmptyState,
   ErrorMessage,
-  FeatureIcon,
   FileUploader,
   Input,
   Loading,
   Modal,
-  PageActionBar,
   Pagination,
   ProgressBar,
   SearchInput,
   SectionTitle,
   Select,
-  StatusListItem,
   Tabs,
   Textarea,
   Toast,
   WeeklyProgressList,
-  type DataTableColumn,
 } from '@/shared/ui';
-
-interface PreviewRow {
-  id: string;
-  name: string;
-  status: 'confirmed' | 'review' | 'draft';
-  week: string;
-}
 
 const previewTabs = [
   { id: 'knowledge', label: '지식 구조', to: '/dev/components' },
@@ -73,32 +61,6 @@ const accordionItems = [
   },
 ];
 
-const tableRows: PreviewRow[] = [
-  { id: '1', name: '스프링 핵심 정리 자료', status: 'confirmed', week: '1주차' },
-  { id: '2', name: '네트워크 요약본', status: 'review', week: '2주차' },
-  { id: '3', name: '알고리즘 노트', status: 'draft', week: '3주차' },
-];
-
-const statusLabel: Record<PreviewRow['status'], string> = {
-  confirmed: '확정',
-  draft: '작성 중',
-  review: '검토 필요',
-};
-
-const tableColumns: DataTableColumn<PreviewRow>[] = [
-  { key: 'name', header: '자료명', render: (row) => row.name },
-  { key: 'week', header: '주차', render: (row) => row.week },
-  {
-    key: 'status',
-    header: '상태',
-    render: (row) => (
-      <Badge variant={row.status === 'confirmed' ? 'success' : 'warning'}>
-        {statusLabel[row.status]}
-      </Badge>
-    ),
-  },
-];
-
 export const ComponentPreviewPage = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -117,21 +79,18 @@ export const ComponentPreviewPage = () => {
         </header>
 
         <Card className="p-6 md:p-7">
-          <SectionTitle>탭 / 검색 / 액션바</SectionTitle>
+          <SectionTitle>탭 / 검색 / 액션</SectionTitle>
           <Tabs className="mt-5" items={previewTabs} />
-          <PageActionBar
-            className="mt-5"
-            left={
-              <SearchInput
-                className="max-w-xs"
-                onChange={setQuery}
-                onSearch={setQuery}
-                placeholder="스터디 검색"
-                value={query}
-              />
-            }
-            right={<Button leftIcon={<Plus size={16} aria-hidden />}>스터디 생성</Button>}
-          />
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <SearchInput
+              className="w-full max-w-xs"
+              onChange={setQuery}
+              onSearch={setQuery}
+              placeholder="스터디 검색"
+              value={query}
+            />
+            <Button leftIcon={<Plus size={16} aria-hidden />}>스터디 생성</Button>
+          </div>
         </Card>
 
         <Card className="p-6 md:p-7">
@@ -237,34 +196,37 @@ export const ComponentPreviewPage = () => {
         </Card>
 
         <Card className="p-6 md:p-7">
-          <SectionTitle>파일 업로드 / 상태 목록</SectionTitle>
+          <SectionTitle>파일 업로드 / 파일 목록</SectionTitle>
           <div className="mt-5 grid gap-6 md:grid-cols-[1fr_1fr]">
             <FileUploader
               files={files}
-              helperText="MD 파일을 업로드할 수 있습니다."
+              helperText="PDF, MD, TXT 파일을 업로드할 수 있습니다."
               label="자료 업로드"
               multiple
               onChange={setFiles}
               onRemove={(file) => setFiles((current) => current.filter((item) => item !== file))}
             />
             <div className="space-y-3">
-              <StatusListItem
-                description="3분 전에 업로드됨"
-                leading={<FileText size={20} aria-hidden />}
-                status={<Badge variant="success">확정</Badge>}
-                title="1주차 학습 자료"
-              />
-              <StatusListItem
-                actions={
-                  <Button size="sm" variant="outline">
-                    검토
-                  </Button>
-                }
-                description="AI 추출이 완료되었습니다"
-                leading={<FeatureIcon size="sm" type="knowledge" />}
-                status={<Badge variant="warning">검토 필요</Badge>}
-                title="지식 후보"
-              />
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-stology-border-light bg-white px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <FileText className="size-5 shrink-0 text-stology-electric-blue" aria-hidden />
+                  <div className="min-w-0">
+                    <p className="truncate text-label text-stology-text-dark">1주차 학습 자료</p>
+                    <p className="text-caption text-stology-text-light">3분 전에 업로드됨</p>
+                  </div>
+                </div>
+                <Badge variant="success">확정</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-stology-border-light bg-white px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <FileText className="size-5 shrink-0 text-stology-electric-blue" aria-hidden />
+                  <div className="min-w-0">
+                    <p className="truncate text-label text-stology-text-dark">지식 후보</p>
+                    <p className="text-caption text-stology-text-light">AI 추출이 완료되었습니다</p>
+                  </div>
+                </div>
+                <Badge variant="warning">검토 필요</Badge>
+              </div>
             </div>
           </div>
         </Card>
@@ -280,20 +242,9 @@ export const ComponentPreviewPage = () => {
         </Card>
 
         <Card className="p-6 md:p-7">
-          <SectionTitle>테이블 / 페이지네이션</SectionTitle>
-          <div className="mt-5 space-y-5">
-            <DataTable columns={tableColumns} rowKey={(row) => row.id} rows={tableRows} />
+          <SectionTitle>페이지네이션</SectionTitle>
+          <div className="mt-5">
             <Pagination page={1} totalPages={5} />
-          </div>
-        </Card>
-
-        <Card className="p-6 md:p-7">
-          <SectionTitle>기능 아이콘</SectionTitle>
-          <div className="mt-5 flex flex-wrap items-center gap-4">
-            <FeatureIcon active label="지식 구조" type="knowledge" />
-            <FeatureIcon label="자료" type="file" />
-            <FeatureIcon label="승인" type="check" />
-            <FeatureIcon label="질문" type="question" />
           </div>
         </Card>
       </div>
@@ -320,6 +271,7 @@ export const ComponentPreviewPage = () => {
       </Modal>
 
       <ConfirmDialog
+        cancelText="취소"
         confirmText="삭제"
         description="삭제한 내용은 되돌릴 수 없습니다."
         isOpen={isConfirmOpen}
