@@ -9,12 +9,12 @@ import { Button } from './Button';
 interface ModalProps {
   children: ReactNode;
   className?: string;
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
   description?: string;
   footer?: ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
   showCloseButton?: boolean;
+  title: string;
 }
 
 export const Modal = ({
@@ -59,7 +59,7 @@ export const Modal = ({
           </div>
           {showCloseButton ? (
             <Button
-              aria-label="닫기"
+              aria-label="Close"
               className="-mr-2 -mt-2"
               onClick={onClose}
               size="icon"

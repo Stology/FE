@@ -22,7 +22,7 @@ const variantClass: Record<ButtonVariant, string> = {
   ghost: 'text-stology-electric-blue hover:bg-stology-off-white',
   success:
     'border border-stology-approve bg-stology-approve text-white hover:bg-stology-royal-blue',
-  danger: 'border border-stology-reject bg-stology-reject text-white hover:bg-stology-royal-blue',
+  danger: 'border border-stology-reject bg-stology-reject text-white hover:bg-red-600',
 };
 
 const sizeClass: Record<ButtonSize, string> = {
@@ -60,7 +60,7 @@ export const Button = ({
     ) : (
       leftIcon
     )}
-    {size === 'icon' ? <span className="sr-only">{children}</span> : children}
+    {children}
     {!isLoading ? rightIcon : null}
   </button>
 );

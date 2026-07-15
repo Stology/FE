@@ -1,4 +1,4 @@
-﻿import { PagePlaceholder } from '@/shared/ui';
+import { PagePlaceholder } from '@/shared/ui';
 
 export const LoginPage = () => (
   <main className="min-h-screen bg-stology-off-white px-6">
