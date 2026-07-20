@@ -15,6 +15,7 @@
 
 ## 기존 참고 문서
 
+- [백엔드 데이터베이스 스키마](backend-database-schema.md): 프론트엔드 더미데이터의 엔티티 관계 참고
 - [디자인 토큰](design-tokens.md)
 - [Hermes 권한 확인](hermes-permission-check.md)
 
