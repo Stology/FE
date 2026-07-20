@@ -1,5 +1,6 @@
 import { getMockWeeklyRecord, mockWeeklyRecordWeeks } from '@/shared/mocks/weeklyRecords';
 import type { WeeklyRecordConcept } from '@/shared/types/stology';
+import { EmptyState } from '@/shared/ui';
 
 import { WeeklyRecordItem } from './WeeklyRecordItem';
 
@@ -10,15 +11,15 @@ interface WeeklyRecordsPageProps {
   selectedWeek?: number;
 }
 
-const DEFAULT_WEEK = 3;
-
 export const WeeklyRecordsPage = ({
   availableWeeks = mockWeeklyRecordWeeks,
   concepts,
   onWeekChange,
-  selectedWeek = DEFAULT_WEEK,
+  selectedWeek,
 }: WeeklyRecordsPageProps) => {
-  const visibleConcepts = concepts ?? getMockWeeklyRecord(selectedWeek)?.concepts ?? [];
+  const activeWeek = selectedWeek ?? availableWeeks[0];
+  const visibleConcepts =
+    concepts ?? (activeWeek === undefined ? [] : (getMockWeeklyRecord(activeWeek)?.concepts ?? []));
 
   return (
     <section
@@ -26,9 +27,9 @@ export const WeeklyRecordsPage = ({
       className="min-h-[520px] rounded-b-lg border border-stology-border-light bg-white px-10 pb-10 pt-10"
     >
       <div className="w-full max-w-[1120px]">
-        <div aria-label="주차 선택" className="mb-6 flex flex-wrap gap-2">
+        <div aria-label="주차 선택" className="mb-6 flex flex-wrap gap-2" role="group">
           {availableWeeks.map((week) => {
-            const isSelected = week === selectedWeek;
+            const isSelected = week === activeWeek;
 
             return (
               <button
@@ -49,11 +50,15 @@ export const WeeklyRecordsPage = ({
           })}
         </div>
 
-        <div className="border-t border-stology-border-light">
-          {visibleConcepts.map((concept) => (
-            <WeeklyRecordItem concept={concept} key={concept.id} />
-          ))}
-        </div>
+        {visibleConcepts.length > 0 ? (
+          <div className="border-t border-stology-border-light">
+            {visibleConcepts.map((concept) => (
+              <WeeklyRecordItem concept={concept} key={concept.id} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState className="min-h-40" title="이 주차에 활성화된 노드가 없습니다" />
+        )}
       </div>
     </section>
   );
