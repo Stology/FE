@@ -23,13 +23,27 @@ export const WeeklyRecordsPage = ({
 }: WeeklyRecordsPageProps) => {
   const [internalWeek, setInternalWeek] = useState(() => selectedWeek ?? availableWeeks[0]);
   const [openConceptIds, setOpenConceptIds] = useState<string[]>([]);
-  const activeWeek = selectedWeek ?? internalWeek ?? availableWeeks[0];
+  const activeWeek =
+    selectedWeek ??
+    (internalWeek !== undefined && availableWeeks.includes(internalWeek)
+      ? internalWeek
+      : availableWeeks[0]);
   const visibleConcepts =
     concepts ?? (activeWeek === undefined ? [] : (getMockWeeklyRecord(activeWeek)?.concepts ?? []));
 
   useEffect(() => {
     setOpenConceptIds([]);
   }, [activeWeek]);
+
+  useEffect(() => {
+    if (selectedWeek !== undefined) return;
+
+    setInternalWeek((currentWeek) =>
+      currentWeek !== undefined && availableWeeks.includes(currentWeek)
+        ? currentWeek
+        : availableWeeks[0],
+    );
+  }, [availableWeeks, selectedWeek]);
 
   const handleWeekChange = (week: number) => {
     if (selectedWeek === undefined) setInternalWeek(week);

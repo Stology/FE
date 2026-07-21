@@ -16,13 +16,45 @@ const statusLabel = {
   reinforced: '보강',
 } as const;
 
+const SAFE_DOWNLOAD_PROTOCOLS = new Set(['http:', 'https:', 'blob:']);
+const SAFE_DATA_URL_PATTERN = /^data:(text\/(?:markdown|plain)|application\/octet-stream)[;,]/i;
+const INVALID_FILE_NAME_CHARACTERS = new Set(['<', '>', ':', '"', '/', '\\', '|', '?', '*']);
+
+const getSafeDownloadUrl = (downloadUrl: string) => {
+  if (SAFE_DATA_URL_PATTERN.test(downloadUrl)) return downloadUrl;
+
+  try {
+    const url = new URL(downloadUrl, window.location.origin);
+    return SAFE_DOWNLOAD_PROTOCOLS.has(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+};
+
+const getSafeFileName = (title: string) => {
+  const normalizedTitle = Array.from(title.trim(), (character) =>
+    character.charCodeAt(0) <= 31 || INVALID_FILE_NAME_CHARACTERS.has(character) ? '_' : character,
+  )
+    .join('')
+    .replace(/[. ]+$/g, '')
+    .slice(0, 100);
+
+  return `${normalizedTitle || 'material'}.md`;
+};
+
 const downloadMaterial = (material: WeeklyRecordMaterial) => {
   if (!material.downloadUrl) return;
 
+  const safeDownloadUrl = getSafeDownloadUrl(material.downloadUrl);
+  if (!safeDownloadUrl) return;
+
   const link = document.createElement('a');
-  link.href = material.downloadUrl;
-  link.download = `${material.title}.md`;
+  link.href = safeDownloadUrl;
+  link.download = getSafeFileName(material.title);
+  link.rel = 'noopener';
+  document.body.appendChild(link);
   link.click();
+  link.remove();
 };
 
 export const WeeklyRecordItem = ({
