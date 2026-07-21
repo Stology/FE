@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
+
 import { getMockWeeklyRecord, mockWeeklyRecordWeeks } from '@/shared/mocks/weeklyRecords';
-import type { WeeklyRecordConcept } from '@/shared/types/stology';
+import type { WeeklyRecordConcept, WeeklyRecordMaterial } from '@/shared/types/stology';
 import { EmptyState } from '@/shared/ui';
 
 import { WeeklyRecordItem } from './WeeklyRecordItem';
@@ -7,6 +9,7 @@ import { WeeklyRecordItem } from './WeeklyRecordItem';
 interface WeeklyRecordsPageProps {
   availableWeeks?: number[];
   concepts?: WeeklyRecordConcept[];
+  onMaterialDownload?: (material: WeeklyRecordMaterial) => void;
   onWeekChange?: (week: number) => void;
   selectedWeek?: number;
 }
@@ -14,12 +17,32 @@ interface WeeklyRecordsPageProps {
 export const WeeklyRecordsPage = ({
   availableWeeks = mockWeeklyRecordWeeks,
   concepts,
+  onMaterialDownload,
   onWeekChange,
   selectedWeek,
 }: WeeklyRecordsPageProps) => {
-  const activeWeek = selectedWeek ?? availableWeeks[0];
+  const [internalWeek, setInternalWeek] = useState(() => selectedWeek ?? availableWeeks[0]);
+  const [openConceptIds, setOpenConceptIds] = useState<string[]>([]);
+  const activeWeek = selectedWeek ?? internalWeek ?? availableWeeks[0];
   const visibleConcepts =
     concepts ?? (activeWeek === undefined ? [] : (getMockWeeklyRecord(activeWeek)?.concepts ?? []));
+
+  useEffect(() => {
+    setOpenConceptIds([]);
+  }, [activeWeek]);
+
+  const handleWeekChange = (week: number) => {
+    if (selectedWeek === undefined) setInternalWeek(week);
+    onWeekChange?.(week);
+  };
+
+  const handleConceptToggle = (conceptId: string) => {
+    setOpenConceptIds((current) =>
+      current.includes(conceptId)
+        ? current.filter((openId) => openId !== conceptId)
+        : [...current, conceptId],
+    );
+  };
 
   return (
     <section
@@ -39,9 +62,8 @@ export const WeeklyRecordsPage = ({
                     ? 'h-[39px] rounded-[14.5px] border border-stology-deep-navy bg-stology-deep-navy px-[21px] text-[13px] font-semibold leading-[19.5px] text-white'
                     : 'h-[39px] rounded-[14.5px] border border-stology-border-light bg-white px-[21px] text-[13px] font-semibold leading-[19.5px] text-stology-text-dark'
                 }
-                disabled={!onWeekChange}
                 key={week}
-                onClick={() => onWeekChange?.(week)}
+                onClick={() => handleWeekChange(week)}
                 type="button"
               >
                 {week}주차
@@ -53,7 +75,13 @@ export const WeeklyRecordsPage = ({
         {visibleConcepts.length > 0 ? (
           <div className="border-t border-stology-border-light">
             {visibleConcepts.map((concept) => (
-              <WeeklyRecordItem concept={concept} key={concept.id} />
+              <WeeklyRecordItem
+                concept={concept}
+                isOpen={openConceptIds.includes(concept.id)}
+                key={concept.id}
+                onDownload={onMaterialDownload}
+                onToggle={() => handleConceptToggle(concept.id)}
+              />
             ))}
           </div>
         ) : (

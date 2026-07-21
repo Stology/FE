@@ -28,6 +28,8 @@ export const mockWeeklyRecords: WeeklyRecord[] = [
             title: 'JWT 정리 노트',
             uploaderName: '김철수',
             uploadedAt: '2026-03-15',
+            downloadUrl:
+              'data:text/markdown;charset=utf-8,%23%20JWT%20%EC%A0%95%EB%A6%AC%20%EB%85%B8%ED%8A%B8',
           },
         ],
       },
@@ -41,6 +43,8 @@ export const mockWeeklyRecords: WeeklyRecord[] = [
             title: '인증 흐름 요약',
             uploaderName: '이영희',
             uploadedAt: '2026-03-14',
+            downloadUrl:
+              'data:text/markdown;charset=utf-8,%23%20%EC%9D%B8%EC%A6%9D%20%ED%9D%90%EB%A6%84%20%EC%9A%94%EC%95%BD',
           },
         ],
       },
