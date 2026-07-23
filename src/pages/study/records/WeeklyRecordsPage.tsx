@@ -78,12 +78,10 @@ export const WeeklyRecordsPage = ({
 
     if (errorMessage) {
       return (
-        <div className="flex min-h-40 flex-col items-center justify-center gap-4" role="alert">
-          <ErrorMessage
-            className="w-full max-w-lg"
-            message={errorMessage}
-            title="주차별 기록을 불러오지 못했습니다"
-          />
+        <div className="flex min-h-40 flex-col items-center justify-center gap-4">
+          <div className="w-full max-w-lg" role="alert">
+            <ErrorMessage message={errorMessage} title="주차별 기록을 불러오지 못했습니다" />
+          </div>
           {onRetry ? (
             <Button
               leftIcon={<RotateCcw aria-hidden size={15} />}
