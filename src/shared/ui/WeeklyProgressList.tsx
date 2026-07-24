@@ -19,7 +19,7 @@ export const WeeklyProgressList = ({
   items,
   showPercent = true,
 }: WeeklyProgressListProps) => (
-  <div className={cn('flex flex-col gap-2', className)}>
+  <div className={cn('flex w-full max-w-[480px] flex-col -space-y-[3px] pt-4', className)}>
     {items.map((item) => (
       <ProgressBar key={item.id} label={item.label} showPercent={showPercent} value={item.value} />
     ))}

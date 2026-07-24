@@ -15,17 +15,18 @@ interface TabsProps {
 }
 
 export const Tabs = ({ className, items }: TabsProps) => (
-  <nav className={cn('flex flex-wrap gap-8 border-b border-stology-border-light', className)}>
+  <nav className={cn('flex border-b border-stology-border-light', className)}>
     {items.map((item) => (
       <NavLink
         className={({ isActive }) =>
           cn(
-            '-mb-px inline-flex min-h-10 items-center border-b-2 px-1 text-[14px] font-semibold leading-5 transition',
+            '-mb-px inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-t-[2.5px] border-b-2 px-[23px] text-[13px] font-medium leading-[20.8px] transition',
             isActive
-              ? 'border-stology-electric-blue text-stology-electric-blue'
+              ? 'border-stology-electric-blue text-stology-electric-blue drop-shadow-[0_4px_7px_rgba(59,130,246,0.25)]'
               : 'border-transparent text-stology-text-light hover:text-stology-text-dark',
           )
         }
+        end
         key={item.id}
         to={item.to}
       >

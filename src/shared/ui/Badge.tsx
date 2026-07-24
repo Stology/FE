@@ -43,7 +43,7 @@ export const Badge = ({
 }: BadgeProps) => (
   <span
     className={cn(
-      'inline-flex h-6 items-center justify-center gap-1.5 rounded-full px-2.5 py-[3px] [font-size:14px] font-semibold [line-height:18px]',
+      'inline-flex h-6 items-center justify-center gap-1.5 rounded-full px-2.5 py-[3px] text-[13px] font-semibold leading-[18px]',
       badgeClass[variant],
       className,
     )}

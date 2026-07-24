@@ -31,7 +31,7 @@ export const Input = ({
         ) : null}
         <input
           className={cn(
-            'h-10 w-full rounded border border-stology-border-light bg-white px-3 text-body text-stology-text-dark outline-none transition placeholder:text-stology-text-light focus:border-stology-electric-blue focus:ring-2 focus:ring-stology-light-blue',
+            'h-10 w-full rounded border border-stology-border-light bg-white px-3 text-[13px] font-medium leading-[20.8px] text-stology-text-dark outline-none transition placeholder:text-stology-text-light focus:border-stology-electric-blue focus:ring-2 focus:ring-stology-light-blue',
             leftIcon && 'pl-9',
             rightIcon && 'pr-9',
             error &&
