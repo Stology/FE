@@ -15,7 +15,7 @@ export const Textarea = ({ className, error, id, label, ...props }: TextareaProp
       {label ? <span className="mb-2 block text-label text-stology-text-dark">{label}</span> : null}
       <textarea
         className={cn(
-          'min-h-28 w-full resize-y rounded border border-stology-border-light bg-white px-3 py-2 text-body text-stology-text-dark outline-none transition placeholder:text-stology-text-light focus:border-stology-electric-blue focus:ring-2 focus:ring-stology-light-blue',
+          'min-h-28 w-full resize-y rounded border border-stology-border-light bg-white px-3 py-2 text-[13px] font-medium leading-[20.8px] text-stology-text-dark outline-none transition placeholder:text-stology-text-light focus:border-stology-electric-blue focus:ring-2 focus:ring-stology-light-blue',
           error && 'border-stology-reject focus:border-stology-reject focus:ring-stology-reject-bg',
           className,
         )}

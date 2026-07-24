@@ -30,7 +30,7 @@ export const SearchInput = ({
     />
     <input
       className={cn(
-        'h-10 w-full rounded border border-stology-border-light bg-white px-9 text-body text-stology-text-dark outline-none transition placeholder:text-stology-text-light focus:border-stology-electric-blue focus:ring-2 focus:ring-stology-light-blue disabled:cursor-not-allowed disabled:bg-stology-off-white disabled:opacity-70',
+        'h-10 w-full rounded border border-stology-border-light bg-white px-9 text-[13px] font-medium leading-[20.8px] text-stology-text-dark outline-none transition placeholder:text-stology-text-light focus:border-stology-electric-blue focus:ring-2 focus:ring-stology-light-blue disabled:cursor-not-allowed disabled:bg-stology-off-white disabled:opacity-70',
         className,
       )}
       onChange={(event) => onChange(event.target.value)}

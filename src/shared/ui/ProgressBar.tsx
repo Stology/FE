@@ -31,23 +31,28 @@ export const ProgressBar = ({
   const percent = (clampedValue / safeMax) * 100;
 
   return (
-    <div className={cn('grid grid-cols-[auto_1fr_auto] items-center gap-4', className)}>
-      {label ? <span className="min-w-12 text-body text-stology-text-light">{label}</span> : null}
+    <div className={cn('flex w-full max-w-[480px] items-center gap-3', className)}>
+      {label ? (
+        <span className="w-[70px] shrink-0 pt-0.5 text-[11px] font-normal leading-[17.6px] text-stology-text-light">
+          {label}
+        </span>
+      ) : null}
       <div
         aria-label={label}
         aria-valuemax={safeMax}
-        aria-valuemin={0.1}
+        aria-valuemin={0}
         aria-valuenow={clampedValue}
-        className="h-3 overflow-hidden rounded-full bg-stology-light-blue/50"
+        className="flex h-[9px] min-w-0 flex-1 overflow-hidden rounded-full bg-stology-border-light"
         role="progressbar"
       >
         <div
-          className={cn('h-full rounded-full', fillClass[variant])}
+          className={cn('h-full shrink-0', fillClass[variant])}
           style={{ width: `${percent}%` }}
         />
+        <div className="h-full min-w-0 flex-1 bg-stology-light-blue/50" />
       </div>
       {showPercent ? (
-        <span className="min-w-10 text-right text-body text-stology-text-light">
+        <span className="w-10 shrink-0 text-right text-[11px] font-normal leading-[17.6px] text-stology-text-light">
           {Math.round(percent)}%
         </span>
       ) : null}

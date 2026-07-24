@@ -34,10 +34,10 @@ Figma에서 확인한 공통 색상과 타이포그래피는 `tailwind.config.ts
 | `Text/Heading-1`     | `20px / 28px`   | `700`  | `text-heading-1`       | 페이지/섹션 제목     |
 | `Text/Heading-2`     | `16px / 24px`   | `700`  | `text-heading-2`       | 카드, 모달 제목      |
 | Noto Sans KR Bold    | `16px / 19.2px` | `700`  | `text-title-1`         | 카드 제목, 강조 제목 |
-| `Text/Label`         | `14px / 20px`   | `600`  | `text-label`           | 탭, 버튼, 입력 라벨  |
-| `Text/Body`          | `14px / 20px`   | `500`  | `text-body`            | 본문 텍스트          |
-| `Text/Caption`       | `13px / 18px`   | `400`  | `text-caption`         | 보조 설명, 메타 정보 |
-| Sidebar section text | `11px / 13px`   | `500`  | `text-sidebar-section` | 사이드바 섹션 제목   |
+| `Text/Label`         | `13px / 20.8px` | `600`  | `text-label`           | 탭, 버튼, 입력 라벨  |
+| `Text/Body`          | `13px / 20.8px` | `500`  | `text-body`            | 공용 UI 기본 텍스트  |
+| `Text/Caption`       | `11px / 17.6px` | `400`  | `text-caption`         | 보조 설명, 메타 정보 |
+| Sidebar section text | `11px / 17.6px` | `500`  | `text-sidebar-section` | 사이드바 섹션 제목   |
 
 ## Spacing / Radius
 
