@@ -12,6 +12,7 @@ import type { Study } from '@/shared/types/stology';
 import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
+import { WeeklyReportPage } from './reports/WeeklyReportPage';
 
 interface StudyRouteParams extends Record<string, string | undefined> {
   studyId: string;
@@ -49,6 +50,37 @@ const WeeklyRecordsTab = ({ study }: WeeklyRecordsTabProps) => {
   );
 };
 
+interface WeeklyReportTabProps {
+  study: Study;
+}
+
+const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
+  const availableWeeks = useMemo(
+    () => Array.from({ length: Math.max(0, study.currentWeek) }, (_, index) => index + 1),
+    [study.currentWeek],
+  );
+  const [selectedWeek, setSelectedWeek] = useState<number | undefined>(
+    availableWeeks[availableWeeks.length - 1],
+  );
+
+  useEffect(() => {
+    setSelectedWeek((currentWeek) =>
+      currentWeek !== undefined && availableWeeks.includes(currentWeek)
+        ? currentWeek
+        : availableWeeks[availableWeeks.length - 1],
+    );
+  }, [availableWeeks]);
+
+  return (
+    <WeeklyReportPage
+      availableWeeks={availableWeeks}
+      isReadOnly={study.status === 'ended'}
+      onWeekChange={setSelectedWeek}
+      selectedWeek={selectedWeek}
+    />
+  );
+};
+
 export const StudyPage = () => {
   const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
 
@@ -77,6 +109,8 @@ export const StudyPage = () => {
       </Card>
       {tab === 'records' && study ? (
         <WeeklyRecordsTab key={study.id} study={study} />
+      ) : tab === 'reports' && study ? (
+        <WeeklyReportTab key={study.id} study={study} />
       ) : (
         <PagePlaceholder
           code={meta.code}
