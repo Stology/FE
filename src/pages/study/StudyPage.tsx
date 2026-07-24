@@ -1,6 +1,6 @@
 ﻿import { Navigate, useParams } from 'react-router-dom';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   getMockStudyById,
@@ -23,13 +23,21 @@ interface WeeklyRecordsTabProps {
 }
 
 const WeeklyRecordsTab = ({ study }: WeeklyRecordsTabProps) => {
-  const availableWeeks = Array.from(
-    { length: Math.max(0, study.currentWeek) },
-    (_, index) => index + 1,
+  const availableWeeks = useMemo(
+    () => Array.from({ length: Math.max(0, study.currentWeek) }, (_, index) => index + 1),
+    [study.currentWeek],
   );
   const [selectedWeek, setSelectedWeek] = useState<number | undefined>(
     availableWeeks[availableWeeks.length - 1],
   );
+
+  useEffect(() => {
+    setSelectedWeek((currentWeek) =>
+      currentWeek !== undefined && availableWeeks.includes(currentWeek)
+        ? currentWeek
+        : availableWeeks[availableWeeks.length - 1],
+    );
+  }, [availableWeeks]);
 
   return (
     <WeeklyRecordsPage
