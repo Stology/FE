@@ -50,3 +50,39 @@ export interface WeeklyRecord {
   week: number;
   concepts: WeeklyRecordConcept[];
 }
+
+export type WeeklyReportConceptStatus = 'newly_activated' | 'reinforced';
+
+export type WeeklyReportRecommendationType = 'missed' | 'deepening' | 'related';
+
+export interface WeeklyReportCoreConcept {
+  id: string;
+  materialCount: number;
+  name: string;
+  status: WeeklyReportConceptStatus;
+}
+
+export interface WeeklyReportRecommendation {
+  id: string;
+  name: string;
+  reason: string;
+  type: WeeklyReportRecommendationType;
+}
+
+export interface WeeklyReportMemberActivity {
+  comment: string;
+  memberId: string;
+  memberName: string;
+  questionCount: number;
+  uploadCount: number;
+}
+
+export interface WeeklyReport {
+  aiReview: string;
+  coreConcepts: WeeklyReportCoreConcept[];
+  newlyActivatedCount: number;
+  recommendations: WeeklyReportRecommendation[];
+  reinforcedCount: number;
+  teamActivities: WeeklyReportMemberActivity[];
+  week: number;
+}
