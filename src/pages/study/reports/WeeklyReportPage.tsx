@@ -32,7 +32,11 @@ export const WeeklyReportPage = ({
         ? internalWeek
         : lastAvailableWeek;
   const visibleReport =
-    report ?? (activeWeek === undefined ? undefined : getMockWeeklyReport(activeWeek));
+    report?.week === activeWeek
+      ? report
+      : activeWeek === undefined
+        ? undefined
+        : getMockWeeklyReport(activeWeek);
 
   useEffect(() => {
     if (selectedWeek !== undefined) return;
