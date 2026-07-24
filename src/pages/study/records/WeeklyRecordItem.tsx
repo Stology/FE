@@ -110,24 +110,24 @@ export const WeeklyRecordItem = ({
       {isOpen ? (
         <div
           aria-labelledby={triggerId}
-          className="space-y-2 pb-6 pl-7 pr-1"
+          className="space-y-2 pb-6 pl-4 pr-1 sm:pl-7"
           id={panelId}
           role="region"
         >
           {concept.materials.length > 0 ? (
             concept.materials.map((material) => (
               <div
-                className="flex min-h-[62px] flex-wrap items-center justify-between gap-4 rounded-[5.5px] border border-stology-border-light bg-stology-off-white px-4 py-[15px]"
+                className="flex min-h-[62px] flex-col items-stretch justify-between gap-3 rounded-[5.5px] border border-stology-border-light bg-stology-off-white px-4 py-[15px] sm:flex-row sm:items-center sm:gap-4"
                 key={material.id}
               >
-                <p className="min-w-0 text-[13px] leading-[19.5px]">
+                <p className="min-w-0 break-words text-[13px] leading-[19.5px]">
                   <span className="font-semibold text-stology-text-dark">{material.title}</span>
                   <span className="font-normal text-stology-text-light">
                     {' '}
                     · 업로드자 {material.uploaderName} · {material.uploadedAt}
                   </span>
                 </p>
-                <div className="flex shrink-0 items-center gap-2.5">
+                <div className="flex shrink-0 items-center justify-end gap-2.5">
                   <Button
                     className="h-8 px-[15px] text-xs text-stology-text-dark"
                     disabled={!onDownload && !material.downloadUrl}
@@ -142,7 +142,10 @@ export const WeeklyRecordItem = ({
               </div>
             ))
           ) : (
-            <p className="rounded-[5.5px] border border-stology-border-light bg-stology-off-white px-4 py-5 text-[13px] text-stology-text-light">
+            <p
+              className="rounded-[5.5px] border border-dashed border-stology-border-light bg-stology-off-white px-4 py-5 text-center text-[13px] text-stology-text-light"
+              role="status"
+            >
               연결된 자료가 없습니다.
             </p>
           )}
