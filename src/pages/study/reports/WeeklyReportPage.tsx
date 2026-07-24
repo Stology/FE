@@ -1,5 +1,6 @@
 import { getMockWeeklyReport, mockWeeklyReportWeeks } from '@/shared/mocks/weeklyReports';
 import type { WeeklyReport } from '@/shared/types/stology';
+import { EmptyState } from '@/shared/ui';
 
 import { WeeklyReportRecommendations } from './WeeklyReportRecommendations';
 import { WeeklyReportSummary } from './WeeklyReportSummary';
@@ -17,8 +18,6 @@ export const WeeklyReportPage = ({
   selectedWeek = availableWeeks[availableWeeks.length - 1],
 }: WeeklyReportPageProps) => {
   const visibleReport = report ?? getMockWeeklyReport(selectedWeek);
-
-  if (!visibleReport) return null;
 
   return (
     <section
@@ -46,23 +45,35 @@ export const WeeklyReportPage = ({
         })}
       </div>
 
-      <article className="w-full max-w-[1040px] overflow-hidden rounded-lg border border-[#d1d1d1] bg-white">
-        <header className="border-b border-[#d1d1d1] px-5 py-5 sm:px-7">
-          <p className="text-[11px] font-bold uppercase leading-4 text-[#141414]">
-            RPT001 · Weekly Coverage Report
-          </p>
-          <h1 className="mt-1 text-[26px] font-bold leading-[32px] text-[#141414]">
-            {visibleReport.week}주차 리포트
-          </h1>
-          <p className="mt-1 text-[12px] leading-5 text-[#6d6d6d]">
-            완료된 주차의 진행 상황, 노드 추천, 팀 활동을 하나의 문서형 리포트로 요약합니다.
-          </p>
-        </header>
+      {visibleReport ? (
+        <article className="w-full max-w-[1040px] overflow-hidden rounded-lg border border-[#d1d1d1] bg-white">
+          <header className="border-b border-[#d1d1d1] px-5 py-5 sm:px-7">
+            <p className="text-[11px] font-bold uppercase leading-4 text-[#141414]">
+              RPT001 · Weekly Coverage Report
+            </p>
+            <h1 className="mt-1 text-[26px] font-bold leading-[32px] text-[#141414]">
+              {visibleReport.week}주차 리포트
+            </h1>
+            <p className="mt-1 text-[12px] leading-5 text-[#6d6d6d]">
+              완료된 주차의 진행 상황, 노드 추천, 팀 활동을 하나의 문서형 리포트로 요약합니다.
+            </p>
+          </header>
 
-        <WeeklyReportSummary report={visibleReport} />
-        <WeeklyReportRecommendations recommendations={visibleReport.recommendations} />
-        <WeeklyReportTeamStats activities={visibleReport.teamActivities} />
-      </article>
+          <WeeklyReportSummary report={visibleReport} />
+          <WeeklyReportRecommendations recommendations={visibleReport.recommendations} />
+          <WeeklyReportTeamStats activities={visibleReport.teamActivities} />
+        </article>
+      ) : (
+        <EmptyState
+          className="w-full max-w-[1040px]"
+          description="주차가 완료되면 리포트가 생성됩니다."
+          title={
+            selectedWeek === undefined
+              ? '생성된 주차별 리포트가 없습니다.'
+              : `${selectedWeek}주차 리포트가 아직 없습니다.`
+          }
+        />
+      )}
     </section>
   );
 };

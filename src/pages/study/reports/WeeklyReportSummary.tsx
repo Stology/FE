@@ -1,13 +1,13 @@
-import type { WeeklyReport } from '@/shared/types/stology';
+import type { WeeklyReport, WeeklyReportConceptStatus } from '@/shared/types/stology';
 
 interface WeeklyReportSummaryProps {
   report: WeeklyReport;
 }
 
-const statusLabel = {
+const statusLabel: Record<WeeklyReportConceptStatus, string> = {
   newly_activated: '신규',
   reinforced: '보강',
-} as const;
+};
 
 export const WeeklyReportSummary = ({ report }: WeeklyReportSummaryProps) => {
   const totalCount = report.newlyActivatedCount + report.reinforcedCount;

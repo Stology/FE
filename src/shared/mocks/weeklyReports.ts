@@ -74,7 +74,7 @@ export const mockWeeklyReports: WeeklyReport[] = [
   },
 ];
 
-export const mockWeeklyReportWeeks = [1, 2, 3, 4];
+export const mockWeeklyReportWeeks = mockWeeklyReports.map(({ week }) => week);
 
 export const getMockWeeklyReport = (week: number) =>
   mockWeeklyReports.find((report) => report.week === week);

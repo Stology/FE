@@ -51,7 +51,7 @@ export interface WeeklyRecord {
   concepts: WeeklyRecordConcept[];
 }
 
-export type WeeklyReportConceptStatus = 'newly_activated' | 'reinforced';
+export type WeeklyReportConceptStatus = WeeklyRecordStatus;
 
 export type WeeklyReportRecommendationType = 'missed' | 'deepening' | 'related';
 
