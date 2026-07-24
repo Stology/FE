@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import { getMockWeeklyReport, mockWeeklyReportWeeks } from '@/shared/mocks/weeklyReports';
 import type { WeeklyReport } from '@/shared/types/stology';
 import { EmptyState } from '@/shared/ui';
@@ -8,16 +10,48 @@ import { WeeklyReportTeamStats } from './WeeklyReportTeamStats';
 
 interface WeeklyReportPageProps {
   availableWeeks?: number[];
+  onWeekChange?: (week: number) => void;
   report?: WeeklyReport;
   selectedWeek?: number;
 }
 
 export const WeeklyReportPage = ({
   availableWeeks = mockWeeklyReportWeeks,
+  onWeekChange,
   report,
-  selectedWeek = availableWeeks[availableWeeks.length - 1],
+  selectedWeek,
 }: WeeklyReportPageProps) => {
-  const visibleReport = report ?? getMockWeeklyReport(selectedWeek);
+  const lastAvailableWeek = availableWeeks[availableWeeks.length - 1];
+  const [internalWeek, setInternalWeek] = useState(() => selectedWeek ?? lastAvailableWeek);
+  const activeWeek =
+    selectedWeek !== undefined
+      ? availableWeeks.includes(selectedWeek)
+        ? selectedWeek
+        : lastAvailableWeek
+      : internalWeek !== undefined && availableWeeks.includes(internalWeek)
+        ? internalWeek
+        : lastAvailableWeek;
+  const visibleReport =
+    report?.week === activeWeek
+      ? report
+      : activeWeek === undefined
+        ? undefined
+        : getMockWeeklyReport(activeWeek);
+
+  useEffect(() => {
+    if (selectedWeek !== undefined) return;
+
+    setInternalWeek((currentWeek) =>
+      currentWeek !== undefined && availableWeeks.includes(currentWeek)
+        ? currentWeek
+        : lastAvailableWeek,
+    );
+  }, [availableWeeks, lastAvailableWeek, selectedWeek]);
+
+  const handleWeekChange = (week: number) => {
+    if (selectedWeek === undefined) setInternalWeek(week);
+    onWeekChange?.(week);
+  };
 
   return (
     <section
@@ -26,7 +60,7 @@ export const WeeklyReportPage = ({
     >
       <div aria-label="주차 선택" className="mb-5 flex flex-wrap gap-3" role="group">
         {availableWeeks.map((week) => {
-          const isSelected = week === selectedWeek;
+          const isSelected = week === activeWeek;
 
           return (
             <button
@@ -37,6 +71,7 @@ export const WeeklyReportPage = ({
                   : 'h-9 min-w-[84px] rounded-full border border-[#d1d1d1] bg-white px-5 text-[13px] font-bold text-[#141414]'
               }
               key={week}
+              onClick={() => handleWeekChange(week)}
               type="button"
             >
               {week}주차
@@ -68,9 +103,9 @@ export const WeeklyReportPage = ({
           className="w-full max-w-[1040px]"
           description="주차가 완료되면 리포트가 생성됩니다."
           title={
-            selectedWeek === undefined
+            activeWeek === undefined
               ? '생성된 주차별 리포트가 없습니다.'
-              : `${selectedWeek}주차 리포트가 아직 없습니다.`
+              : `${activeWeek}주차 리포트가 아직 없습니다.`
           }
         />
       )}
