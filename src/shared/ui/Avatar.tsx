@@ -10,8 +10,8 @@ export interface AvatarProps {
 }
 
 const sizeClass: Record<AvatarSize, string> = {
-  sm: 'size-8 text-[12px]',
-  md: 'size-10 text-[14px]',
+  sm: 'size-7 text-[10px] leading-4',
+  md: 'size-9 text-[11px] leading-[17.6px]',
   lg: 'size-12 text-[16px]',
 };
 
@@ -27,7 +27,7 @@ const getInitials = (name: string) =>
 export const Avatar = ({ className, name, size = 'md', src }: AvatarProps) => (
   <span
     className={cn(
-      'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#DBEAFE] font-bold text-stology-royal-blue ring-2 ring-white',
+      'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-stology-border-light bg-[#DBEAFE] font-semibold text-stology-royal-blue',
       sizeClass[size],
       className,
     )}
