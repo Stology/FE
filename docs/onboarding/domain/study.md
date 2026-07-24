@@ -5,6 +5,7 @@
 - 화면: `src/pages/study/StudyPage.tsx`
 - 기본 진입: `/studies/:studyId`에서 `knowledge` 탭으로 이동
 - 탭 라우트: `/studies/:studyId/:tab`
+- 주차별 기록: `/studies/:studyId/records`에서 공통 헤더와 탭 아래에 Mock 기록 화면 표시
 - 공유 모델: `src/shared/types/stology.ts`
 
 ## 제품 경계
