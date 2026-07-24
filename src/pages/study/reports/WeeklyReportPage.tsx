@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { LockKeyhole, RotateCcw } from 'lucide-react';
 
 import { getMockWeeklyReport, mockWeeklyReportWeeks } from '@/shared/mocks/weeklyReports';
 import type { WeeklyReport } from '@/shared/types/stology';
-import { EmptyState } from '@/shared/ui';
+import { Button, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
 import { WeeklyReportRecommendations } from './WeeklyReportRecommendations';
 import { WeeklyReportSummary } from './WeeklyReportSummary';
@@ -10,6 +11,10 @@ import { WeeklyReportTeamStats } from './WeeklyReportTeamStats';
 
 interface WeeklyReportPageProps {
   availableWeeks?: number[];
+  errorMessage?: string | null;
+  isLoading?: boolean;
+  isReadOnly?: boolean;
+  onRetry?: () => void;
   onWeekChange?: (week: number) => void;
   report?: WeeklyReport;
   selectedWeek?: number;
@@ -17,6 +22,10 @@ interface WeeklyReportPageProps {
 
 export const WeeklyReportPage = ({
   availableWeeks = mockWeeklyReportWeeks,
+  errorMessage,
+  isLoading = false,
+  isReadOnly = false,
+  onRetry,
   onWeekChange,
   report,
   selectedWeek,
@@ -53,11 +62,91 @@ export const WeeklyReportPage = ({
     onWeekChange?.(week);
   };
 
+  const renderReportContent = () => {
+    if (isLoading) {
+      return (
+        <div aria-live="polite" role="status">
+          <Loading className="min-h-48" label="주차별 리포트를 불러오는 중입니다" />
+        </div>
+      );
+    }
+
+    if (errorMessage) {
+      return (
+        <div className="flex min-h-48 flex-col items-center justify-center gap-4">
+          <div className="w-full max-w-lg" role="alert">
+            <ErrorMessage message={errorMessage} title="주차별 리포트를 불러오지 못했습니다" />
+          </div>
+          {onRetry ? (
+            <Button
+              leftIcon={<RotateCcw aria-hidden size={15} />}
+              onClick={onRetry}
+              variant="outline"
+            >
+              다시 시도
+            </Button>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (!visibleReport) {
+      return (
+        <EmptyState
+          className="min-h-[180px] w-full max-w-[1040px]"
+          description={
+            activeWeek === undefined
+              ? '완료된 주차의 리포트를 조회할 수 있습니다.'
+              : '스터디가 완료되면 이곳에서 리포트를 확인할 수 있습니다.'
+          }
+          title={
+            activeWeek === undefined
+              ? '생성된 주차별 리포트가 없습니다.'
+              : '이번 주차 스터디가 완료되지 않았습니다.'
+          }
+        />
+      );
+    }
+
+    return (
+      <article className="w-full max-w-[1040px] overflow-hidden rounded-lg border border-[#d1d1d1] bg-white">
+        <header className="border-b border-[#d1d1d1] px-5 py-5 sm:px-7">
+          <p className="text-[11px] font-bold uppercase leading-4 text-[#141414]">
+            RPT001 · Weekly Coverage Report
+          </p>
+          <h1 className="mt-1 text-[26px] font-bold leading-[32px] text-[#141414]">
+            {visibleReport.week}주차 리포트
+          </h1>
+          <p className="mt-1 text-[12px] leading-5 text-[#6d6d6d]">
+            완료된 주차의 진행 상황, 노드 추천, 팀 활동을 하나의 문서형 리포트로 요약합니다.
+          </p>
+        </header>
+
+        <WeeklyReportSummary report={visibleReport} />
+        <WeeklyReportRecommendations recommendations={visibleReport.recommendations} />
+        <WeeklyReportTeamStats activities={visibleReport.teamActivities} />
+      </article>
+    );
+  };
+
   return (
     <section
       aria-label="주차별 리포트"
+      aria-busy={isLoading}
       className="min-h-[520px] bg-white px-4 py-6 sm:px-6 lg:px-10"
     >
+      {isReadOnly ? (
+        <div
+          className="mb-5 flex w-full max-w-[1040px] items-start gap-2.5 border-y border-stology-border-light bg-stology-off-white px-4 py-3 text-stology-text-light"
+          role="status"
+        >
+          <LockKeyhole aria-hidden className="mt-0.5 size-4 shrink-0" />
+          <p className="text-[13px] leading-5">
+            종료된 스터디입니다. 주차별 리포트를 읽기 전용으로 확인할 수 있습니다.
+          </p>
+        </div>
+      ) : null}
+
       <div aria-label="주차 선택" className="mb-5 flex flex-wrap gap-3" role="group">
         {availableWeeks.map((week) => {
           const isSelected = week === activeWeek;
@@ -70,6 +159,7 @@ export const WeeklyReportPage = ({
                   ? 'h-9 min-w-[84px] rounded-full border border-[#1f1f1f] bg-[#1f1f1f] px-5 text-[13px] font-bold text-white'
                   : 'h-9 min-w-[84px] rounded-full border border-[#d1d1d1] bg-white px-5 text-[13px] font-bold text-[#141414]'
               }
+              disabled={isLoading}
               key={week}
               onClick={() => handleWeekChange(week)}
               type="button"
@@ -80,35 +170,7 @@ export const WeeklyReportPage = ({
         })}
       </div>
 
-      {visibleReport ? (
-        <article className="w-full max-w-[1040px] overflow-hidden rounded-lg border border-[#d1d1d1] bg-white">
-          <header className="border-b border-[#d1d1d1] px-5 py-5 sm:px-7">
-            <p className="text-[11px] font-bold uppercase leading-4 text-[#141414]">
-              RPT001 · Weekly Coverage Report
-            </p>
-            <h1 className="mt-1 text-[26px] font-bold leading-[32px] text-[#141414]">
-              {visibleReport.week}주차 리포트
-            </h1>
-            <p className="mt-1 text-[12px] leading-5 text-[#6d6d6d]">
-              완료된 주차의 진행 상황, 노드 추천, 팀 활동을 하나의 문서형 리포트로 요약합니다.
-            </p>
-          </header>
-
-          <WeeklyReportSummary report={visibleReport} />
-          <WeeklyReportRecommendations recommendations={visibleReport.recommendations} />
-          <WeeklyReportTeamStats activities={visibleReport.teamActivities} />
-        </article>
-      ) : (
-        <EmptyState
-          className="w-full max-w-[1040px]"
-          description="주차가 완료되면 리포트가 생성됩니다."
-          title={
-            activeWeek === undefined
-              ? '생성된 주차별 리포트가 없습니다.'
-              : `${activeWeek}주차 리포트가 아직 없습니다.`
-          }
-        />
-      )}
+      {renderReportContent()}
     </section>
   );
 };
