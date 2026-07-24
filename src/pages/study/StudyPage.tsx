@@ -1,17 +1,45 @@
 ﻿import { Navigate, useParams } from 'react-router-dom';
 
+import { useState } from 'react';
+
 import {
   getMockStudyById,
   getMockStudyTabById,
   mockStudyContainer,
   mockStudyTabs,
 } from '@/shared/mocks/studies';
+import type { Study } from '@/shared/types/stology';
 import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
+
+import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 
 interface StudyRouteParams extends Record<string, string | undefined> {
   studyId: string;
   tab?: string;
 }
+
+interface WeeklyRecordsTabProps {
+  study: Study;
+}
+
+const WeeklyRecordsTab = ({ study }: WeeklyRecordsTabProps) => {
+  const availableWeeks = Array.from(
+    { length: Math.max(0, study.currentWeek) },
+    (_, index) => index + 1,
+  );
+  const [selectedWeek, setSelectedWeek] = useState<number | undefined>(
+    availableWeeks[availableWeeks.length - 1],
+  );
+
+  return (
+    <WeeklyRecordsPage
+      availableWeeks={availableWeeks}
+      isReadOnly={study.status === 'ended'}
+      onWeekChange={setSelectedWeek}
+      selectedWeek={selectedWeek}
+    />
+  );
+};
 
 export const StudyPage = () => {
   const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
@@ -39,7 +67,15 @@ export const StudyPage = () => {
           }))}
         />
       </Card>
-      <PagePlaceholder code={meta.code} className="min-h-[calc(100vh-260px)]" title={meta.label} />
+      {tab === 'records' && study ? (
+        <WeeklyRecordsTab key={study.id} study={study} />
+      ) : (
+        <PagePlaceholder
+          code={meta.code}
+          className="min-h-[calc(100vh-260px)]"
+          title={meta.label}
+        />
+      )}
     </AppLayout>
   );
 };
