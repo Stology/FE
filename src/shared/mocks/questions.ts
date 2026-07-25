@@ -75,14 +75,15 @@ export const mockQuestions: QuestionSummary[] = [
   },
 ];
 
-const createMockReplies = (questionId: string, count: number): QuestionReply[] =>
-  Array.from({ length: count }, (_, index) => ({
+function createMockReplies(questionId: string, count: number): QuestionReply[] {
+  return Array.from({ length: count }, (_, index) => ({
     id: `${questionId}-reply-${index + 1}`,
     authorName: index === count - 1 ? '김스토' : ['김철수', '이영희', '현우'][index % 3],
     content: `${index + 1}번째 답글입니다. 관련 내용을 확인해보겠습니다.`,
     createdAt: '2026-03-15',
     isMine: index === count - 1,
   }));
+}
 
 export const mockQuestionDetails: Record<string, QuestionDetail> = {
   'refresh-token-storage': {

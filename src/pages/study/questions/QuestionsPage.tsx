@@ -10,6 +10,7 @@ import { QuestionListItem } from './QuestionListItem';
 import { QuestionPagination } from './QuestionPagination';
 
 interface QuestionsPageProps {
+  isReadOnly?: boolean;
   onPageChange?: (page: number) => void;
   onQuestionCreate?: () => void;
   onQuestionSelect?: (questionId: string) => void;
@@ -22,6 +23,7 @@ interface QuestionsPageProps {
 const DEFAULT_PAGE_SIZE = 3;
 
 export const QuestionsPage = ({
+  isReadOnly = false,
   onPageChange,
   onQuestionCreate,
   onQuestionSelect,
@@ -100,13 +102,15 @@ export const QuestionsPage = ({
       <div className="w-full max-w-[1534px]">
         <div className="mb-2.5 flex items-center justify-between gap-4">
           <p className="text-[11px] leading-[16.5px] text-stology-text-light">최신순 고정 정렬</p>
-          <Button
-            className="bg-stology-deep-navy hover:bg-stology-royal-blue"
-            leftIcon={<PenLine aria-hidden size={14} />}
-            onClick={onQuestionCreate}
-          >
-            질문 작성
-          </Button>
+          {!isReadOnly ? (
+            <Button
+              className="bg-stology-deep-navy hover:bg-stology-royal-blue"
+              leftIcon={<PenLine aria-hidden size={14} />}
+              onClick={onQuestionCreate}
+            >
+              질문 작성
+            </Button>
+          ) : null}
         </div>
 
         {questions.length === 0 ? (
@@ -125,6 +129,7 @@ export const QuestionsPage = ({
                   {questionDetails[question.id] ? (
                     <QuestionDetailPanel
                       detail={questionDetails[question.id]}
+                      isReadOnly={isReadOnly}
                       onReplyCreate={(content) => handleReplyCreate(question.id, content)}
                       onReplyUpdate={(replyId, content) =>
                         handleReplyUpdate(question.id, replyId, content)

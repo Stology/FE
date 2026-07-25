@@ -108,4 +108,34 @@ describe('QuestionsPage', () => {
       screen.queryByRole('textbox', { name: '김스토 답글 수정 내용' }),
     ).not.toBeInTheDocument();
   });
+
+  it('질문을 접었다 펼쳐도 작성 중인 답글을 유지한다', () => {
+    render(<QuestionsPage />);
+    const questionButton = screen.getByRole('button', {
+      name: /Refresh Token 저장 위치가 궁금합니다/,
+    });
+
+    fireEvent.click(questionButton);
+    fireEvent.change(screen.getByRole('textbox', { name: '답글 내용' }), {
+      target: { value: '작성 중인 답글입니다.' },
+    });
+    fireEvent.click(questionButton);
+
+    expect(screen.queryByRole('textbox', { name: '답글 내용' })).not.toBeInTheDocument();
+
+    fireEvent.click(questionButton);
+    expect(screen.getByRole('textbox', { name: '답글 내용' })).toHaveValue('작성 중인 답글입니다.');
+  });
+
+  it('종료된 스터디에서는 답글 작성과 수정 기능을 숨긴다', () => {
+    render(<QuestionsPage isReadOnly />);
+    fireEvent.click(screen.getByRole('button', { name: /Refresh Token 저장 위치가 궁금합니다/ }));
+
+    expect(screen.queryByRole('textbox', { name: '답글 내용' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '답글 작성' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '이미지 첨부' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '질문 작성' })).not.toBeInTheDocument();
+    expect(screen.getByText('서버의 토큰 재발급 정책도 같이 정리해볼게요.')).toBeInTheDocument();
+  });
 });

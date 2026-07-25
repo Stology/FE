@@ -64,7 +64,9 @@ export const QuestionListItem = ({
           ) : null}
         </span>
       </button>
-      {isExpanded ? <div id={detailId}>{children}</div> : null}
+      <div hidden={!isExpanded} id={detailId}>
+        {children}
+      </div>
     </li>
   );
 };

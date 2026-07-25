@@ -6,6 +6,7 @@ import { Button, Input } from '@/shared/ui';
 
 interface QuestionDetailPanelProps {
   detail: QuestionDetail;
+  isReadOnly?: boolean;
   onReplyCreate: (content: string) => void;
   onReplyUpdate: (replyId: string, content: string) => void;
   replies: QuestionReply[];
@@ -13,6 +14,7 @@ interface QuestionDetailPanelProps {
 
 export const QuestionDetailPanel = ({
   detail,
+  isReadOnly = false,
   onReplyCreate,
   onReplyUpdate,
   replies,
@@ -58,43 +60,45 @@ export const QuestionDetailPanel = ({
         {detail.content}
       </p>
 
-      <form
-        aria-label={`${detail.title} 답글 작성`}
-        className="mt-3.5 flex flex-col gap-2 sm:flex-row"
-        onSubmit={handleReplySubmit}
-      >
-        <input
-          accept="image/*"
-          className="sr-only"
-          onChange={(event) => setAttachmentName(event.target.files?.[0]?.name ?? '')}
-          ref={fileInputRef}
-          type="file"
-        />
-        <Button
-          aria-label={attachmentName ? `첨부 이미지 변경: ${attachmentName}` : '이미지 첨부'}
-          leftIcon={<ImagePlus aria-hidden size={14} />}
-          onClick={() => fileInputRef.current?.click()}
-          variant="outline"
+      {!isReadOnly ? (
+        <form
+          aria-label={`${detail.title} 답글 작성`}
+          className="mt-3.5 flex flex-col gap-2 sm:flex-row"
+          onSubmit={handleReplySubmit}
         >
-          <span className="max-w-40 truncate" title={attachmentName || undefined}>
-            {attachmentName || '이미지 첨부'}
-          </span>
-        </Button>
-        <Input
-          aria-label="답글 내용"
-          className="h-9"
-          onChange={(event) => setReplyContent(event.target.value)}
-          placeholder="답글을 입력하세요"
-          value={replyContent}
-        />
-        <Button
-          className="bg-stology-deep-navy hover:bg-stology-royal-blue"
-          disabled={!replyContent.trim()}
-          type="submit"
-        >
-          답글 작성
-        </Button>
-      </form>
+          <input
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => setAttachmentName(event.target.files?.[0]?.name ?? '')}
+            ref={fileInputRef}
+            type="file"
+          />
+          <Button
+            aria-label={attachmentName ? `첨부 이미지 변경: ${attachmentName}` : '이미지 첨부'}
+            leftIcon={<ImagePlus aria-hidden size={14} />}
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+          >
+            <span className="max-w-40 truncate" title={attachmentName || undefined}>
+              {attachmentName || '이미지 첨부'}
+            </span>
+          </Button>
+          <Input
+            aria-label="답글 내용"
+            className="h-9"
+            onChange={(event) => setReplyContent(event.target.value)}
+            placeholder="답글을 입력하세요"
+            value={replyContent}
+          />
+          <Button
+            className="bg-stology-deep-navy hover:bg-stology-royal-blue"
+            disabled={!replyContent.trim()}
+            type="submit"
+          >
+            답글 작성
+          </Button>
+        </form>
+      ) : null}
 
       <div aria-label="답글 목록" className="mt-3.5">
         {replies.length === 0 ? (
@@ -115,7 +119,7 @@ export const QuestionDetailPanel = ({
                   <strong className="w-[50px] shrink-0 text-[13px] leading-[19.5px] text-stology-text-dark">
                     {reply.authorName}
                   </strong>
-                  {isEditing ? (
+                  {isEditing && !isReadOnly ? (
                     <Input
                       aria-label={`${reply.authorName} 답글 수정 내용`}
                       className="h-9"
@@ -129,7 +133,7 @@ export const QuestionDetailPanel = ({
                   )}
                 </div>
 
-                {reply.isMine ? (
+                {reply.isMine && !isReadOnly ? (
                   <div className="flex shrink-0 gap-1.5 self-end sm:self-auto">
                     {isEditing ? (
                       <>
