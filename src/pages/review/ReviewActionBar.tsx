@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import type { ReviewAction } from '@/shared/types/stology';
 import { Button } from '@/shared/ui';
 
@@ -20,39 +18,31 @@ export const ReviewActionBar = ({
   onSubmit,
   selectedCount = 0,
 }: ReviewActionBarProps) => {
-  const [isBulkOpen, setIsBulkOpen] = useState(false);
   const hasSelection = selectedCount > 0;
-
-  const handleBulkAction = (action: ReviewAction) => {
-    onBulkAction?.(action);
-    setIsBulkOpen(false);
-  };
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-lg border border-stology-border-light bg-white px-5 py-4">
+      <p className="text-[15px] font-bold leading-[22px] text-stology-text-dark">
+        선택된 후보 {selectedCount}개
+      </p>
+
       <Button disabled={isReadOnly} onClick={onApproveAll} variant="outline">
         전체 승인
       </Button>
-
       <Button
-        aria-expanded={isBulkOpen}
         disabled={isReadOnly || !hasSelection}
-        onClick={() => setIsBulkOpen((current) => !current)}
+        onClick={() => onBulkAction?.('approved')}
         variant="outline"
       >
-        선택 일괄 처리{hasSelection ? ` (${selectedCount})` : ''}
+        선택 승인
       </Button>
-
-      {isBulkOpen && hasSelection ? (
-        <div aria-label="선택 일괄 처리 액션" className="flex gap-2" role="group">
-          <Button onClick={() => handleBulkAction('approved')} size="sm" variant="secondary">
-            선택 승인
-          </Button>
-          <Button onClick={() => handleBulkAction('rejected')} size="sm" variant="danger">
-            선택 반려
-          </Button>
-        </div>
-      ) : null}
+      <Button
+        disabled={isReadOnly || !hasSelection}
+        onClick={() => onBulkAction?.('rejected')}
+        variant="outline"
+      >
+        선택 반려
+      </Button>
 
       <div className="ml-auto flex items-center gap-3">
         {!isSubmittable && !isReadOnly ? (

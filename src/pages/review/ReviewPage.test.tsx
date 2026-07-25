@@ -87,13 +87,24 @@ describe('ReviewPage', () => {
     expect(screen.getByText('검토를 제출했습니다.')).toBeInTheDocument();
   });
 
+  it('선택된 후보 수를 표시하고 선택이 없으면 일괄 액션을 비활성화한다', () => {
+    renderPage();
+
+    expect(screen.getByText('선택된 후보 0개')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '선택 승인' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '선택 반려' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'JWT 후보 선택' }));
+
+    expect(screen.getByText('선택된 후보 1개')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '선택 승인' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '선택 반려' })).toBeEnabled();
+  });
+
   it('선택한 후보만 일괄 반려한다', () => {
     renderPage();
 
-    expect(screen.getByRole('button', { name: /선택 일괄 처리/ })).toBeDisabled();
-
     fireEvent.click(screen.getByRole('checkbox', { name: 'JWT 후보 선택' }));
-    fireEvent.click(screen.getByRole('button', { name: '선택 일괄 처리 (1)' }));
     fireEvent.click(screen.getByRole('button', { name: '선택 반려' }));
 
     const cards = screen.getAllByRole('listitem');
@@ -104,10 +115,26 @@ describe('ReviewPage', () => {
     expect(screen.getByText('3/3 검토 완료')).toBeInTheDocument();
   });
 
+  it('선택한 후보만 일괄 승인한다', () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'JWT 후보 선택' }));
+    fireEvent.click(screen.getByRole('button', { name: '선택 승인' }));
+
+    const cards = screen.getAllByRole('listitem');
+    expect(within(cards[0]).getByRole('button', { name: '승인' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByText('선택된 후보 0개')).toBeInTheDocument();
+  });
+
   it('종료된 스터디는 모든 검토 액션을 비활성화한다', () => {
     renderPage({ isReadOnly: true });
 
     expect(screen.getByRole('button', { name: '전체 승인' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '선택 승인' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '선택 반려' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '검토 마치기' })).toBeDisabled();
 
     const cards = screen.getAllByRole('listitem');
