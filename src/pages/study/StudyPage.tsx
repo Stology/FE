@@ -19,6 +19,47 @@ interface StudyRouteParams extends Record<string, string | undefined> {
   tab?: string;
 }
 
+export const StudyPage = () => {
+  const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
+
+  if (!studyId) {
+    return <Navigate to="/" replace />;
+  }
+
+  const study = getMockStudyById(studyId);
+  const meta = getMockStudyTabById(tab) ?? {
+    code: mockStudyContainer.code,
+    label: mockStudyContainer.title,
+  };
+
+  return (
+    <AppLayout>
+      <Card className="p-6">
+        <Header code={mockStudyContainer.code} title={study?.name ?? mockStudyContainer.title} />
+        <Tabs
+          className="mt-6"
+          items={mockStudyTabs.map((studyTab) => ({
+            id: studyTab.id,
+            label: studyTab.label,
+            to: `/studies/${studyId}/${studyTab.id}`,
+          }))}
+        />
+      </Card>
+      {tab === 'records' && study ? (
+        <WeeklyRecordsTab key={study.id} study={study} />
+      ) : tab === 'reports' && study ? (
+        <WeeklyReportTab key={study.id} study={study} />
+      ) : (
+        <PagePlaceholder
+          code={meta.code}
+          className="min-h-[calc(100vh-260px)]"
+          title={meta.label}
+        />
+      )}
+    </AppLayout>
+  );
+};
+
 interface WeeklyRecordsTabProps {
   study: Study;
 }
@@ -78,46 +119,5 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
       onWeekChange={setSelectedWeek}
       selectedWeek={selectedWeek}
     />
-  );
-};
-
-export const StudyPage = () => {
-  const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
-
-  if (!studyId) {
-    return <Navigate to="/" replace />;
-  }
-
-  const study = getMockStudyById(studyId);
-  const meta = getMockStudyTabById(tab) ?? {
-    code: mockStudyContainer.code,
-    label: mockStudyContainer.title,
-  };
-
-  return (
-    <AppLayout>
-      <Card className="p-6">
-        <Header code={mockStudyContainer.code} title={study?.name ?? mockStudyContainer.title} />
-        <Tabs
-          className="mt-6"
-          items={mockStudyTabs.map((studyTab) => ({
-            id: studyTab.id,
-            label: studyTab.label,
-            to: `/studies/${studyId}/${studyTab.id}`,
-          }))}
-        />
-      </Card>
-      {tab === 'records' && study ? (
-        <WeeklyRecordsTab key={study.id} study={study} />
-      ) : tab === 'reports' && study ? (
-        <WeeklyReportTab key={study.id} study={study} />
-      ) : (
-        <PagePlaceholder
-          code={meta.code}
-          className="min-h-[calc(100vh-260px)]"
-          title={meta.label}
-        />
-      )}
-    </AppLayout>
   );
 };

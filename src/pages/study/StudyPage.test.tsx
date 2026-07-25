@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -24,6 +24,10 @@ describe('StudyPage reports route', () => {
     renderStudyRoute('/studies/spring-study/reports');
 
     expect(screen.getByRole('heading', { level: 1, name: '3주차 리포트' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '2주차' }));
+
+    expect(screen.getByRole('heading', { level: 1, name: '2주차 리포트' })).toBeInTheDocument();
   });
 
   it('종료된 스터디의 리포트를 읽기 전용으로 표시한다', () => {
