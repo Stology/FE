@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { PenLine } from 'lucide-react';
 
-import { mockQuestions } from '@/shared/mocks/questions';
-import type { QuestionSummary } from '@/shared/types/stology';
+import { mockQuestionDetails, mockQuestions } from '@/shared/mocks/questions';
+import type { QuestionDetail, QuestionReply, QuestionSummary } from '@/shared/types/stology';
 import { Button, EmptyState } from '@/shared/ui';
 
+import { QuestionDetailPanel } from './QuestionDetailPanel';
 import { QuestionListItem } from './QuestionListItem';
 import { QuestionPagination } from './QuestionPagination';
 
@@ -14,6 +15,7 @@ interface QuestionsPageProps {
   onQuestionSelect?: (questionId: string) => void;
   page?: number;
   pageSize?: number;
+  questionDetails?: Record<string, QuestionDetail>;
   questions?: QuestionSummary[];
 }
 
@@ -25,12 +27,19 @@ export const QuestionsPage = ({
   onQuestionSelect,
   page,
   pageSize = DEFAULT_PAGE_SIZE,
+  questionDetails = mockQuestionDetails,
   questions = mockQuestions,
 }: QuestionsPageProps) => {
   const validPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
   const totalPages = Math.ceil(questions.length / validPageSize);
   const lastPage = Math.max(1, totalPages);
   const [internalPage, setInternalPage] = useState(1);
+  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(() => new Set());
+  const [repliesByQuestion, setRepliesByQuestion] = useState<Record<string, QuestionReply[]>>(() =>
+    Object.fromEntries(
+      Object.entries(questionDetails).map(([questionId, detail]) => [questionId, detail.replies]),
+    ),
+  );
   const requestedPage = page ?? internalPage;
   const activePage = Math.min(Math.max(requestedPage, 1), lastPage);
   const visibleQuestions = questions.slice(
@@ -46,6 +55,41 @@ export const QuestionsPage = ({
   const handlePageChange = (nextPage: number) => {
     if (page === undefined) setInternalPage(nextPage);
     onPageChange?.(nextPage);
+  };
+
+  const handleQuestionToggle = (questionId: string) => {
+    setExpandedQuestionIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      if (nextIds.has(questionId)) nextIds.delete(questionId);
+      else nextIds.add(questionId);
+      return nextIds;
+    });
+    onQuestionSelect?.(questionId);
+  };
+
+  const handleReplyCreate = (questionId: string, content: string) => {
+    setRepliesByQuestion((currentReplies) => ({
+      ...currentReplies,
+      [questionId]: [
+        ...(currentReplies[questionId] ?? []),
+        {
+          id: `${questionId}-reply-${Date.now()}`,
+          authorName: '김스토',
+          content,
+          createdAt: new Date().toISOString().slice(0, 10),
+          isMine: true,
+        },
+      ],
+    }));
+  };
+
+  const handleReplyUpdate = (questionId: string, replyId: string, content: string) => {
+    setRepliesByQuestion((currentReplies) => ({
+      ...currentReplies,
+      [questionId]: (currentReplies[questionId] ?? []).map((reply) =>
+        reply.id === replyId ? { ...reply, content } : reply,
+      ),
+    }));
   };
 
   return (
@@ -72,10 +116,23 @@ export const QuestionsPage = ({
             <ul className="space-y-2" aria-label="질문 목록">
               {visibleQuestions.map((question) => (
                 <QuestionListItem
+                  isExpanded={expandedQuestionIds.has(question.id)}
                   key={question.id}
-                  onSelect={onQuestionSelect}
+                  onSelect={handleQuestionToggle}
                   question={question}
-                />
+                  replyCount={(repliesByQuestion[question.id] ?? []).length}
+                >
+                  {questionDetails[question.id] ? (
+                    <QuestionDetailPanel
+                      detail={questionDetails[question.id]}
+                      onReplyCreate={(content) => handleReplyCreate(question.id, content)}
+                      onReplyUpdate={(replyId, content) =>
+                        handleReplyUpdate(question.id, replyId, content)
+                      }
+                      replies={repliesByQuestion[question.id] ?? []}
+                    />
+                  ) : null}
+                </QuestionListItem>
               ))}
             </ul>
 

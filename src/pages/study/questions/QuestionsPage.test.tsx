@@ -61,4 +61,51 @@ describe('QuestionsPage', () => {
     expect(screen.getByText('Refresh Token 저장 위치가 궁금합니다')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '2페이지' })).toBeInTheDocument();
   });
+
+  it('여러 질문의 상세 내용을 독립적으로 펼친다', () => {
+    render(<QuestionsPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Refresh Token 저장 위치가 궁금합니다/ }));
+    fireEvent.click(screen.getByRole('button', { name: /인가와 인증의 차이/ }));
+
+    expect(
+      screen.getByText(
+        'Refresh Token은 httpOnly 쿠키에 저장하는 게 안전할까요, 아니면 별도 저장소가 좋을까요?',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('인증과 인가가 실제 요청 흐름에서 어떤 순서로 동작하는지 궁금합니다.'),
+    ).toBeInTheDocument();
+  });
+
+  it('답글을 작성하고 답글 수를 갱신한다', () => {
+    render(<QuestionsPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Refresh Token 저장 위치가 궁금합니다/ }));
+
+    const replyInput = screen.getByRole('textbox', { name: '답글 내용' });
+    const submitButton = screen.getByRole('button', { name: '답글 작성' });
+
+    expect(submitButton).toBeDisabled();
+    fireEvent.change(replyInput, { target: { value: '쿠키 설정을 함께 확인하겠습니다.' } });
+    fireEvent.click(submitButton);
+
+    expect(screen.getByText('쿠키 설정을 함께 확인하겠습니다.')).toBeInTheDocument();
+    expect(screen.getByText('답글 4')).toBeInTheDocument();
+    expect(replyInput).toHaveValue('');
+  });
+
+  it('본인 답글을 인라인으로 수정한다', () => {
+    render(<QuestionsPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Refresh Token 저장 위치가 궁금합니다/ }));
+    fireEvent.click(screen.getByRole('button', { name: '수정' }));
+
+    const editInput = screen.getByRole('textbox', { name: '김스토 답글 수정 내용' });
+    fireEvent.change(editInput, { target: { value: '토큰 재발급 정책까지 정리했습니다.' } });
+    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(screen.getByText('토큰 재발급 정책까지 정리했습니다.')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', { name: '김스토 답글 수정 내용' }),
+    ).not.toBeInTheDocument();
+  });
 });
