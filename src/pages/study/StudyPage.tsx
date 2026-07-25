@@ -1,4 +1,4 @@
-﻿import { Navigate, useParams } from 'react-router-dom';
+﻿import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useMemo, useState } from 'react';
 
@@ -13,6 +13,7 @@ import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
+import { MaterialUploadPage } from './upload/MaterialUploadPage';
 
 interface StudyRouteParams extends Record<string, string | undefined> {
   studyId: string;
@@ -45,7 +46,9 @@ export const StudyPage = () => {
           }))}
         />
       </Card>
-      {tab === 'records' && study ? (
+      {tab === 'upload' && study ? (
+        <MaterialUploadTab key={study.id} study={study} />
+      ) : tab === 'records' && study ? (
         <WeeklyRecordsTab key={study.id} study={study} />
       ) : tab === 'reports' && study ? (
         <WeeklyReportTab key={study.id} study={study} />
@@ -57,6 +60,22 @@ export const StudyPage = () => {
         />
       )}
     </AppLayout>
+  );
+};
+
+interface MaterialUploadTabProps {
+  study: Study;
+}
+
+const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <MaterialUploadPage
+      currentWeek={study.currentWeek}
+      isReadOnly={study.status === 'ended'}
+      onMaterialReview={(material) => navigate(`/studies/${study.id}/review/${material.id}`)}
+    />
   );
 };
 
