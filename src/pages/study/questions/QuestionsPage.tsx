@@ -3,7 +3,7 @@ import { PenLine } from 'lucide-react';
 
 import { mockQuestions } from '@/shared/mocks/questions';
 import type { QuestionSummary } from '@/shared/types/stology';
-import { Button } from '@/shared/ui';
+import { Button, EmptyState } from '@/shared/ui';
 
 import { QuestionListItem } from './QuestionListItem';
 import { QuestionPagination } from './QuestionPagination';
@@ -17,24 +17,31 @@ interface QuestionsPageProps {
   questions?: QuestionSummary[];
 }
 
+const DEFAULT_PAGE_SIZE = 3;
+
 export const QuestionsPage = ({
   onPageChange,
   onQuestionCreate,
   onQuestionSelect,
   page,
-  pageSize = 3,
+  pageSize = DEFAULT_PAGE_SIZE,
   questions = mockQuestions,
 }: QuestionsPageProps) => {
-  const totalPages = Math.max(1, Math.ceil(questions.length / pageSize));
+  const validPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
+  const totalPages = Math.ceil(questions.length / validPageSize);
+  const lastPage = Math.max(1, totalPages);
   const [internalPage, setInternalPage] = useState(1);
   const requestedPage = page ?? internalPage;
-  const activePage = Math.min(Math.max(requestedPage, 1), totalPages);
-  const visibleQuestions = questions.slice((activePage - 1) * pageSize, activePage * pageSize);
+  const activePage = Math.min(Math.max(requestedPage, 1), lastPage);
+  const visibleQuestions = questions.slice(
+    (activePage - 1) * validPageSize,
+    activePage * validPageSize,
+  );
 
   useEffect(() => {
     if (page !== undefined) return;
-    setInternalPage((currentPage) => Math.min(Math.max(currentPage, 1), totalPages));
-  }, [page, totalPages]);
+    setInternalPage((currentPage) => Math.min(Math.max(currentPage, 1), lastPage));
+  }, [lastPage, page]);
 
   const handlePageChange = (nextPage: number) => {
     if (page === undefined) setInternalPage(nextPage);
@@ -58,17 +65,27 @@ export const QuestionsPage = ({
           </Button>
         </div>
 
-        <ul className="space-y-2" aria-label="질문 목록">
-          {visibleQuestions.map((question) => (
-            <QuestionListItem key={question.id} onSelect={onQuestionSelect} question={question} />
-          ))}
-        </ul>
+        {questions.length === 0 ? (
+          <EmptyState description="첫 질문을 작성해보세요!" title="아직 질문이 없습니다." />
+        ) : (
+          <>
+            <ul className="space-y-2" aria-label="질문 목록">
+              {visibleQuestions.map((question) => (
+                <QuestionListItem
+                  key={question.id}
+                  onSelect={onQuestionSelect}
+                  question={question}
+                />
+              ))}
+            </ul>
 
-        <QuestionPagination
-          onPageChange={handlePageChange}
-          page={activePage}
-          totalPages={totalPages}
-        />
+            <QuestionPagination
+              onPageChange={handlePageChange}
+              page={activePage}
+              totalPages={totalPages}
+            />
+          </>
+        )}
       </div>
     </section>
   );
