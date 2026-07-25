@@ -86,3 +86,12 @@ export interface WeeklyReport {
   teamActivities: WeeklyReportMemberActivity[];
   week: number;
 }
+
+export interface QuestionSummary {
+  authorName: string;
+  createdAt: string;
+  hasAttachment: boolean;
+  id: string;
+  replyCount: number;
+  title: string;
+}
