@@ -13,12 +13,51 @@ export const LoginPage = () => {
 
   const handleKakaoLogin = () => {
     const kakaoAuthUrl = import.meta.env.VITE_KAKAO_AUTH_URL || '#';
+
+    // 1. OAuth 콜백 세션 보존: sessionStorage에 초대 컨텍스트 저장
+    if (extractedToken) {
+      sessionStorage.setItem('stology_invite_token', extractedToken);
+    }
+    if (redirectUrl) {
+      sessionStorage.setItem('stology_redirect_url', redirectUrl);
+    } else if (extractedToken) {
+      sessionStorage.setItem('stology_redirect_url', `/invite/${extractedToken}`);
+    }
+
     if (kakaoAuthUrl !== '#') {
-      window.location.href = kakaoAuthUrl;
+      try {
+        // 2. OAuth state 및 URL 파라미터동적 바인딩 (서버 검증 가능한 OAuth state 구조)
+        const targetUrl = new URL(kakaoAuthUrl, window.location.origin);
+
+        const statePayload = {
+          inviteToken: extractedToken ?? null,
+          redirectUrl: redirectUrl ?? (extractedToken ? `/invite/${extractedToken}` : null),
+          timestamp: Date.now(),
+        };
+
+        // OAuth state 쿼리 파라미터에 인코딩된 초대 컨텍스트 포함
+        targetUrl.searchParams.set('state', encodeURIComponent(JSON.stringify(statePayload)));
+
+        // 서버 Callback Endpoint 직접 파라미터 호환성 보장
+        if (extractedToken) {
+          targetUrl.searchParams.set('invite', extractedToken);
+        }
+        if (redirectUrl) {
+          targetUrl.searchParams.set('redirect_url', redirectUrl);
+        }
+
+        window.location.href = targetUrl.toString();
+      } catch {
+        window.location.href = kakaoAuthUrl;
+      }
     } else {
-      console.log('Kakao login initiated', { redirectUrl, inviteToken });
+      console.log('Kakao login initiated with preserved context', {
+        redirectUrl,
+        inviteToken: extractedToken,
+        sessionStorageInviteToken: sessionStorage.getItem('stology_invite_token'),
+      });
       alert(
-        '카카오 로그인 연동 (VITE_KAKAO_AUTH_URL 환경 변수가 설정되면 카카오 OAuth 페이지로 이동합니다.)',
+        `카카오 로그인 연동 (초대 토큰: ${extractedToken ?? '없음'} - OAuth state 및 sessionStorage에 초대 컨텍스트가 보존되었습니다.)`,
       );
     }
   };
