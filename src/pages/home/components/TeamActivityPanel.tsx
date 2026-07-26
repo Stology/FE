@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 import { cn } from '@/shared/lib/cn';
+import { ErrorMessage, Loading } from '@/shared/ui';
 import type { TeamActivityItem, TeamActivityType } from '../mocks';
 
 export type { TeamActivityItem, TeamActivityType };
@@ -81,6 +82,8 @@ const StudyFilter = ({ onChange, selected, studies }: StudyFilterProps) => (
 // ─── Panel ───────────────────────────────────────────────────────────────────
 
 interface TeamActivityPanelProps {
+  error?: Error | null;
+  isLoading?: boolean;
   items: TeamActivityItem[];
   studies: { id: string; name: string }[];
   selectedStudy: string;
@@ -88,6 +91,8 @@ interface TeamActivityPanelProps {
 }
 
 export const TeamActivityPanel = ({
+  error,
+  isLoading = false,
   items,
   onStudyChange,
   selectedStudy,
@@ -97,7 +102,10 @@ export const TeamActivityPanel = ({
     selectedStudy === 'all' ? items : items.filter((item) => item.id.startsWith(selectedStudy));
 
   return (
-    <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5">
+    <section
+      aria-busy={isLoading}
+      className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5"
+    >
       {/* 제목 & 필터 */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -109,7 +117,15 @@ export const TeamActivityPanel = ({
         <StudyFilter studies={studies} selected={selectedStudy} onChange={onStudyChange} />
       </div>
 
-      {filtered.length > 0 ? (
+      {isLoading ? (
+        <div aria-live="polite" className="flex flex-1" role="status">
+          <Loading className="w-full" label="팀 활동을 불러오는 중입니다" />
+        </div>
+      ) : error ? (
+        <div className="mt-5" role="alert">
+          <ErrorMessage message={error.message} title="팀 활동을 불러오지 못했습니다" />
+        </div>
+      ) : filtered.length > 0 ? (
         <>
           {/* 정책 안내 */}
           <p className="mt-3 rounded-[3px] border border-dashed border-stology-border-light bg-stology-off-white px-3 py-2 text-[11px] text-stology-text-light">
