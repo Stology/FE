@@ -20,21 +20,6 @@ export interface Material {
   week: number;
 }
 
-export interface NodeCandidate {
-  approverNames: string[];
-  id: string;
-  matchReason: string;
-  myAction?: ReviewAction;
-  name: string;
-  rejecterNames: string[];
-}
-
-export interface MaterialReview {
-  candidates: NodeCandidate[];
-  material: Material;
-  reviewerCount: number;
-}
-
 export interface MaterialDraft {
   content?: string;
   description?: string;
