@@ -7,3 +7,5 @@ export { CreateStudyModal } from './CreateStudyModal';
 export type { CreateStudyModalProps } from './CreateStudyModal';
 export { InviteLinkModal } from './InviteLinkModal';
 export type { InviteLinkModalProps } from './InviteLinkModal';
+export { OntologySearchModal } from './OntologySearchModal';
+export type { OntologySearchModalProps, OntologyTemplate } from './OntologySearchModal';
