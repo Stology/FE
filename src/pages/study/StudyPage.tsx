@@ -62,6 +62,8 @@ export const StudyPage = () => {
         <WeeklyRecordsTab key={study.id} study={study} />
       ) : tab === 'reports' && study ? (
         <WeeklyReportTab key={study.id} study={study} />
+      ) : tab === 'questions' && study ? (
+        <QuestionsTab key={study.id} study={study} />
       ) : (
         <PagePlaceholder
           code={meta.code}
@@ -171,3 +173,11 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
     />
   );
 };
+
+interface QuestionsTabProps {
+  study: Study;
+}
+
+const QuestionsTab = ({ study }: QuestionsTabProps) => (
+  <QuestionsPage isReadOnly={study.status === 'ended'} />
+);
