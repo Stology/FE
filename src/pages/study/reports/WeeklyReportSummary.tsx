@@ -91,7 +91,7 @@ export const WeeklyReportSummary = ({ report }: WeeklyReportSummaryProps) => {
                     {concept.name}
                   </th>
                   <td className="px-3.5 py-2.5">
-                    <span className="text-[11px] font-medium text-stology-electric-blue">
+                    <span className="text-[11px] font-medium text-stology-royal-blue">
                       {statusLabel[concept.status]}
                     </span>
                   </td>

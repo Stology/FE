@@ -111,7 +111,7 @@ export const WeeklyReportPage = ({
     return (
       <article className="w-full max-w-[1534px] bg-white">
         <header className="pb-1 pt-4">
-          <p className="text-[11px] font-bold uppercase leading-4 text-stology-electric-blue">
+          <p className="text-[11px] font-bold uppercase leading-4 text-stology-royal-blue">
             RPT001 · Weekly Coverage Report
           </p>
           <h1 className="mt-1 text-[26px] font-bold leading-[32px] text-stology-text-dark">

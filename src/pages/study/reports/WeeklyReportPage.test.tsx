@@ -5,6 +5,8 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { getMockWeeklyReport } from '@/shared/mocks/weeklyReports';
+
 import { WeeklyReportPage } from './WeeklyReportPage';
 
 afterEach(cleanup);
@@ -60,5 +62,25 @@ describe('WeeklyReportPage', () => {
     expect(
       screen.getByText('종료된 스터디입니다. 주차별 리포트를 읽기 전용으로 확인할 수 있습니다.'),
     ).toBeInTheDocument();
+  });
+
+  it('추천 노드와 팀 활동이 없으면 각 영역의 빈 상태를 표시한다', () => {
+    const report = getMockWeeklyReport(4);
+
+    expect(report).toBeDefined();
+    if (!report) throw new Error('4주차 목 리포트가 필요합니다.');
+
+    render(
+      <WeeklyReportPage
+        availableWeeks={[4]}
+        report={{ ...report, recommendations: [], teamActivities: [] }}
+        selectedWeek={4}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: '추천 노드가 없습니다.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '집계할 팀 활동이 없습니다.' })).toBeInTheDocument();
+    expect(screen.queryByText('이어서 해보기')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('통계 범례')).not.toBeInTheDocument();
   });
 });
