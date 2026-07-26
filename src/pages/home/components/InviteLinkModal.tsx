@@ -1,39 +1,71 @@
 import { Check, Copy } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button, Input, Modal } from '@/shared/ui';
 
 export interface InviteLinkModalProps {
   isOpen: boolean;
   onClose: () => void;
-  studyName?: string;
-  inviteToken?: string;
+  studyName: string;
+  inviteToken: string;
 }
 
 export const InviteLinkModal = ({
   isOpen,
   onClose,
-  studyName = '새 스터디',
-  inviteToken = 'sample-token',
+  studyName,
+  inviteToken,
 }: InviteLinkModalProps) => {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 모달 unmount 시 복사 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   const inviteUrl = `${window.location.origin}/invite/${inviteToken}`;
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(inviteUrl);
+
+      // 기존 복사 타이머 취소 (단일 타이머 관리)
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      timerRef.current = setTimeout(() => {
+        setCopied(false);
+        timerRef.current = null;
+      }, 2000);
     } catch {
       alert('초대 링크 복사에 실패했습니다.');
     }
   };
 
+  const handleClose = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setCopied(false);
+    onClose();
+  };
+
+  if (!isOpen || !studyName || !inviteToken) {
+    return null;
+  }
+
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="스터디 생성 완료"
       description={`'${studyName}' 스터디가 성공적으로 생성되었습니다.`}
       showCloseButton
@@ -80,7 +112,7 @@ export const InviteLinkModal = ({
         </div>
 
         <div className="flex justify-end pt-2">
-          <Button type="button" variant="primary" onClick={onClose}>
+          <Button type="button" variant="primary" onClick={handleClose}>
             완료
           </Button>
         </div>

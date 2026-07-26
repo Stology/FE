@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Search } from 'lucide-react';
+import { z } from 'zod';
 
 import { Button, Input, Modal, Textarea } from '@/shared/ui';
 
@@ -11,77 +13,115 @@ export interface CreateStudyModalProps {
   onSuccess?: (createdStudy: { id: string; name: string; inviteToken: string }) => void;
 }
 
+// Zod 검증 스키마 정의 (React Hook Form 연동)
+const createStudySchema = z.object({
+  name: z.string().trim().min(1, '스터디 이름을 입력해 주세요.'),
+  templateId: z.string().min(1, '온톨로지 템플릿을 선택해 주세요.'),
+  startedAt: z.string().min(1, '시작일을 선택해 주세요.'),
+  description: z.string().optional(),
+});
+
+export type CreateStudyFormValues = z.infer<typeof createStudySchema>;
+
 const WEEKDAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
+// 현지 날짜를 YYYY-MM-DD 형식으로 포맷팅하는 헬퍼 (toISOString 사용 시 UTC 시차로 인한 저녁 시간대 날짜 왜곡 방지)
+const getLocalDateString = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// YYYY-MM-DD 분해 및 Date.UTC() / getUTCDay() 기반 KST 요일 계산 (미국 등 UTC보다 느린 타임존 오프셋 영향 방지)
 const getReportScheduleText = (startDateStr: string): string => {
   if (!startDateStr) {
     return '기본 리포트  매주 화요일 24:00 (KST)';
   }
 
-  const date = new Date(startDateStr);
-  if (isNaN(date.getTime())) {
+  const parts = startDateStr.split('-');
+  if (parts.length !== 3) {
     return '기본 리포트  매주 화요일 24:00 (KST)';
   }
 
-  // 전날 요일 계산 (시작일 선택 시 전날 24:00을 기본 주차 종료/리포트 생성 시각으로 안내)
-  const prevDayIndex = (date.getDay() + 6) % 7;
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    return '기본 리포트  매주 화요일 24:00 (KST)';
+  }
+
+  // Date.UTC()로 파싱하여 타임존 오프셋 영향 방지
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  // 시작일 선택 시 전날 24:00을 기본 주차 종료/리포트 생성 시각으로 안내
+  const prevDayIndex = (utcDate.getUTCDay() + 6) % 7;
   const prevWeekday = WEEKDAYS[prevDayIndex];
 
   return `기본 리포트  매주 ${prevWeekday} 24:00 (KST)`;
 };
 
 export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModalProps) => {
-  const [name, setName] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<OntologyTemplate | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [startedAt, setStartedAt] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+
+  // React Hook Form + Zod Resolver 폼 상태 관리
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateStudyFormValues>({
+    defaultValues: {
+      name: '',
+      templateId: '',
+      startedAt: getLocalDateString(),
+      description: '',
+    },
+    resolver: (values) => {
+      const result = createStudySchema.safeParse(values);
+      if (result.success) {
+        return { values: result.data, errors: {} };
+      }
+      const fieldErrors: Record<string, { type: string; message: string }> = {};
+      result.error.issues.forEach((issue) => {
+        const path = issue.path[0] as string;
+        if (path && !fieldErrors[path]) {
+          fieldErrors[path] = { type: 'validation', message: issue.message };
+        }
+      });
+      return { values: {}, errors: fieldErrors };
+    },
   });
-  const [description, setDescription] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; templateId?: string; startedAt?: string }>(
-    {},
-  );
 
-  const validate = () => {
-    const newErrors: { name?: string; templateId?: string; startedAt?: string } = {};
+  const startedAt = watch('startedAt');
 
-    if (!name.trim()) {
-      newErrors.name = '스터디 이름을 입력해 주세요.';
+  // 제출 중(isSubmitting)에는 모달 닫기 차단
+  const handleClose = () => {
+    if (!isSubmitting) {
+      reset();
+      setSelectedTemplate(null);
+      onClose();
     }
-    if (!selectedTemplate) {
-      newErrors.templateId = '온톨로지 템플릿을 선택해 주세요.';
-    }
-    if (!startedAt) {
-      newErrors.startedAt = '시작일을 선택해 주세요.';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+  const onSubmit = async (data: CreateStudyFormValues) => {
     try {
-      setIsSubmitting(true);
       // Simulate API call for study creation (HOME-CRT-01)
       await new Promise((resolve) => setTimeout(resolve, 400));
 
       const mockInviteToken = `inv_${Math.random().toString(36).substring(2, 9)}`;
       const createdStudy = {
         id: `study-${Date.now()}`,
-        name: name.trim(),
+        name: data.name.trim(),
         inviteToken: mockInviteToken,
       };
 
-      // Reset form
-      setName('');
+      reset();
       setSelectedTemplate(null);
-      setDescription('');
-      setErrors({});
       onClose();
 
       if (onSuccess) {
@@ -89,8 +129,6 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
       }
     } catch {
       alert('스터디 생성 중 오류가 발생했습니다.');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -98,22 +136,22 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
     <>
       <Modal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleClose}
         title="스터디 생성"
         description="HOM001-0100 · 스터디 생성 및 기본 리포트 일정 확정"
         showCloseButton
         className="max-w-[460px]"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* 스터디 이름 * */}
           <div>
             <Input
               id="study-name"
               label="스터디 이름 *"
               placeholder="예: 백엔드 마스터, CS 스터디"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              error={errors.name}
+              disabled={isSubmitting}
+              error={errors.name?.message}
+              {...register('name')}
             />
           </div>
 
@@ -126,8 +164,15 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
               <button
                 type="button"
                 id="study-template-trigger"
-                onClick={() => setIsSearchModalOpen(true)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 bg-white border rounded-lg text-sm text-left transition-all cursor-pointer ${
+                disabled={isSubmitting}
+                onClick={() => {
+                  if (!isSubmitting) setIsSearchModalOpen(true);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 bg-white border rounded-lg text-sm text-left transition-all ${
+                  isSubmitting
+                    ? 'cursor-not-allowed opacity-70 bg-stology-off-white'
+                    : 'cursor-pointer'
+                } ${
                   errors.templateId
                     ? 'border-red-500 ring-1 ring-red-500'
                     : 'border-stology-border hover:border-stology-border-dark'
@@ -145,8 +190,8 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
                 <Search className="w-4 h-4 text-stology-text-light" />
               </button>
 
-              {errors.templateId && (
-                <p className="mt-1 text-xs text-red-500 font-medium">{errors.templateId}</p>
+              {errors.templateId?.message && (
+                <p className="mt-1 text-xs text-red-500 font-medium">{errors.templateId.message}</p>
               )}
             </div>
           </div>
@@ -157,9 +202,9 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
               id="study-started-at"
               type="date"
               label="시작일 YYYY-MM-DD *"
-              value={startedAt}
-              onChange={(e) => setStartedAt(e.target.value)}
-              error={errors.startedAt}
+              disabled={isSubmitting}
+              error={errors.startedAt?.message}
+              {...register('startedAt')}
             />
             {/* 기본 리포트 일정 안내 */}
             <p className="mt-1.5 text-caption font-medium text-stology-text-light">
@@ -173,15 +218,15 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
               id="study-description"
               label="설명 (선택)"
               placeholder="스터디 목표나 전달사항을 입력해주세요."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              disabled={isSubmitting}
+              {...register('description')}
               className="min-h-20"
             />
           </div>
 
           {/* 액션 버튼 그룹 (생성하기, 닫기) */}
           <div className="flex items-center justify-end gap-2.5 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               닫기
             </Button>
             <Button type="submit" variant="primary" isLoading={isSubmitting}>
@@ -197,7 +242,7 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
         onClose={() => setIsSearchModalOpen(false)}
         onSelect={(template) => {
           setSelectedTemplate(template);
-          setErrors((prev) => ({ ...prev, templateId: undefined }));
+          setValue('templateId', template.id, { shouldValidate: true });
         }}
         initialSelectedId={selectedTemplate?.id}
       />
