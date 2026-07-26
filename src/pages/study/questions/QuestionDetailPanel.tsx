@@ -7,8 +7,10 @@ import { Button, Input } from '@/shared/ui';
 interface QuestionDetailPanelProps {
   detail: QuestionDetail;
   isReadOnly?: boolean;
+  onQuestionDelete?: () => void;
   onQuestionEdit?: () => void;
   onReplyCreate: (content: string) => void;
+  onReplyDelete?: (replyId: string) => void;
   onReplyUpdate: (replyId: string, content: string) => void;
   replies: QuestionReply[];
 }
@@ -16,8 +18,10 @@ interface QuestionDetailPanelProps {
 export const QuestionDetailPanel = ({
   detail,
   isReadOnly = false,
+  onQuestionDelete,
   onQuestionEdit,
   onReplyCreate,
+  onReplyDelete,
   onReplyUpdate,
   replies,
 }: QuestionDetailPanelProps) => {
@@ -62,10 +66,25 @@ export const QuestionDetailPanel = ({
         <p className="break-words text-[13px] leading-[22.1px] text-stology-text-dark">
           {detail.content}
         </p>
-        {detail.isMine && !isReadOnly && onQuestionEdit ? (
-          <Button aria-label="질문 수정" onClick={onQuestionEdit} size="sm" variant="ghost">
-            수정
-          </Button>
+        {detail.isMine && !isReadOnly ? (
+          <div className="flex shrink-0 gap-1.5">
+            {onQuestionEdit ? (
+              <Button aria-label="질문 수정" onClick={onQuestionEdit} size="sm" variant="ghost">
+                수정
+              </Button>
+            ) : null}
+            {onQuestionDelete ? (
+              <Button
+                aria-label="질문 삭제"
+                className="text-stology-reject"
+                onClick={onQuestionDelete}
+                size="sm"
+                variant="ghost"
+              >
+                삭제
+              </Button>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -158,9 +177,22 @@ export const QuestionDetailPanel = ({
                         </Button>
                       </>
                     ) : (
-                      <Button onClick={() => startEditing(reply)} size="sm" variant="ghost">
-                        수정
-                      </Button>
+                      <>
+                        <Button onClick={() => startEditing(reply)} size="sm" variant="ghost">
+                          수정
+                        </Button>
+                        {onReplyDelete ? (
+                          <Button
+                            aria-label={`${reply.authorName} 답글 삭제`}
+                            className="text-stology-reject"
+                            onClick={() => onReplyDelete(reply.id)}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            삭제
+                          </Button>
+                        ) : null}
+                      </>
                     )}
                   </div>
                 ) : null}
