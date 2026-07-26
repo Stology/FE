@@ -61,7 +61,13 @@ describe('QuestionsPage', () => {
     const handleQuestionSelect = vi.fn();
 
     render(<QuestionsPage onQuestionSelect={handleQuestionSelect} />);
-    fireEvent.click(screen.getByRole('button', { name: /Refresh Token 저장 위치가 궁금합니다/ }));
+    const questionButton = screen.getByRole('button', {
+      name: /Refresh Token 저장 위치가 궁금합니다/,
+    });
+    const questionItem = questionButton.closest('li');
+
+    expect(questionItem).not.toBeNull();
+    fireEvent.click(questionButton);
 
     expect(handleQuestionSelect).toHaveBeenCalledOnce();
     expect(handleQuestionSelect).toHaveBeenCalledWith('refresh-token-storage');
@@ -73,6 +79,23 @@ describe('QuestionsPage', () => {
     expect(screen.getByText('아직 질문이 없습니다.')).toBeInTheDocument();
     expect(screen.getByText('첫 질문을 작성해보세요!')).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: '질문 목록 페이지' })).not.toBeInTheDocument();
+  });
+
+  it('로딩 중에는 질문 목록 대신 로딩 상태를 표시한다', () => {
+    render(<QuestionsPage isLoading />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('질문 목록을 불러오는 중입니다');
+    expect(screen.queryByRole('list', { name: '질문 목록' })).not.toBeInTheDocument();
+  });
+
+  it('오류 상태에서 질문 목록을 다시 불러올 수 있다', () => {
+    const handleRetry = vi.fn();
+
+    render(<QuestionsPage errorMessage="질문함 조회에 실패했습니다." onRetry={handleRetry} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('질문함 조회에 실패했습니다.');
+    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
+    expect(handleRetry).toHaveBeenCalledOnce();
   });
 
   it.each([0, -1, 1.5])('유효하지 않은 pageSize %s를 기본값으로 보정한다', (pageSize) => {
@@ -158,6 +181,43 @@ describe('QuestionsPage', () => {
     );
     expect(screen.getByText('JWT 만료 시간 설정 기준')).toBeInTheDocument();
     expect(screen.getByText('서비스별 만료 시간 설정 기준을 알고 싶습니다.')).toBeInTheDocument();
+  });
+
+  it('본인 질문을 확인 후 삭제한다', () => {
+    const handleQuestionDelete = vi.fn();
+
+    render(<QuestionsPage onQuestionDelete={handleQuestionDelete} />);
+    fireEvent.click(screen.getByRole('button', { name: /JWT 만료 시간 기준/ }));
+    fireEvent.click(screen.getByRole('button', { name: '질문 삭제' }));
+
+    expect(screen.getByRole('dialog', { name: '질문을 삭제하시겠습니까?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+
+    expect(handleQuestionDelete).toHaveBeenCalledWith('jwt-expiration');
+    expect(screen.queryByText('JWT 만료 시간 기준')).not.toBeInTheDocument();
+  });
+
+  it('본인 답글을 확인 후 삭제하고 답글 수를 갱신한다', () => {
+    const handleReplyDelete = vi.fn();
+
+    render(<QuestionsPage onReplyDelete={handleReplyDelete} />);
+    const questionButton = screen.getByRole('button', {
+      name: /Refresh Token 저장 위치가 궁금합니다/,
+    });
+    const questionItem = questionButton.closest('li');
+
+    expect(questionItem).not.toBeNull();
+    fireEvent.click(questionButton);
+    fireEvent.click(screen.getByRole('button', { name: '김스토 답글 삭제' }));
+
+    expect(screen.getByRole('dialog', { name: '답글을 삭제하시겠습니까?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+
+    expect(handleReplyDelete).toHaveBeenCalledWith('refresh-token-storage', 'refresh-reply-3');
+    expect(
+      screen.queryByText('서버의 토큰 재발급 정책도 같이 정리해볼게요.'),
+    ).not.toBeInTheDocument();
+    expect(questionItem).toHaveTextContent('답글 2');
   });
 
   it('질문 작성 모달을 닫으면 입력 내용을 폐기한다', () => {
@@ -249,6 +309,7 @@ describe('QuestionsPage', () => {
     expect(screen.queryByRole('button', { name: '답글 작성' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '이미지 첨부' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /삭제/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '질문 작성' })).not.toBeInTheDocument();
     expect(screen.getByText('서버의 토큰 재발급 정책도 같이 정리해볼게요.')).toBeInTheDocument();
   });
