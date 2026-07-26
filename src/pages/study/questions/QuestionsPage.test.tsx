@@ -138,6 +138,7 @@ describe('QuestionsPage', () => {
 
     expect(screen.getByRole('dialog', { name: '질문 수정' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '질문 제목' })).toHaveValue('JWT 만료 시간 기준');
+    await waitFor(() => expect(screen.getByRole('button', { name: '수정하기' })).toBeEnabled());
 
     fireEvent.change(screen.getByRole('textbox', { name: '질문 제목' }), {
       target: { value: 'JWT 만료 시간 설정 기준' },
@@ -183,7 +184,43 @@ describe('QuestionsPage', () => {
     });
 
     expect(screen.getByText('question.png')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'question.png 제거' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'question.png 제거' }));
+    expect(screen.queryByText('question.png')).not.toBeInTheDocument();
+  });
+
+  it('글자 수 제한을 초과하면 오류를 표시하고 제출을 막는다', async () => {
+    render(<QuestionsPage />);
+    fireEvent.click(screen.getByRole('button', { name: '질문 작성' }));
+
+    fireEvent.change(screen.getByRole('textbox', { name: '질문 제목' }), {
+      target: { value: '제'.repeat(51) },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '질문 본문' }), {
+      target: { value: '본'.repeat(1001) },
+    });
+
+    expect(await screen.findByText('제목은 50자 이내입니다.')).toBeInTheDocument();
+    expect(await screen.findByText('본문은 1000자 이내입니다.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '질문하기' })).toBeDisabled();
+  });
+
+  it('모달 포커스를 내부에 유지하고 닫은 뒤 작성 버튼으로 돌려보낸다', async () => {
+    render(<QuestionsPage />);
+    const openButton = screen.getByRole('button', { name: '질문 작성' });
+    openButton.focus();
+    fireEvent.click(openButton);
+
+    const titleInput = screen.getByRole('textbox', { name: '질문 제목' });
+    const closeButton = screen.getByRole('button', { name: '닫기' });
+    expect(titleInput).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(closeButton).toHaveFocus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(titleInput).toHaveFocus();
+
+    fireEvent.click(closeButton);
+    await waitFor(() => expect(openButton).toHaveFocus());
   });
 
   it('질문을 접었다 펼쳐도 작성 중인 답글을 유지한다', () => {

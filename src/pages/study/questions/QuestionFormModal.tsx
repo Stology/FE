@@ -65,6 +65,7 @@ export const QuestionFormModal = ({
     handleSubmit,
     register,
     reset,
+    trigger,
   } = useForm<Pick<QuestionFormValues, 'content' | 'title'>>({
     defaultValues: { content: initialContent, title: initialTitle },
     mode: 'onChange',
@@ -75,7 +76,8 @@ export const QuestionFormModal = ({
     if (!isOpen) return;
     reset({ content: initialContent, title: initialTitle });
     setImages([]);
-  }, [initialContent, initialTitle, isOpen, reset]);
+    if (initialContent.trim() && initialTitle.trim()) void trigger();
+  }, [initialContent, initialTitle, isOpen, reset, trigger]);
 
   const closeModal = () => {
     reset({ content: initialContent, title: initialTitle });
@@ -99,6 +101,7 @@ export const QuestionFormModal = ({
       .filter((file): file is File => file !== null);
 
     if (pastedImages.length > 0) {
+      event.preventDefault();
       setImages((currentImages) => [...currentImages, ...pastedImages]);
     }
   };
@@ -147,25 +150,27 @@ export const QuestionFormModal = ({
 
         {images.length > 0 ? (
           <ul aria-label="첨부 이미지" className="flex flex-wrap gap-2">
-            {images.map((image, imageIndex) => (
-              <li
-                className="flex max-w-full items-center gap-2 rounded-[4.5px] bg-stology-off-white px-2.5 py-1.5 text-[11px] text-stology-text-dark"
-                key={`${image.name}-${image.lastModified}-${imageIndex}`}
-              >
-                <ImageIcon aria-hidden className="size-3.5 shrink-0 text-stology-royal-blue" />
-                <span className="max-w-64 truncate">
-                  {image.name || `붙여넣은 이미지 ${imageIndex + 1}`}
-                </span>
-                <button
-                  aria-label={`${image.name || `붙여넣은 이미지 ${imageIndex + 1}`} 제거`}
-                  className="text-stology-text-light transition hover:text-stology-text-dark"
-                  onClick={() => removeImage(imageIndex)}
-                  type="button"
+            {images.map((image, imageIndex) => {
+              const displayName = image.name || `붙여넣은 이미지 ${imageIndex + 1}`;
+
+              return (
+                <li
+                  className="flex max-w-full items-center gap-2 rounded-[4.5px] bg-stology-off-white px-2.5 py-1.5 text-[11px] text-stology-text-dark"
+                  key={`${image.name}-${image.lastModified}-${imageIndex}`}
                 >
-                  <X aria-hidden className="size-3.5" />
-                </button>
-              </li>
-            ))}
+                  <ImageIcon aria-hidden className="size-3.5 shrink-0 text-stology-royal-blue" />
+                  <span className="max-w-64 truncate">{displayName}</span>
+                  <button
+                    aria-label={`${displayName} 제거`}
+                    className="text-stology-text-light transition hover:text-stology-text-dark"
+                    onClick={() => removeImage(imageIndex)}
+                    type="button"
+                  >
+                    <X aria-hidden className="size-3.5" />
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         ) : null}
       </form>

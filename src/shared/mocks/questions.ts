@@ -22,7 +22,7 @@ export const mockQuestions: QuestionSummary[] = [
   {
     id: 'jwt-expiration',
     title: 'JWT 만료 시간 기준',
-    authorName: '김철수',
+    authorName: '김스토',
     createdAt: '2026-03-13',
     isMine: true,
     replyCount: 2,

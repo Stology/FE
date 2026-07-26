@@ -32,15 +32,17 @@ export const QuestionsPage = ({
   onQuestionUpdate,
   page,
   pageSize = DEFAULT_PAGE_SIZE,
-  questionDetails: providedQuestionDetails = mockQuestionDetails,
-  questions: providedQuestions = mockQuestions,
+  questionDetails: controlledQuestionDetails,
+  questions: controlledQuestions,
 }: QuestionsPageProps) => {
   const validPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
-  const [questions, setQuestions] = useState(providedQuestions);
-  const [questionDetails, setQuestionDetails] = useState(providedQuestionDetails);
+  const [internalQuestions, setInternalQuestions] = useState(mockQuestions);
+  const [internalQuestionDetails, setInternalQuestionDetails] = useState(mockQuestionDetails);
   const [questionForm, setQuestionForm] = useState<
     { mode: 'create' } | { mode: 'edit'; questionId: string } | null
   >(null);
+  const questions = controlledQuestions ?? internalQuestions;
+  const questionDetails = controlledQuestionDetails ?? internalQuestionDetails;
   const totalPages = Math.ceil(questions.length / validPageSize);
   const lastPage = Math.max(1, totalPages);
   const [internalPage, setInternalPage] = useState(1);
@@ -61,14 +63,6 @@ export const QuestionsPage = ({
     if (page !== undefined) return;
     setInternalPage((currentPage) => Math.min(Math.max(currentPage, 1), lastPage));
   }, [lastPage, page]);
-
-  useEffect(() => {
-    setQuestions(providedQuestions);
-  }, [providedQuestions]);
-
-  useEffect(() => {
-    setQuestionDetails(providedQuestionDetails);
-  }, [providedQuestionDetails]);
 
   const handlePageChange = (nextPage: number) => {
     if (page === undefined) setInternalPage(nextPage);
@@ -91,7 +85,7 @@ export const QuestionsPage = ({
       [questionId]: [
         ...(currentReplies[questionId] ?? []),
         {
-          id: `${questionId}-reply-${Date.now()}`,
+          id: `${questionId}-reply-${crypto.randomUUID()}`,
           authorName: '김스토',
           content,
           createdAt: new Date().toISOString().slice(0, 10),
@@ -114,31 +108,35 @@ export const QuestionsPage = ({
     if (questionForm?.mode === 'edit') {
       const { questionId } = questionForm;
 
-      setQuestions((currentQuestions) =>
-        currentQuestions.map((question) =>
-          question.id === questionId
-            ? {
-                ...question,
-                hasAttachment: question.hasAttachment || values.images.length > 0,
-                title: values.title,
-              }
-            : question,
-        ),
-      );
-      setQuestionDetails((currentDetails) => ({
-        ...currentDetails,
-        [questionId]: {
-          ...currentDetails[questionId],
-          content: values.content,
-          hasAttachment: currentDetails[questionId].hasAttachment || values.images.length > 0,
-          title: values.title,
-        },
-      }));
+      if (controlledQuestions === undefined) {
+        setInternalQuestions((currentQuestions) =>
+          currentQuestions.map((question) =>
+            question.id === questionId
+              ? {
+                  ...question,
+                  hasAttachment: question.hasAttachment || values.images.length > 0,
+                  title: values.title,
+                }
+              : question,
+          ),
+        );
+      }
+      if (controlledQuestionDetails === undefined) {
+        setInternalQuestionDetails((currentDetails) => ({
+          ...currentDetails,
+          [questionId]: {
+            ...currentDetails[questionId],
+            content: values.content,
+            hasAttachment: currentDetails[questionId].hasAttachment || values.images.length > 0,
+            title: values.title,
+          },
+        }));
+      }
       onQuestionUpdate?.(questionId, values);
       return;
     }
 
-    const questionId = `question-${Date.now()}`;
+    const questionId = `question-${crypto.randomUUID()}`;
     const createdAt = new Date().toISOString().slice(0, 10);
     const question: QuestionSummary = {
       authorName: '김스토',
@@ -150,15 +148,19 @@ export const QuestionsPage = ({
       title: values.title,
     };
 
-    setQuestions((currentQuestions) => [question, ...currentQuestions]);
-    setQuestionDetails((currentDetails) => ({
-      ...currentDetails,
-      [questionId]: {
-        ...question,
-        content: values.content,
-        replies: [],
-      },
-    }));
+    if (controlledQuestions === undefined) {
+      setInternalQuestions((currentQuestions) => [question, ...currentQuestions]);
+    }
+    if (controlledQuestionDetails === undefined) {
+      setInternalQuestionDetails((currentDetails) => ({
+        ...currentDetails,
+        [questionId]: {
+          ...question,
+          content: values.content,
+          replies: [],
+        },
+      }));
+    }
     setRepliesByQuestion((currentReplies) => ({ ...currentReplies, [questionId]: [] }));
     if (page === undefined) setInternalPage(1);
     onQuestionCreate?.(values);
