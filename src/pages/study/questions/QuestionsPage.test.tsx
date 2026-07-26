@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { QuestionsPage } from './QuestionsPage';
@@ -28,13 +28,33 @@ describe('QuestionsPage', () => {
     expect(screen.queryByText('Refresh Token 저장 위치가 궁금합니다')).not.toBeInTheDocument();
   });
 
-  it('질문 작성 요청을 전달한다', () => {
+  it('질문을 작성해 목록 최상단에 추가한다', async () => {
     const handleQuestionCreate = vi.fn();
 
     render(<QuestionsPage onQuestionCreate={handleQuestionCreate} />);
     fireEvent.click(screen.getByRole('button', { name: '질문 작성' }));
 
-    expect(handleQuestionCreate).toHaveBeenCalledOnce();
+    expect(screen.getByRole('dialog', { name: '질문 작성' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '질문하기' })).toBeDisabled();
+
+    fireEvent.change(screen.getByRole('textbox', { name: '질문 제목' }), {
+      target: { value: '토큰 저장 정책이 궁금합니다' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '질문 본문' }), {
+      target: { value: 'Refresh Token 저장 정책을 어떻게 정하면 좋을까요?' },
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: '질문하기' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }));
+
+    await waitFor(() =>
+      expect(handleQuestionCreate).toHaveBeenCalledWith({
+        content: 'Refresh Token 저장 정책을 어떻게 정하면 좋을까요?',
+        images: [],
+        title: '토큰 저장 정책이 궁금합니다',
+      }),
+    );
+    expect(screen.getByText('토큰 저장 정책이 궁금합니다')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '질문 작성' })).not.toBeInTheDocument();
   });
 
   it('선택한 질문 식별자를 전달한다', () => {
@@ -107,6 +127,63 @@ describe('QuestionsPage', () => {
     expect(
       screen.queryByRole('textbox', { name: '김스토 답글 수정 내용' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('본인 질문을 기존 내용으로 열어 수정한다', async () => {
+    const handleQuestionUpdate = vi.fn();
+
+    render(<QuestionsPage onQuestionUpdate={handleQuestionUpdate} />);
+    fireEvent.click(screen.getByRole('button', { name: /JWT 만료 시간 기준/ }));
+    fireEvent.click(screen.getByRole('button', { name: '질문 수정' }));
+
+    expect(screen.getByRole('dialog', { name: '질문 수정' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '질문 제목' })).toHaveValue('JWT 만료 시간 기준');
+
+    fireEvent.change(screen.getByRole('textbox', { name: '질문 제목' }), {
+      target: { value: 'JWT 만료 시간 설정 기준' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '질문 본문' }), {
+      target: { value: '서비스별 만료 시간 설정 기준을 알고 싶습니다.' },
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: '수정하기' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '수정하기' }));
+
+    await waitFor(() =>
+      expect(handleQuestionUpdate).toHaveBeenCalledWith('jwt-expiration', {
+        content: '서비스별 만료 시간 설정 기준을 알고 싶습니다.',
+        images: [],
+        title: 'JWT 만료 시간 설정 기준',
+      }),
+    );
+    expect(screen.getByText('JWT 만료 시간 설정 기준')).toBeInTheDocument();
+    expect(screen.getByText('서비스별 만료 시간 설정 기준을 알고 싶습니다.')).toBeInTheDocument();
+  });
+
+  it('질문 작성 모달을 닫으면 입력 내용을 폐기한다', () => {
+    render(<QuestionsPage />);
+    fireEvent.click(screen.getByRole('button', { name: '질문 작성' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '질문 제목' }), {
+      target: { value: '임시 질문' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '닫기' }));
+
+    fireEvent.click(screen.getByRole('button', { name: '질문 작성' }));
+    expect(screen.getByRole('textbox', { name: '질문 제목' })).toHaveValue('');
+  });
+
+  it('본문에 붙여넣은 이미지를 첨부 목록에 표시한다', () => {
+    render(<QuestionsPage />);
+    fireEvent.click(screen.getByRole('button', { name: '질문 작성' }));
+
+    const image = new File(['image'], 'question.png', { type: 'image/png' });
+    fireEvent.paste(screen.getByRole('textbox', { name: '질문 본문' }), {
+      clipboardData: {
+        items: [{ getAsFile: () => image, type: 'image/png' }],
+      },
+    });
+
+    expect(screen.getByText('question.png')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'question.png 제거' })).toBeInTheDocument();
   });
 
   it('질문을 접었다 펼쳐도 작성 중인 답글을 유지한다', () => {

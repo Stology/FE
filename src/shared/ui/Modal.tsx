@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { cn } from '@/shared/lib/cn';
@@ -27,6 +27,9 @@ export const Modal = ({
   showCloseButton = false,
   title,
 }: ModalProps) => {
+  const titleId = useId();
+  const descriptionId = useId();
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -43,6 +46,8 @@ export const Modal = ({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,25,47,0.28)] px-4 py-8">
       <section
+        aria-describedby={description ? descriptionId : undefined}
+        aria-labelledby={titleId}
         aria-modal="true"
         className={cn(
           'w-full max-w-[440px] rounded-[7.5px] bg-white p-6 shadow-[0_20px_60px_rgba(10,25,47,0.28)]',
@@ -52,9 +57,13 @@ export const Modal = ({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-heading-2 text-stology-text-dark">{title}</h2>
+            <h2 className="text-heading-2 text-stology-text-dark" id={titleId}>
+              {title}
+            </h2>
             {description ? (
-              <p className="mt-2 text-caption text-stology-text-light">{description}</p>
+              <p className="mt-2 text-caption text-stology-text-light" id={descriptionId}>
+                {description}
+              </p>
             ) : null}
           </div>
           {showCloseButton ? (

@@ -6,14 +6,16 @@ import type { QuestionDetail, QuestionReply, QuestionSummary } from '@/shared/ty
 import { Button, EmptyState } from '@/shared/ui';
 
 import { QuestionDetailPanel } from './QuestionDetailPanel';
+import { QuestionFormModal, type QuestionFormValues } from './QuestionFormModal';
 import { QuestionListItem } from './QuestionListItem';
 import { QuestionPagination } from './QuestionPagination';
 
 interface QuestionsPageProps {
   isReadOnly?: boolean;
   onPageChange?: (page: number) => void;
-  onQuestionCreate?: () => void;
+  onQuestionCreate?: (values: QuestionFormValues) => void;
   onQuestionSelect?: (questionId: string) => void;
+  onQuestionUpdate?: (questionId: string, values: QuestionFormValues) => void;
   page?: number;
   pageSize?: number;
   questionDetails?: Record<string, QuestionDetail>;
@@ -27,12 +29,18 @@ export const QuestionsPage = ({
   onPageChange,
   onQuestionCreate,
   onQuestionSelect,
+  onQuestionUpdate,
   page,
   pageSize = DEFAULT_PAGE_SIZE,
-  questionDetails = mockQuestionDetails,
-  questions = mockQuestions,
+  questionDetails: providedQuestionDetails = mockQuestionDetails,
+  questions: providedQuestions = mockQuestions,
 }: QuestionsPageProps) => {
   const validPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
+  const [questions, setQuestions] = useState(providedQuestions);
+  const [questionDetails, setQuestionDetails] = useState(providedQuestionDetails);
+  const [questionForm, setQuestionForm] = useState<
+    { mode: 'create' } | { mode: 'edit'; questionId: string } | null
+  >(null);
   const totalPages = Math.ceil(questions.length / validPageSize);
   const lastPage = Math.max(1, totalPages);
   const [internalPage, setInternalPage] = useState(1);
@@ -53,6 +61,14 @@ export const QuestionsPage = ({
     if (page !== undefined) return;
     setInternalPage((currentPage) => Math.min(Math.max(currentPage, 1), lastPage));
   }, [lastPage, page]);
+
+  useEffect(() => {
+    setQuestions(providedQuestions);
+  }, [providedQuestions]);
+
+  useEffect(() => {
+    setQuestionDetails(providedQuestionDetails);
+  }, [providedQuestionDetails]);
 
   const handlePageChange = (nextPage: number) => {
     if (page === undefined) setInternalPage(nextPage);
@@ -94,61 +110,135 @@ export const QuestionsPage = ({
     }));
   };
 
+  const handleQuestionSubmit = (values: QuestionFormValues) => {
+    if (questionForm?.mode === 'edit') {
+      const { questionId } = questionForm;
+
+      setQuestions((currentQuestions) =>
+        currentQuestions.map((question) =>
+          question.id === questionId
+            ? {
+                ...question,
+                hasAttachment: question.hasAttachment || values.images.length > 0,
+                title: values.title,
+              }
+            : question,
+        ),
+      );
+      setQuestionDetails((currentDetails) => ({
+        ...currentDetails,
+        [questionId]: {
+          ...currentDetails[questionId],
+          content: values.content,
+          hasAttachment: currentDetails[questionId].hasAttachment || values.images.length > 0,
+          title: values.title,
+        },
+      }));
+      onQuestionUpdate?.(questionId, values);
+      return;
+    }
+
+    const questionId = `question-${Date.now()}`;
+    const createdAt = new Date().toISOString().slice(0, 10);
+    const question: QuestionSummary = {
+      authorName: '김스토',
+      createdAt,
+      hasAttachment: values.images.length > 0,
+      id: questionId,
+      isMine: true,
+      replyCount: 0,
+      title: values.title,
+    };
+
+    setQuestions((currentQuestions) => [question, ...currentQuestions]);
+    setQuestionDetails((currentDetails) => ({
+      ...currentDetails,
+      [questionId]: {
+        ...question,
+        content: values.content,
+        replies: [],
+      },
+    }));
+    setRepliesByQuestion((currentReplies) => ({ ...currentReplies, [questionId]: [] }));
+    if (page === undefined) setInternalPage(1);
+    onQuestionCreate?.(values);
+  };
+
+  const editingQuestion =
+    questionForm?.mode === 'edit' ? questionDetails[questionForm.questionId] : undefined;
+
   return (
-    <section
-      aria-label="질문함"
-      className="min-h-[520px] rounded-b-lg border border-stology-border-light bg-white px-4 py-6 sm:px-6 lg:px-10 lg:pb-10 lg:pt-10"
-    >
-      <div className="w-full max-w-[1534px]">
-        <div className="mb-2.5 flex items-center justify-between gap-4">
-          <p className="text-[11px] leading-[16.5px] text-stology-text-light">최신순 고정 정렬</p>
-          {!isReadOnly ? (
-            <Button
-              className="bg-stology-deep-navy hover:bg-stology-royal-blue"
-              leftIcon={<PenLine aria-hidden size={14} />}
-              onClick={onQuestionCreate}
-            >
-              질문 작성
-            </Button>
-          ) : null}
+    <>
+      <section
+        aria-label="질문함"
+        className="min-h-[520px] rounded-b-lg border border-stology-border-light bg-white px-4 py-6 sm:px-6 lg:px-10 lg:pb-10 lg:pt-10"
+      >
+        <div className="w-full max-w-[1534px]">
+          <div className="mb-2.5 flex items-center justify-between gap-4">
+            <p className="text-[11px] leading-[16.5px] text-stology-text-light">최신순 고정 정렬</p>
+            {!isReadOnly ? (
+              <Button
+                className="bg-stology-deep-navy hover:bg-stology-royal-blue"
+                leftIcon={<PenLine aria-hidden size={14} />}
+                onClick={() => setQuestionForm({ mode: 'create' })}
+              >
+                질문 작성
+              </Button>
+            ) : null}
+          </div>
+
+          {questions.length === 0 ? (
+            <EmptyState description="첫 질문을 작성해보세요!" title="아직 질문이 없습니다." />
+          ) : (
+            <>
+              <ul className="space-y-2" aria-label="질문 목록">
+                {visibleQuestions.map((question) => (
+                  <QuestionListItem
+                    isExpanded={expandedQuestionIds.has(question.id)}
+                    key={question.id}
+                    onSelect={handleQuestionToggle}
+                    question={question}
+                    replyCount={(repliesByQuestion[question.id] ?? []).length}
+                  >
+                    {questionDetails[question.id] ? (
+                      <QuestionDetailPanel
+                        detail={questionDetails[question.id]}
+                        isReadOnly={isReadOnly}
+                        onQuestionEdit={() =>
+                          setQuestionForm({ mode: 'edit', questionId: question.id })
+                        }
+                        onReplyCreate={(content) => handleReplyCreate(question.id, content)}
+                        onReplyUpdate={(replyId, content) =>
+                          handleReplyUpdate(question.id, replyId, content)
+                        }
+                        replies={repliesByQuestion[question.id] ?? []}
+                      />
+                    ) : null}
+                  </QuestionListItem>
+                ))}
+              </ul>
+
+              <QuestionPagination
+                onPageChange={handlePageChange}
+                page={activePage}
+                totalPages={totalPages}
+              />
+            </>
+          )}
         </div>
+      </section>
 
-        {questions.length === 0 ? (
-          <EmptyState description="첫 질문을 작성해보세요!" title="아직 질문이 없습니다." />
-        ) : (
-          <>
-            <ul className="space-y-2" aria-label="질문 목록">
-              {visibleQuestions.map((question) => (
-                <QuestionListItem
-                  isExpanded={expandedQuestionIds.has(question.id)}
-                  key={question.id}
-                  onSelect={handleQuestionToggle}
-                  question={question}
-                  replyCount={(repliesByQuestion[question.id] ?? []).length}
-                >
-                  {questionDetails[question.id] ? (
-                    <QuestionDetailPanel
-                      detail={questionDetails[question.id]}
-                      isReadOnly={isReadOnly}
-                      onReplyCreate={(content) => handleReplyCreate(question.id, content)}
-                      onReplyUpdate={(replyId, content) =>
-                        handleReplyUpdate(question.id, replyId, content)
-                      }
-                      replies={repliesByQuestion[question.id] ?? []}
-                    />
-                  ) : null}
-                </QuestionListItem>
-              ))}
-            </ul>
-
-            <QuestionPagination
-              onPageChange={handlePageChange}
-              page={activePage}
-              totalPages={totalPages}
-            />
-          </>
-        )}
-      </div>
-    </section>
+      <QuestionFormModal
+        initialValues={
+          editingQuestion
+            ? { content: editingQuestion.content, title: editingQuestion.title }
+            : undefined
+        }
+        isOpen={questionForm !== null}
+        mode={questionForm?.mode}
+        onClose={() => setQuestionForm(null)}
+        onSubmit={handleQuestionSubmit}
+      />
+    </>
   );
 };
