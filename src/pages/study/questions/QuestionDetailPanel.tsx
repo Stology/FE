@@ -7,6 +7,7 @@ import { Button, Input } from '@/shared/ui';
 interface QuestionDetailPanelProps {
   detail: QuestionDetail;
   isReadOnly?: boolean;
+  onQuestionEdit?: () => void;
   onReplyCreate: (content: string) => void;
   onReplyUpdate: (replyId: string, content: string) => void;
   replies: QuestionReply[];
@@ -15,6 +16,7 @@ interface QuestionDetailPanelProps {
 export const QuestionDetailPanel = ({
   detail,
   isReadOnly = false,
+  onQuestionEdit,
   onReplyCreate,
   onReplyUpdate,
   replies,
@@ -56,9 +58,16 @@ export const QuestionDetailPanel = ({
 
   return (
     <div className="px-[18px] pb-[18px]">
-      <p className="break-words text-[13px] leading-[22.1px] text-stology-text-dark">
-        {detail.content}
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <p className="break-words text-[13px] leading-[22.1px] text-stology-text-dark">
+          {detail.content}
+        </p>
+        {detail.isMine && !isReadOnly && onQuestionEdit ? (
+          <Button aria-label="질문 수정" onClick={onQuestionEdit} size="sm" variant="ghost">
+            수정
+          </Button>
+        ) : null}
+      </div>
 
       {!isReadOnly ? (
         <form

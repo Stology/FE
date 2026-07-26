@@ -113,6 +113,7 @@ export interface QuestionSummary {
   createdAt: string;
   hasAttachment: boolean;
   id: string;
+  isMine: boolean;
   replyCount: number;
   title: string;
 }
