@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 import { cn } from '@/shared/lib/cn';
+import { ErrorMessage, Loading } from '@/shared/ui';
 import type { TeamActivityItem, TeamActivityType } from '../mocks';
 
 export type { TeamActivityItem, TeamActivityType };
@@ -81,6 +82,8 @@ const StudyFilter = ({ onChange, selected, studies }: StudyFilterProps) => (
 // ─── Panel ───────────────────────────────────────────────────────────────────
 
 interface TeamActivityPanelProps {
+  error?: Error | null;
+  isLoading?: boolean;
   items: TeamActivityItem[];
   studies: { id: string; name: string }[];
   selectedStudy: string;
@@ -88,6 +91,8 @@ interface TeamActivityPanelProps {
 }
 
 export const TeamActivityPanel = ({
+  error,
+  isLoading = false,
   items,
   onStudyChange,
   selectedStudy,
@@ -97,7 +102,10 @@ export const TeamActivityPanel = ({
     selectedStudy === 'all' ? items : items.filter((item) => item.id.startsWith(selectedStudy));
 
   return (
-    <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5">
+    <section
+      aria-busy={isLoading}
+      className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5"
+    >
       {/* 제목 & 필터 */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -109,33 +117,43 @@ export const TeamActivityPanel = ({
         <StudyFilter studies={studies} selected={selectedStudy} onChange={onStudyChange} />
       </div>
 
-      {/* 정책 안내 */}
-      <p className="mt-3 rounded-[3px] border border-dashed border-stology-border-light bg-stology-off-white px-3 py-2 text-[11px] text-stology-text-light">
-        전체 스터디 필터 · 최신순 단일 세로 스크롤
-      </p>
+      {isLoading ? (
+        <div aria-live="polite" className="flex flex-1" role="status">
+          <Loading className="w-full" label="팀 활동을 불러오는 중입니다" />
+        </div>
+      ) : error ? (
+        <div className="mt-5" role="alert">
+          <ErrorMessage message={error.message} title="팀 활동을 불러오지 못했습니다" />
+        </div>
+      ) : filtered.length > 0 ? (
+        <>
+          {/* 정책 안내 */}
+          <p className="mt-3 rounded-[3px] border border-dashed border-stology-border-light bg-stology-off-white px-3 py-2 text-[11px] text-stology-text-light">
+            전체 스터디 필터 · 최신순 단일 세로 스크롤
+          </p>
 
-      {/* 필드 헤더 */}
-      <div
-        className="mt-3 grid items-center gap-3 rounded-[2px] border border-stology-border-light bg-stology-off-white px-3 py-1.5 text-[10px] font-bold text-stology-text-light"
-        style={{ gridTemplateColumns: '48px 1fr 92px 42px 20px' }}
-      >
-        <span>유형</span>
-        <span>이벤트</span>
-        <span>대상</span>
-        <span>시간</span>
-        <span>이동</span>
-      </div>
+          {/* 필드 헤더 */}
+          <div
+            className="mt-3 grid items-center gap-3 rounded-[2px] border border-stology-border-light bg-stology-off-white px-3 py-1.5 text-[10px] font-bold text-stology-text-light"
+            style={{ gridTemplateColumns: '48px 1fr 92px 42px 20px' }}
+          >
+            <span>유형</span>
+            <span>이벤트</span>
+            <span>대상</span>
+            <span>시간</span>
+            <span>이동</span>
+          </div>
 
-      {/* 항목 목록 */}
-      {filtered.length > 0 ? (
-        <ul className="mt-1 flex flex-col gap-1">
-          {filtered.map((item) => (
-            <TeamActivityRow key={item.id} item={item} />
-          ))}
-        </ul>
+          {/* 항목 목록 */}
+          <ul className="mt-1 flex flex-col gap-1">
+            {filtered.map((item) => (
+              <TeamActivityRow key={item.id} item={item} />
+            ))}
+          </ul>
+        </>
       ) : (
-        <p className="mt-4 rounded-[2px] border border-dashed border-stology-border-light px-3 py-1 text-[10px] text-stology-text-light">
-          빈 상태: 아직 팀 활동이 없습니다.
+        <p className="flex flex-1 items-center justify-center text-body text-stology-text-light">
+          아직 팀 활동이 없습니다.
         </p>
       )}
     </section>
