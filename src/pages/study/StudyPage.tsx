@@ -11,6 +11,7 @@ import {
 import type { Study } from '@/shared/types/stology';
 import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 
+import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
 import { MaterialUploadPage } from './upload/MaterialUploadPage';
@@ -52,6 +53,8 @@ export const StudyPage = () => {
         <WeeklyRecordsTab key={study.id} study={study} />
       ) : tab === 'reports' && study ? (
         <WeeklyReportTab key={study.id} study={study} />
+      ) : tab === 'questions' && study ? (
+        <QuestionsTab key={study.id} study={study} />
       ) : (
         <PagePlaceholder
           code={meta.code}
@@ -140,3 +143,11 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
     />
   );
 };
+
+interface QuestionsTabProps {
+  study: Study;
+}
+
+const QuestionsTab = ({ study }: QuestionsTabProps) => (
+  <QuestionsPage isReadOnly={study.status === 'ended'} />
+);
