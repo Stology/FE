@@ -84,7 +84,10 @@ export const OntologySearchModal = ({
       <div className="space-y-5 pt-1">
         {/* 1. 템플릿 검색어 입력 */}
         <div>
-          <label className="block text-xs font-bold text-stology-text-dark mb-1.5">
+          <label
+            htmlFor="ontology-template-search"
+            className="block text-xs font-bold text-stology-text-dark mb-1.5"
+          >
             템플릿 검색어
           </label>
           <div className="relative">
@@ -110,10 +113,12 @@ export const OntologySearchModal = ({
               filteredTemplates.map((template) => {
                 const isSelected = selectedId === template.id;
                 return (
-                  <div
+                  <button
                     key={template.id}
+                    type="button"
                     onClick={() => setSelectedId(template.id)}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                    aria-pressed={isSelected}
+                    className={`w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B5CF6] ${
                       isSelected
                         ? 'bg-[#EEF2FF] border-[#5B5CF6] shadow-sm'
                         : 'bg-white border-stology-border hover:border-stology-border-dark hover:bg-stology-off-white/50'
@@ -134,7 +139,7 @@ export const OntologySearchModal = ({
                       <span>{template.description}</span>
                       <span>업로드 사용자: {template.author}</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })
             ) : (
