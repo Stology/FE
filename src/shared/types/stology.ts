@@ -95,3 +95,16 @@ export interface QuestionSummary {
   replyCount: number;
   title: string;
 }
+
+export interface QuestionReply {
+  authorName: string;
+  content: string;
+  createdAt: string;
+  id: string;
+  isMine: boolean;
+}
+
+export interface QuestionDetail extends QuestionSummary {
+  content: string;
+  replies: QuestionReply[];
+}
