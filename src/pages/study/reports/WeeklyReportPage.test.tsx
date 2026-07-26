@@ -46,6 +46,12 @@ describe('WeeklyReportPage', () => {
     render(<WeeklyReportPage availableWeeks={[4]} selectedWeek={4} />);
 
     expect(screen.getByRole('heading', { level: 1, name: '4주차 리포트' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: '2. 노드 추천 · 이어서 해보기' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Refresh Token → Token Rotation → Session Revocation/),
+    ).toBeInTheDocument();
   });
 
   it('종료된 스터디의 읽기 전용 상태를 표시한다', () => {

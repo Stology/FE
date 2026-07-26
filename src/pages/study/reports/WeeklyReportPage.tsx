@@ -109,15 +109,15 @@ export const WeeklyReportPage = ({
     }
 
     return (
-      <article className="w-full max-w-[1040px] overflow-hidden rounded-lg border border-[#d1d1d1] bg-white">
-        <header className="border-b border-[#d1d1d1] px-5 py-5 sm:px-7">
-          <p className="text-[11px] font-bold uppercase leading-4 text-[#141414]">
+      <article className="w-full max-w-[1534px] bg-white">
+        <header className="pb-1 pt-4">
+          <p className="text-[11px] font-bold uppercase leading-4 text-stology-electric-blue">
             RPT001 · Weekly Coverage Report
           </p>
-          <h1 className="mt-1 text-[26px] font-bold leading-[32px] text-[#141414]">
+          <h1 className="mt-1 text-[26px] font-bold leading-[32px] text-stology-text-dark">
             {visibleReport.week}주차 리포트
           </h1>
-          <p className="mt-1 text-[12px] leading-5 text-[#6d6d6d]">
+          <p className="mt-1 text-[12px] leading-5 text-stology-text-light">
             완료된 주차의 진행 상황, 노드 추천, 팀 활동을 하나의 문서형 리포트로 요약합니다.
           </p>
         </header>
@@ -137,7 +137,7 @@ export const WeeklyReportPage = ({
     >
       {isReadOnly ? (
         <div
-          className="mb-5 flex w-full max-w-[1040px] items-start gap-2.5 border-y border-stology-border-light bg-stology-off-white px-4 py-3 text-stology-text-light"
+          className="mb-5 flex w-full max-w-[1534px] items-start gap-2.5 border-y border-stology-border-light bg-stology-off-white px-4 py-3 text-stology-text-light"
           role="status"
         >
           <LockKeyhole aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -147,7 +147,7 @@ export const WeeklyReportPage = ({
         </div>
       ) : null}
 
-      <div aria-label="주차 선택" className="mb-5 flex flex-wrap gap-3" role="group">
+      <div aria-label="주차 선택" className="mb-1 flex flex-wrap gap-3" role="group">
         {availableWeeks.map((week) => {
           const isSelected = week === activeWeek;
 
@@ -156,8 +156,8 @@ export const WeeklyReportPage = ({
               aria-pressed={isSelected}
               className={
                 isSelected
-                  ? 'h-9 min-w-[84px] rounded-full border border-[#1f1f1f] bg-[#1f1f1f] px-5 text-[13px] font-bold text-white'
-                  : 'h-9 min-w-[84px] rounded-full border border-[#d1d1d1] bg-white px-5 text-[13px] font-bold text-[#141414]'
+                  ? 'h-9 min-w-[84px] rounded-full border border-stology-deep-navy bg-stology-deep-navy px-5 text-[13px] font-bold text-white'
+                  : 'h-9 min-w-[84px] rounded-full border border-stology-border-light bg-white px-5 text-[13px] font-bold text-stology-text-dark transition hover:border-stology-light-blue hover:bg-stology-off-white'
               }
               disabled={isLoading}
               key={week}

@@ -12,22 +12,19 @@ export const WeeklyReportTeamStats = ({ activities }: WeeklyReportTeamStatsProps
   );
 
   return (
-    <section
-      aria-labelledby="weekly-report-team-title"
-      className="border-t border-[#d1d1d1] px-5 py-5 sm:px-7"
-    >
+    <section aria-labelledby="weekly-report-team-title" className="pb-0 pt-7">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
-          className="text-[17px] font-bold leading-[22px] text-[#141414]"
+          className="text-[17px] font-bold leading-[22px] text-stology-text-dark"
           id="weekly-report-team-title"
         >
           3. 팀 통계
         </h2>
-        <span className="rounded-full bg-[#eeeeee] px-3 py-1 text-[10px] font-bold text-[#333333]">
+        <span className="rounded-full bg-stology-off-white px-3 py-1 text-[10px] font-bold text-stology-text-light">
           단순 카운트 MVP
         </span>
       </div>
-      <p className="mt-1 text-[11px] leading-4 text-[#6d6d6d]">
+      <p className="mt-1 text-[11px] leading-4 text-stology-text-light">
         자료 업로드와 질문 작성 수를 누적 막대로 표시합니다.
       </p>
 
@@ -41,18 +38,24 @@ export const WeeklyReportTeamStats = ({ activities }: WeeklyReportTeamStatsProps
               className="grid grid-cols-[72px_1fr_52px] items-center gap-3"
               key={activity.memberId}
             >
-              <span className="truncate text-[12px] font-bold text-[#1a1a1a]">
+              <span className="truncate text-[12px] font-bold text-stology-text-dark">
                 {activity.memberName}
               </span>
               <div
                 aria-label={`${activity.memberName}: 자료 업로드 ${activity.uploadCount}건, 질문 작성 ${activity.questionCount}건`}
-                className="flex h-2.5 overflow-hidden rounded-full bg-[#e5e5e5]"
+                className="flex h-3.5 overflow-hidden rounded-full bg-stology-off-white"
                 role="img"
               >
-                <span className="h-full bg-[#2a2a2a]" style={{ width: `${uploadWidth}%` }} />
-                <span className="h-full bg-[#8a8a8a]" style={{ width: `${questionWidth}%` }} />
+                <span
+                  className="h-full bg-stology-electric-blue"
+                  style={{ width: `${uploadWidth}%` }}
+                />
+                <span
+                  className="h-full bg-stology-light-blue"
+                  style={{ width: `${questionWidth}%` }}
+                />
               </div>
-              <span className="text-right text-[12px] font-semibold text-[#555555]">
+              <span className="text-right text-[12px] font-semibold text-stology-text-light">
                 {activity.uploadCount} + {activity.questionCount}
               </span>
             </div>
@@ -60,13 +63,13 @@ export const WeeklyReportTeamStats = ({ activities }: WeeklyReportTeamStatsProps
         })}
       </div>
 
-      <div aria-label="통계 범례" className="mt-4 flex gap-5 text-[11px] text-[#666666]">
+      <div aria-label="통계 범례" className="mt-3 flex gap-5 text-[11px] text-stology-text-light">
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="size-2 rounded-full bg-[#2a2a2a]" />
+          <span aria-hidden className="size-2 rounded-full bg-stology-electric-blue" />
           자료 업로드
         </span>
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="size-2 rounded-full bg-[#8a8a8a]" />
+          <span aria-hidden className="size-2 rounded-full bg-stology-light-blue" />
           질문 작성
         </span>
       </div>
@@ -74,20 +77,20 @@ export const WeeklyReportTeamStats = ({ activities }: WeeklyReportTeamStatsProps
       <ul className="mt-4 grid gap-2 md:grid-cols-2">
         {activities.map((activity) => (
           <li
-            className="rounded-lg border border-[#d1d1d1] bg-[#fafafa] px-3 py-2"
+            className="min-h-16 rounded-[5.5px] border border-stology-border-light bg-white px-4 py-3"
             key={activity.memberId}
           >
             <div className="flex items-center gap-2">
               <Avatar
-                className="size-[18px] bg-[#555555] text-[9px] text-white"
+                className="size-[30px] bg-blue-100 text-[11px] text-stology-royal-blue"
                 name={activity.memberName}
                 size="sm"
               />
-              <strong className="text-[11px] leading-4 text-[#222222]">
+              <strong className="text-[13px] leading-5 text-stology-text-dark">
                 {activity.memberName}
               </strong>
             </div>
-            <p className="mt-1 text-[10px] leading-4 text-[#555555]">{activity.comment}</p>
+            <p className="mt-1 text-[11px] leading-4 text-stology-text-light">{activity.comment}</p>
           </li>
         ))}
       </ul>
