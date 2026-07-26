@@ -111,13 +111,15 @@ export const QuestionDetailPanel = ({
               {attachmentName || '이미지 첨부'}
             </span>
           </Button>
-          <Input
-            aria-label="답글 내용"
-            className="h-9"
-            onChange={(event) => setReplyContent(event.target.value)}
-            placeholder="답글을 입력하세요"
-            value={replyContent}
-          />
+          <div className="min-w-0 flex-1">
+            <Input
+              aria-label="답글 내용"
+              className="h-9"
+              onChange={(event) => setReplyContent(event.target.value)}
+              placeholder="답글을 입력하세요"
+              value={replyContent}
+            />
+          </div>
           <Button
             className="bg-stology-deep-navy hover:bg-stology-royal-blue"
             disabled={!replyContent.trim()}
