@@ -7,6 +7,27 @@ export type ReviewAction = 'approved' | 'rejected';
 
 export type ConceptRelationType = 'base' | 'context' | 'extension' | 'contrast';
 
+export type UploadMode = 'file' | 'text';
+
+export interface Material {
+  description?: string;
+  id: string;
+  isOwn: boolean;
+  status: MaterialStatus;
+  title: string;
+  uploadedAt: string;
+  uploaderName: string;
+  week: number;
+}
+
+export interface MaterialDraft {
+  content?: string;
+  description?: string;
+  fileName?: string;
+  mode: UploadMode;
+  title: string;
+}
+
 export interface Study {
   id: string;
   name: string;

@@ -1,0 +1,1 @@
+export { MaterialUploadPage } from './MaterialUploadPage';
