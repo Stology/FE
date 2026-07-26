@@ -7,6 +7,7 @@
 - 탭 라우트: `/studies/:studyId/:tab`
 - 주차별 기록: `/studies/:studyId/records`에서 공통 헤더와 탭 아래에 Mock 기록 화면 표시
 - 자료 업로드: `/studies/:studyId/upload`에서 `src/pages/study/upload`의 등록 폼과 대기 자료 목록 표시
+- 질문함: `/studies/:studyId/questions`에서 `src/pages/study/questions`의 질문 목록과 상세·답글 화면 표시
 - 공유 모델: `src/shared/types/stology.ts`
 
 ## 제품 경계

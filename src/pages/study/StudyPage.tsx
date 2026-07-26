@@ -11,6 +11,7 @@ import {
 import type { Study } from '@/shared/types/stology';
 import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 
+import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
 import { MaterialUploadPage } from './upload/MaterialUploadPage';
@@ -48,6 +49,8 @@ export const StudyPage = () => {
       </Card>
       {tab === 'upload' && study ? (
         <MaterialUploadTab key={study.id} study={study} />
+      ) : tab === 'questions' && study ? (
+        <QuestionsPage isReadOnly={study.status === 'ended'} />
       ) : tab === 'records' && study ? (
         <WeeklyRecordsTab key={study.id} study={study} />
       ) : tab === 'reports' && study ? (

@@ -19,6 +19,22 @@ const renderStudyRoute = (path: string) =>
     </MemoryRouter>,
   );
 
+describe('StudyPage questions route', () => {
+  it('질문함 경로에서 질문 목록을 표시한다', () => {
+    renderStudyRoute('/studies/spring-study/questions');
+
+    expect(screen.getByRole('region', { name: '질문함' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '질문 작성' })).toBeInTheDocument();
+  });
+
+  it('종료된 스터디의 질문함을 읽기 전용으로 표시한다', () => {
+    renderStudyRoute('/studies/ended-study/questions');
+
+    expect(screen.getByRole('region', { name: '질문함' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '질문 작성' })).not.toBeInTheDocument();
+  });
+});
+
 describe('StudyPage reports route', () => {
   it('주차별 리포트 경로에서 선택된 주차의 리포트를 표시한다', () => {
     renderStudyRoute('/studies/spring-study/reports');
