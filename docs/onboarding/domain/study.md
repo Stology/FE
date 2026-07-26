@@ -7,12 +7,19 @@
 - 탭 라우트: `/studies/:studyId/:tab`
 - 주차별 기록: `/studies/:studyId/records`에서 공통 헤더와 탭 아래에 Mock 기록 화면 표시
 - 자료 업로드: `/studies/:studyId/upload`에서 `src/pages/study/upload`의 등록 폼과 대기 자료 목록 표시
+- 지식 구조: `/studies/:studyId/knowledge`에서 `src/pages/study/knowledge`의 그래프와 노드 상세 패널 표시
 - 질문함: `/studies/:studyId/questions`에서 `src/pages/study/questions`의 질문 목록과 상세·답글 화면 표시
 - 공유 모델: `src/shared/types/stology.ts`
 
 ## 제품 경계
 
 `STD-COM`, `STD-MGT`, `STD-END`는 컨테이너·관리·종료 상태를, `STD-KNW`는 온톨로지 지식 구조를, `STD-UP`은 자료 업로드와 AI 추출을 담당합니다. 질문은 `QNA`에서 별도로 관리하며 Concept 노드로 자동 변환하지 않습니다. 종료된 스터디는 읽기 전용이고, 탭 추가나 변경 시 라우터와 화면의 허용 탭 처리를 함께 확인합니다.
+
+## 자료 업로드
+
+## 지식 구조
+
+그래프는 외부 라이브러리 없이 SVG로 직접 렌더링하며, 노드 좌표는 데이터로 관리합니다. 활성 노드와 비활성 노드를 함께 표시하고, 활성 노드는 연결된 자료 수가 많을수록 진하게 그립니다. 노드명 검색은 필터와 무관하게 전체 노드를 대상으로 합니다. 주차 필터를 선택하면 해당 주차의 신규 활성과 보강 상태를 구분해 강조합니다. 노드 패널의 연결 관계는 `ConceptRelationType`의 기반·맥락·확장·대조 중 하나만 선택하는 세그먼트 토글이며, 연결 노드명을 클릭하면 그 노드 상세로 패널을 전환합니다.
 
 ## 자료 업로드
 
