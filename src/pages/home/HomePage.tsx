@@ -1,18 +1,35 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { AppLayout } from '@/shared/ui';
 
-import { CreateStudyCard, MyTodoPanel, StudyCard, TeamActivityPanel } from './components';
+import {
+  CreateStudyCard,
+  CreateStudyModal,
+  InviteLinkModal,
+  MyTodoPanel,
+  StudyCard,
+  TeamActivityPanel,
+} from './components';
 import { useMyStudies, useMyTodo, useTeamActivity } from './hooks';
 
 export const HomePage = () => {
-  const navigate = useNavigate();
   const [selectedStudy, setSelectedStudy] = useState('all');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createdStudyInfo, setCreatedStudyInfo] = useState<{
+    name: string;
+    inviteToken: string;
+  } | null>(null);
 
   const { studies } = useMyStudies();
   const { items: todoItems } = useMyTodo();
   const { items: activityItems } = useTeamActivity(selectedStudy);
+
+  const handleStudyCreated = (createdStudy: { id: string; name: string; inviteToken: string }) => {
+    setCreatedStudyInfo({
+      name: createdStudy.name,
+      inviteToken: createdStudy.inviteToken,
+    });
+  };
 
   return (
     <AppLayout>
@@ -29,8 +46,8 @@ export const HomePage = () => {
           {studies.map((study) => (
             <StudyCard key={study.id} study={study} />
           ))}
-          {/* + 스터디 생성 카드 */}
-          <CreateStudyCard onClick={() => navigate('/studies/create')} />
+          {/* + 스터디 생성 카드 (HOM001-0100 트리거) */}
+          <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
         </div>
       </section>
 
@@ -44,6 +61,21 @@ export const HomePage = () => {
           onStudyChange={setSelectedStudy}
         />
       </section>
+
+      {/* 스터디 생성 모달 (HOM001-0100) */}
+      <CreateStudyModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleStudyCreated}
+      />
+
+      {/* 초대 링크 모달 (HOM001-0110 연계) */}
+      <InviteLinkModal
+        isOpen={Boolean(createdStudyInfo)}
+        onClose={() => setCreatedStudyInfo(null)}
+        studyName={createdStudyInfo?.name}
+        inviteToken={createdStudyInfo?.inviteToken}
+      />
     </AppLayout>
   );
 };
