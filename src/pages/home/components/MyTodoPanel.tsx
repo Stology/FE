@@ -61,18 +61,26 @@ export const MyTodoPanel = ({ items }: MyTodoPanelProps) => (
       자료·질문함·리포트를 섹션별로 확인하세요.
     </p>
 
-    {/* 필드 헤더 */}
-    <div className="mt-5 grid grid-cols-[48px_1fr_50px] gap-3 rounded-[2px] border border-stology-border-light bg-stology-off-white px-3 py-1.5 text-[10px] font-bold text-stology-text-light">
-      <span>섹션</span>
-      <span>확인할 내용</span>
-      <span>상세</span>
-    </div>
+    {items.length > 0 ? (
+      <>
+        {/* 필드 헤더 */}
+        <div className="mt-5 grid grid-cols-[48px_1fr_50px] gap-3 rounded-[2px] border border-stology-border-light bg-stology-off-white px-3 py-1.5 text-[10px] font-bold text-stology-text-light">
+          <span>섹션</span>
+          <span>확인할 내용</span>
+          <span>상세</span>
+        </div>
 
-    {/* 항목 목록 */}
-    <ul className="mt-1 flex flex-col gap-1">
-      {items.map((item) => (
-        <MyTodoRow key={item.section} item={item} />
-      ))}
-    </ul>
+        {/* 항목 목록 */}
+        <ul className="mt-1 flex flex-col gap-1">
+          {items.map((item) => (
+            <MyTodoRow key={item.section} item={item} />
+          ))}
+        </ul>
+      </>
+    ) : (
+      <p className="flex flex-1 items-center justify-center text-body text-stology-text-light">
+        지금 확인할 항목이 없습니다.
+      </p>
+    )}
   </section>
 );

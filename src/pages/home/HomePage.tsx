@@ -26,9 +26,13 @@ export const HomePage = () => {
       <section className="mt-7">
         <h2 className="text-heading-1 text-stology-text-dark">진행 중인 스터디</h2>
         <div className="mt-4 flex flex-wrap gap-4">
-          {studies.map((study) => (
-            <StudyCard key={study.id} study={study} />
-          ))}
+          {studies.length > 0 ? (
+            studies.map((study) => <StudyCard key={study.id} study={study} />)
+          ) : (
+            <p className="flex min-h-[145px] items-center text-body text-stology-text-light">
+              아직 진행 중인 스터디가 없습니다.
+            </p>
+          )}
           {/* + 스터디 생성 카드 */}
           <CreateStudyCard onClick={() => navigate('/studies/create')} />
         </div>
