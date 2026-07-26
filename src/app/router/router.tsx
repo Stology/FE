@@ -31,4 +31,8 @@ export const router = createBrowserRouter([
     path: '/studies/:studyId/review/:materialId',
     element: <ReviewPage />,
   },
+  {
+    path: '*',
+    element: <Navigate to="/" replace />,
+  },
 ]);

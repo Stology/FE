@@ -31,17 +31,17 @@ export const mockMyTodo: MyTodoItem[] = [
   {
     section: '자료',
     summary: '검토 5 · 재업로드 2',
-    to: '/home/todo/materials',
+    to: '/studies/spring-study/upload',
   },
   {
     section: '질문함',
     summary: '질문 7 · 답글 2',
-    to: '/home/todo/questions',
+    to: '/studies/spring-study/questions',
   },
   {
     section: '리포트',
     summary: '2개 스터디의 최신 리포트',
-    to: '/home/todo/reports',
+    to: '/studies/spring-study/reports',
   },
 ];
 

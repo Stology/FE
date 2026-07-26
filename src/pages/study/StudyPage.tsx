@@ -30,15 +30,19 @@ export const StudyPage = () => {
   }
 
   const study = getMockStudyById(studyId);
-  const meta = getMockStudyTabById(tab) ?? {
-    code: mockStudyContainer.code,
-    label: mockStudyContainer.title,
-  };
+  if (!study) {
+    return <Navigate to="/" replace />;
+  }
+
+  const meta = getMockStudyTabById(tab);
+  if (!meta) {
+    return <Navigate to={`/studies/${studyId}/knowledge`} replace />;
+  }
 
   return (
     <AppLayout>
       <Card className="p-6">
-        <Header code={mockStudyContainer.code} title={study?.name ?? mockStudyContainer.title} />
+        <Header code={mockStudyContainer.code} title={study.name} />
         <Tabs
           className="mt-6"
           items={mockStudyTabs.map((studyTab) => ({
@@ -73,12 +77,22 @@ interface KnowledgeGraphTabProps {
   study: Study;
 }
 
-const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => (
-  <KnowledgeGraphPage
-    availableWeeks={Array.from({ length: Math.max(0, study.currentWeek) }, (_, index) => index + 1)}
-    isReadOnly={study.status === 'ended'}
-  />
-);
+const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <KnowledgeGraphPage
+      availableWeeks={Array.from(
+        { length: Math.max(0, study.currentWeek) },
+        (_, index) => index + 1,
+      )}
+      isReadOnly={study.status === 'ended'}
+      onMaterialOpen={(material) =>
+        navigate(`/studies/${study.id}/upload?materialId=${encodeURIComponent(material.id)}`)
+      }
+    />
+  );
+};
 
 interface MaterialUploadTabProps {
   study: Study;
