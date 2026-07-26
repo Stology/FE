@@ -70,12 +70,14 @@ export const HomePage = () => {
       />
 
       {/* 초대 링크 모달 (HOM001-0110 연계) */}
-      <InviteLinkModal
-        isOpen={Boolean(createdStudyInfo)}
-        onClose={() => setCreatedStudyInfo(null)}
-        studyName={createdStudyInfo?.name}
-        inviteToken={createdStudyInfo?.inviteToken}
-      />
+      {createdStudyInfo && (
+        <InviteLinkModal
+          isOpen={Boolean(createdStudyInfo)}
+          onClose={() => setCreatedStudyInfo(null)}
+          studyName={createdStudyInfo.name}
+          inviteToken={createdStudyInfo.inviteToken}
+        />
+      )}
     </AppLayout>
   );
 };
