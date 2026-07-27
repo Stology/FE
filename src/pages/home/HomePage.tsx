@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { AppLayout } from '@/shared/ui';
+import { AppLayout, Button, EmptyState } from '@/shared/ui';
 
 import {
   CreateStudyCard,
@@ -12,20 +12,19 @@ import {
 } from './components';
 import { useMyStudies, useMyTodo, useTeamActivity } from './hooks';
 
-interface CreatedStudyInvitation {
-  inviteToken: string;
-  name: string;
-}
-
 export const HomePage = () => {
   const [selectedStudy, setSelectedStudy] = useState('all');
-  const [isCreateStudyOpen, setIsCreateStudyOpen] = useState(false);
-  const [createdStudyInvitation, setCreatedStudyInvitation] =
-    useState<CreatedStudyInvitation | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createdStudyInfo, setCreatedStudyInfo] = useState<{
+    name: string;
+    inviteToken: string;
+  } | null>(null);
 
   const { studies } = useMyStudies();
   const { items: todoItems } = useMyTodo();
   const { items: activityItems } = useTeamActivity(selectedStudy);
+
+  const isEmpty = studies.length === 0;
 
   return (
     <AppLayout>
@@ -35,40 +34,63 @@ export const HomePage = () => {
         <p className="text-body text-stology-text-light">스터디와 최근 활동</p>
       </div>
 
-      {/* ── 진행 중인 스터디 ─────────────────────────────────── */}
-      <section className="mt-7">
-        <h2 className="text-heading-1 text-stology-text-dark">진행 중인 스터디</h2>
-        <div className="mt-4 flex flex-wrap gap-4">
-          {studies.map((study) => (
-            <StudyCard key={study.id} study={study} />
-          ))}
-          {/* + 스터디 생성 카드 */}
-          <CreateStudyCard onClick={() => setIsCreateStudyOpen(true)} />
+      {isEmpty ? (
+        <div className="mt-7 flex h-[400px] items-center justify-center">
+          <EmptyState
+            title="진행 중인 스터디가 없습니다"
+            description="새로운 스터디를 생성하고 팀원들과 함께 지식을 관리해보세요."
+            action={
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                + 스터디 생성
+              </Button>
+            }
+          />
         </div>
-      </section>
+      ) : (
+        <>
+          {/* ── 진행 중인 스터디 ─────────────────────────────────── */}
+          <section className="mt-7">
+            <h2 className="text-heading-1 text-stology-text-dark">진행 중인 스터디</h2>
+            <div className="mt-4 flex flex-wrap gap-4">
+              {studies.map((study) => (
+                <StudyCard key={study.id} study={study} />
+              ))}
+              {/* + 스터디 생성 카드 */}
+              <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
+            </div>
+          </section>
 
-      {/* ── 내 할 일 + 팀 활동 ──────────────────────────────── */}
-      <section className="mt-8 grid grid-cols-2 gap-6">
-        <MyTodoPanel items={todoItems} />
-        <TeamActivityPanel
-          items={activityItems}
-          studies={studies}
-          selectedStudy={selectedStudy}
-          onStudyChange={setSelectedStudy}
-        />
-      </section>
+          {/* ── 내 할 일 + 팀 활동 ──────────────────────────────── */}
+          <section className="mt-8 grid grid-cols-2 gap-6">
+            <MyTodoPanel items={todoItems} />
+            <TeamActivityPanel
+              items={activityItems}
+              studies={studies}
+              selectedStudy={selectedStudy}
+              onStudyChange={setSelectedStudy}
+            />
+          </section>
+        </>
+      )}
 
+      {/* ── 스터디 생성 모달 ─────────────────────────────────── */}
       <CreateStudyModal
-        isOpen={isCreateStudyOpen}
-        onClose={() => setIsCreateStudyOpen(false)}
-        onSuccess={({ inviteToken, name }) => setCreatedStudyInvitation({ inviteToken, name })}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={(createdStudy) => {
+          setCreatedStudyInfo({ name: createdStudy.name, inviteToken: createdStudy.inviteToken });
+        }}
       />
-      <InviteLinkModal
-        inviteToken={createdStudyInvitation?.inviteToken ?? ''}
-        isOpen={createdStudyInvitation !== null}
-        onClose={() => setCreatedStudyInvitation(null)}
-        studyName={createdStudyInvitation?.name ?? ''}
-      />
+
+      {/* ── 초대 링크 모달 ───────────────────────────────────── */}
+      {createdStudyInfo && (
+        <InviteLinkModal
+          isOpen={!!createdStudyInfo}
+          onClose={() => setCreatedStudyInfo(null)}
+          studyName={createdStudyInfo.name}
+          inviteToken={createdStudyInfo.inviteToken}
+        />
+      )}
     </AppLayout>
   );
 };
