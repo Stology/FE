@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { ErrorMessage, Loading } from '@/shared/ui';
+import { ErrorMessage, Loading, Toast } from '@/shared/ui';
 
 import { useInvite } from './hooks';
 
@@ -27,21 +27,44 @@ export const InvitePage = () => {
     );
   }
 
-  if (error || !study) {
+  if (error || !study || study.status === 'ended') {
+    const isEnded = study?.status === 'ended';
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-white font-sans">
-        <div className="w-[530px]">
-          <ErrorMessage
-            message={error?.message || '잘못된 접근입니다.'}
-            title="초대 정보를 확인할 수 없습니다"
-          />
+        <div className="flex w-[530px] flex-col items-center">
+          <div className="w-full">
+            <ErrorMessage
+              message={
+                error?.message || (isEnded ? '이미 종료된 스터디 초대입니다' : '잘못된 접근입니다.')
+              }
+              title="초대 정보를 확인할 수 없습니다"
+            />
+          </div>
+          {isEnded && (
+            <button
+              className="mt-8 flex h-[38px] w-[260px] items-center justify-center rounded-[5px] border border-[#d9c000] bg-[#fee500] text-[13px] font-bold text-[#111] transition-colors hover:bg-[#f2d900]"
+              onClick={() => navigate('/')}
+              type="button"
+            >
+              홈으로 돌아가기
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-white font-sans">
+    <div className="relative flex min-h-screen w-full items-center justify-center bg-white font-sans">
+      {joinError && (
+        <div className="absolute left-1/2 top-4 z-50 -translate-x-1/2">
+          <Toast
+            message={joinError.message || '스터디 참여에 실패했습니다. 다시 시도해 주세요.'}
+            type="error"
+          />
+        </div>
+      )}
+
       <div className="flex flex-col items-center">
         {/* Logo */}
         <h1 className="text-[56px] font-bold leading-[81px] text-[#5b5cf6]">Stology</h1>
@@ -60,22 +83,10 @@ export const InvitePage = () => {
           </div>
         </div>
 
-        {study.status === 'ended' && (
-          <div className="mt-4 w-[530px] rounded-[6px] border border-stology-border-light bg-stology-off-white p-3 text-center text-[14px] text-stology-text-light">
-            이 스터디는 종료되어 참여할 수 없습니다.
-          </div>
-        )}
-
-        {joinError && (
-          <div className="mt-4 w-[260px]">
-            <ErrorMessage message="스터디 참여에 실패했습니다. 다시 시도해 주세요." />
-          </div>
-        )}
-
         {/* Action Button */}
         <button
           className="mt-8 flex h-[38px] w-[260px] items-center justify-center rounded-[5px] border border-[#d9c000] bg-[#fee500] text-[13px] font-bold text-[#111] transition-colors hover:bg-[#f2d900] disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={isJoining || study.status === 'ended'}
+          disabled={isJoining}
           onClick={handleJoin}
           type="button"
         >
