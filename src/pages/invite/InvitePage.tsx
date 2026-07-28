@@ -55,10 +55,16 @@ export const InvitePage = () => {
         <div className="mt-8 flex w-[530px] flex-col justify-center rounded-[10px] border border-[#e4c75c] bg-[#fff7d6] p-7 text-left">
           <h3 className="text-[17px] font-bold leading-[25px] text-[#111]">{study.name}</h3>
           <div className="mt-4 flex flex-col gap-1 text-[14px] font-medium leading-[22px] text-[#111]">
-            <p>스터디장: 김스토</p>
+            <p>스터디장: 김소토</p>
             <p>현재 멤버: {study.memberCount}명</p>
           </div>
         </div>
+
+        {study.status === 'ended' && (
+          <div className="mt-4 w-[530px] rounded-[6px] border border-stology-border-light bg-stology-off-white p-3 text-center text-[14px] text-stology-text-light">
+            이 스터디는 종료되어 참여할 수 없습니다.
+          </div>
+        )}
 
         {joinError && (
           <div className="mt-4 w-[260px]">
@@ -69,7 +75,7 @@ export const InvitePage = () => {
         {/* Action Button */}
         <button
           className="mt-8 flex h-[38px] w-[260px] items-center justify-center rounded-[5px] border border-[#d9c000] bg-[#fee500] text-[13px] font-bold text-[#111] transition-colors hover:bg-[#f2d900] disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={isJoining}
+          disabled={isJoining || study.status === 'ended'}
           onClick={handleJoin}
           type="button"
         >
