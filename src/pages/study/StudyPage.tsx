@@ -11,6 +11,7 @@ import {
 import type { Study } from '@/shared/types/stology';
 import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 
+import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
@@ -29,15 +30,19 @@ export const StudyPage = () => {
   }
 
   const study = getMockStudyById(studyId);
-  const meta = getMockStudyTabById(tab) ?? {
-    code: mockStudyContainer.code,
-    label: mockStudyContainer.title,
-  };
+  if (!study) {
+    return <Navigate to="/" replace />;
+  }
+
+  const meta = getMockStudyTabById(tab);
+  if (!meta) {
+    return <Navigate to={`/studies/${studyId}/knowledge`} replace />;
+  }
 
   return (
     <AppLayout>
       <Card className="p-6">
-        <Header code={mockStudyContainer.code} title={study?.name ?? mockStudyContainer.title} />
+        <Header code={mockStudyContainer.code} title={study.name} />
         <Tabs
           className="mt-6"
           items={mockStudyTabs.map((studyTab) => ({
@@ -47,8 +52,12 @@ export const StudyPage = () => {
           }))}
         />
       </Card>
-      {tab === 'upload' && study ? (
+      {tab === 'knowledge' && study ? (
+        <KnowledgeGraphTab key={study.id} study={study} />
+      ) : tab === 'upload' && study ? (
         <MaterialUploadTab key={study.id} study={study} />
+      ) : tab === 'questions' && study ? (
+        <QuestionsPage isReadOnly={study.status === 'ended'} />
       ) : tab === 'records' && study ? (
         <WeeklyRecordsTab key={study.id} study={study} />
       ) : tab === 'reports' && study ? (
@@ -63,6 +72,27 @@ export const StudyPage = () => {
         />
       )}
     </AppLayout>
+  );
+};
+
+interface KnowledgeGraphTabProps {
+  study: Study;
+}
+
+const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <KnowledgeGraphPage
+      availableWeeks={Array.from(
+        { length: Math.max(0, study.currentWeek) },
+        (_, index) => index + 1,
+      )}
+      isReadOnly={study.status === 'ended'}
+      onMaterialOpen={(material) =>
+        navigate(`/studies/${study.id}/upload?materialId=${encodeURIComponent(material.id)}`)
+      }
+    />
   );
 };
 

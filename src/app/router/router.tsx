@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
-import { ComponentPreviewPage } from '@/pages/dev/ComponentPreviewPage';
 import { HomePage } from '@/pages/home/HomePage';
 import { InvitePage } from '@/pages/invite/InvitePage';
 import { LoginPage } from '@/pages/login/LoginPage';
@@ -21,14 +20,6 @@ export const router = createBrowserRouter([
     element: <InvitePage />,
   },
   {
-    path: '/dev/components',
-    element: <ComponentPreviewPage />,
-  },
-  {
-    path: '/dev/components/:section',
-    element: <ComponentPreviewPage />,
-  },
-  {
     path: '/studies/:studyId',
     element: <Navigate to="knowledge" replace />,
   },
@@ -39,5 +30,9 @@ export const router = createBrowserRouter([
   {
     path: '/studies/:studyId/review/:materialId',
     element: <ReviewPage />,
+  },
+  {
+    path: '*',
+    element: <Navigate to="/" replace />,
   },
 ]);

@@ -4,6 +4,8 @@
 
 - 화면: `src/pages/home/HomePage.tsx`
 - 라우트: `/`
+- 스터디 생성: 홈에서 `CreateStudyModal`을 열고 생성 성공 시 `InviteLinkModal`로 초대 링크 표시
+- 내 할 일: 자료·질문·리포트 항목을 해당 스터디의 구현된 탭으로 이동
 - 현재 mock 스터디 데이터: `src/shared/mocks/studies.ts`
 - 공유 모델: `src/shared/types/stology.ts`
 

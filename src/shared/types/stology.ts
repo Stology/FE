@@ -20,6 +20,43 @@ export interface Material {
   week: number;
 }
 
+export interface ConceptNode {
+  definition: string;
+  id: string;
+  isActive: boolean;
+  materials: WeeklyRecordMaterial[];
+  name: string;
+  weekStatus?: WeeklyRecordStatus;
+  x: number;
+  y: number;
+}
+
+export interface ConceptRelation {
+  fromId: string;
+  toId: string;
+  type: ConceptRelationType;
+}
+
+export interface ConceptGraph {
+  nodes: ConceptNode[];
+  relations: ConceptRelation[];
+}
+
+export interface NodeCandidate {
+  approverNames: string[];
+  id: string;
+  matchReason: string;
+  myAction?: ReviewAction;
+  name: string;
+  rejecterNames: string[];
+}
+
+export interface MaterialReview {
+  candidates: NodeCandidate[];
+  material: Material;
+  reviewerCount: number;
+}
+
 export interface MaterialDraft {
   content?: string;
   description?: string;
