@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { AppLayout, Button, EmptyState } from '@/shared/ui';
+import { AppLayout } from '@/shared/ui';
 
 import {
   CreateStudyCard,
@@ -34,44 +34,33 @@ export const HomePage = () => {
         <p className="text-body text-stology-text-light">스터디와 최근 활동</p>
       </div>
 
-      {isEmpty ? (
-        <div className="mt-7 flex h-[400px] items-center justify-center">
-          <EmptyState
-            title="진행 중인 스터디가 없습니다"
-            description="새로운 스터디를 생성하고 팀원들과 함께 지식을 관리해보세요."
-            action={
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                + 스터디 생성
-              </Button>
-            }
-          />
-        </div>
-      ) : (
-        <>
-          {/* ── 진행 중인 스터디 ─────────────────────────────────── */}
-          <section className="mt-7">
-            <h2 className="text-heading-1 text-stology-text-dark">진행 중인 스터디</h2>
-            <div className="mt-4 flex flex-wrap gap-4">
-              {studies.map((study) => (
-                <StudyCard key={study.id} study={study} />
-              ))}
-              {/* + 스터디 생성 카드 */}
-              <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
+      {/* ── 진행 중인 스터디 ─────────────────────────────────── */}
+      <section className="mt-7">
+        <h2 className="text-heading-1 text-stology-text-dark">진행 중인 스터디</h2>
+        <div className="mt-4 flex flex-wrap gap-4">
+          {isEmpty && (
+            <div className="flex items-center justify-center rounded-[8px] border border-dashed border-stology-border-light bg-stology-off-white px-6 py-4 text-body text-stology-text-light">
+              참여 중인 스터디가 없습니다.
             </div>
-          </section>
+          )}
+          {studies.map((study) => (
+            <StudyCard key={study.id} study={study} />
+          ))}
+          {/* + 스터디 생성 카드 */}
+          <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
+        </div>
+      </section>
 
-          {/* ── 내 할 일 + 팀 활동 ──────────────────────────────── */}
-          <section className="mt-8 grid grid-cols-2 gap-6">
-            <MyTodoPanel items={todoItems} />
-            <TeamActivityPanel
-              items={activityItems}
-              studies={studies}
-              selectedStudy={selectedStudy}
-              onStudyChange={setSelectedStudy}
-            />
-          </section>
-        </>
-      )}
+      {/* ── 내 할 일 + 팀 활동 ──────────────────────────────── */}
+      <section className="mt-8 grid grid-cols-2 gap-6">
+        <MyTodoPanel items={todoItems} />
+        <TeamActivityPanel
+          items={activityItems}
+          studies={studies}
+          selectedStudy={selectedStudy}
+          onStudyChange={setSelectedStudy}
+        />
+      </section>
 
       {/* ── 스터디 생성 모달 ─────────────────────────────────── */}
       <CreateStudyModal

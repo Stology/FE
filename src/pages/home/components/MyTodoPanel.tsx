@@ -69,10 +69,16 @@ export const MyTodoPanel = ({ items }: MyTodoPanelProps) => (
     </div>
 
     {/* 항목 목록 */}
-    <ul className="mt-1 flex flex-col gap-1">
-      {items.map((item) => (
-        <MyTodoRow key={item.section} item={item} />
-      ))}
-    </ul>
+    {items.length > 0 ? (
+      <ul className="mt-1 flex flex-col gap-1">
+        {items.map((item) => (
+          <MyTodoRow key={item.section} item={item} />
+        ))}
+      </ul>
+    ) : (
+      <p className="mt-4 rounded-[2px] border border-dashed border-stology-border-light px-3 py-1 text-[10px] text-stology-text-light">
+        빈 상태: 지금 확인할 항목이 없습니다.
+      </p>
+    )}
   </section>
 );
