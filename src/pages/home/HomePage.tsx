@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { AppLayout } from '@/shared/ui';
+import { AppLayout, ErrorMessage, Loading } from '@/shared/ui';
 
 import {
   CreateStudyCard,
@@ -20,11 +20,11 @@ export const HomePage = () => {
     inviteToken: string;
   } | null>(null);
 
-  const { studies } = useMyStudies();
+  const { error: studiesError, isLoading: isStudiesLoading, studies } = useMyStudies();
   const { items: todoItems } = useMyTodo();
   const { items: activityItems } = useTeamActivity(selectedStudy);
 
-  const isEmpty = studies.length === 0;
+  const isStudiesEmpty = !isStudiesLoading && !studiesError && studies.length === 0;
 
   return (
     <AppLayout>
@@ -38,16 +38,24 @@ export const HomePage = () => {
       <section className="mt-7">
         <h2 className="text-heading-1 text-stology-text-dark">진행 중인 스터디</h2>
         <div className="mt-4 flex flex-wrap gap-4">
-          {isEmpty && (
-            <div className="flex items-center justify-center rounded-[8px] border border-dashed border-stology-border-light bg-stology-off-white px-6 py-4 text-body text-stology-text-light">
-              참여 중인 스터디가 없습니다.
-            </div>
+          {isStudiesLoading ? (
+            <Loading className="w-full py-8" label="스터디 목록을 불러오는 중입니다..." />
+          ) : studiesError ? (
+            <ErrorMessage className="w-full max-w-md" message={studiesError.message} />
+          ) : (
+            <>
+              {isStudiesEmpty && (
+                <div className="flex items-center justify-center rounded-[8px] border border-dashed border-stology-border-light bg-stology-off-white px-6 py-4 text-body text-stology-text-light">
+                  참여 중인 스터디가 없습니다.
+                </div>
+              )}
+              {studies.map((study) => (
+                <StudyCard key={study.id} study={study} />
+              ))}
+              {/* + 스터디 생성 카드 */}
+              <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
+            </>
           )}
-          {studies.map((study) => (
-            <StudyCard key={study.id} study={study} />
-          ))}
-          {/* + 스터디 생성 카드 */}
-          <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
         </div>
       </section>
 
