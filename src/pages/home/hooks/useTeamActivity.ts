@@ -7,6 +7,7 @@ interface UseTeamActivityResult {
   items: TeamActivityItem[];
   isLoading: boolean;
   error: Error | null;
+  removeItem: (id: string) => void;
 }
 
 export const useTeamActivity = (studyId?: string): UseTeamActivityResult => {
@@ -44,5 +45,9 @@ export const useTeamActivity = (studyId?: string): UseTeamActivityResult => {
     };
   }, [studyId]);
 
-  return { error, isLoading, items };
+  const removeItem = (id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  return { error, isLoading, items, removeItem };
 };

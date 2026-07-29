@@ -1,6 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { useActivityClick } from '../hooks/useActivityClick';
 
 import { cn } from '@/shared/lib/cn';
+import { Toast } from '@/shared/ui/Toast';
 import type { TeamActivityItem, TeamActivityType } from '../mocks';
 
 export type { TeamActivityItem, TeamActivityType };
@@ -10,22 +11,24 @@ export type { TeamActivityItem, TeamActivityType };
 const typeChipClass: Record<TeamActivityType, string> = {
   구조: 'border-stology-text-light bg-stology-off-white text-stology-text-dark',
   답글: 'border-stology-royal-blue bg-[#EFF6FF] text-stology-royal-blue',
-  업로드: 'border-stology-electric-blue bg-[#DBEAFE] text-stology-royal-blue',
 };
 
 // ─── Row ─────────────────────────────────────────────────────────────────────
 
-const TeamActivityRow = ({ item }: { item: TeamActivityItem }) => {
-  const navigate = useNavigate();
+interface TeamActivityRowProps {
+  item: TeamActivityItem;
+  onClick: (item: TeamActivityItem) => void;
+}
 
+const TeamActivityRow = ({ item, onClick }: TeamActivityRowProps) => {
   return (
     <li
       role="button"
       tabIndex={0}
       className="grid cursor-pointer items-center gap-3 rounded-[4px] border border-stology-border-light bg-white px-3 py-3 hover:bg-stology-off-white"
       style={{ gridTemplateColumns: '48px 1fr 92px 42px 20px' }}
-      onClick={() => navigate(item.to)}
-      onKeyDown={(e) => e.key === 'Enter' && navigate(item.to)}
+      onClick={() => onClick(item)}
+      onKeyDown={(e) => e.key === 'Enter' && onClick(item)}
     >
       {/* 유형 칩 */}
       <span
@@ -85,6 +88,7 @@ interface TeamActivityPanelProps {
   studies: { id: string; name: string }[];
   selectedStudy: string;
   onStudyChange: (id: string) => void;
+  onRemove?: (id: string) => void;
 }
 
 export const TeamActivityPanel = ({
@@ -92,12 +96,22 @@ export const TeamActivityPanel = ({
   onStudyChange,
   selectedStudy,
   studies,
+  onRemove,
 }: TeamActivityPanelProps) => {
+  const { handleItemClick, setToastMessage, toastMessage } = useActivityClick(onRemove);
+
   const filtered =
     selectedStudy === 'all' ? items : items.filter((item) => item.id.startsWith(selectedStudy));
 
   return (
-    <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5">
+    <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5 relative">
+      {/* 예외 처리 상단 Toast (HOM001-0300) */}
+      {toastMessage && (
+        <div className="absolute left-1/2 top-4 z-50 -translate-x-1/2 w-max max-w-[90%]">
+          <Toast message={toastMessage} type="error" onClose={() => setToastMessage(null)} />
+        </div>
+      )}
+
       {/* 제목 & 필터 */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -130,7 +144,7 @@ export const TeamActivityPanel = ({
       {filtered.length > 0 ? (
         <ul className="mt-1 flex flex-col gap-1">
           {filtered.map((item) => (
-            <TeamActivityRow key={item.id} item={item} />
+            <TeamActivityRow key={item.id} item={item} onClick={handleItemClick} />
           ))}
         </ul>
       ) : (
