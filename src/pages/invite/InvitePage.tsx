@@ -35,20 +35,20 @@ export const InvitePage = () => {
           <div className="w-full">
             <ErrorMessage
               message={
-                error?.message || (isEnded ? '이미 종료된 스터디 초대입니다' : '잘못된 접근입니다.')
+                error?.message ||
+                (isEnded ? '이미 종료된 스터디 초대입니다' : '유효하지 않은 초대 링크입니다.')
               }
               title="초대 정보를 확인할 수 없습니다"
             />
           </div>
-          {isEnded && (
-            <button
-              className="mt-8 flex h-[38px] w-[260px] items-center justify-center rounded-[5px] border border-[#d9c000] bg-[#fee500] text-[13px] font-bold text-[#111] transition-colors hover:bg-[#f2d900]"
-              onClick={() => navigate('/')}
-              type="button"
-            >
-              홈으로 돌아가기
-            </button>
-          )}
+          {/* 에러 원인과 무관하게 항상 탈출할 수 있는 안전한 경로 제공 (INV001-0100) */}
+          <button
+            className="mt-8 flex h-[38px] w-[260px] items-center justify-center rounded-[5px] border border-[#d9c000] bg-[#fee500] text-[13px] font-bold text-[#111] transition-colors hover:bg-[#f2d900]"
+            onClick={() => navigate('/')}
+            type="button"
+          >
+            홈으로 돌아가기
+          </button>
         </div>
       </div>
     );
