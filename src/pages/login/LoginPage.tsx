@@ -1,4 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
+import { Toast } from '@/shared/ui';
+
 import { InviteNoticeCard } from './components/InviteNoticeCard';
 import { KakaoSymbolIcon } from './components/KakaoSymbolIcon';
 
@@ -6,6 +8,7 @@ export const LoginPage = () => {
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || searchParams.get('redirect_url');
   const inviteToken = searchParams.get('invite') || searchParams.get('token');
+  const authError = searchParams.get('error');
 
   const hasInviteContext = Boolean(inviteToken || redirectUrl?.includes('/invite/'));
   const extractedToken =
@@ -64,6 +67,13 @@ export const LoginPage = () => {
 
   return (
     <main className="min-h-screen bg-stology-off-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* 1. 인증 실패 상단 Toast 표시 (LGN001-0100) */}
+      {authError && (
+        <div className="absolute left-1/2 top-4 z-50 -translate-x-1/2">
+          <Toast message="카카오 계정 인증에 실패했습니다. 다시 시도해 주세요." type="error" />
+        </div>
+      )}
+
       {/* Ambient background decoration */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl pointer-events-none" />
