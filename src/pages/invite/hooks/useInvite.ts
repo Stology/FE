@@ -25,7 +25,10 @@ export const useInvite = (token?: string) => {
         // API 연동 전 임시로 토큰 검증 API 호출 모방 (네트워크 지연 모방)
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        if (token === 'invalid-token') {
+        // 성공을 허용할 토큰 화이트리스트 (INV001-0100 피드백 반영)
+        const allowedTokens = ['valid-token', 'fail-token'];
+
+        if (!allowedTokens.includes(token)) {
           throw new Error('invalid-token');
         }
 
@@ -38,7 +41,8 @@ export const useInvite = (token?: string) => {
         setError(null);
       } catch (err: unknown) {
         if ((err as { name?: string }).name !== 'CanceledError') {
-          if (token === 'invalid-token') {
+          const allowedTokens = ['valid-token', 'fail-token'];
+          if (!allowedTokens.includes(token)) {
             setError(new Error('만료되었거나 유효하지 않은 초대 토큰입니다.'));
           } else {
             setError(new Error('초대된 스터디 정보를 찾을 수 없습니다.'));
