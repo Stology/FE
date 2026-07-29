@@ -58,8 +58,15 @@ interface MyTodoPanelProps {
   onRemove?: (id: string) => void;
 }
 
+const DEFAULT_TODO_SECTIONS: MyTodoSection[] = ['자료', '질문함', '리포트'];
+
 export const MyTodoPanel = ({ items, onRemove }: MyTodoPanelProps) => {
   const { handleItemClick, setToastMessage, toastMessage } = useActivityClick(onRemove);
+
+  const displayItems = DEFAULT_TODO_SECTIONS.map((section) => {
+    const existing = items.find((item) => item.section === section);
+    return existing || { section, summary: '지금 확인할 항목이 없습니다.', to: '#' };
+  });
 
   return (
     <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5 relative">
@@ -69,7 +76,6 @@ export const MyTodoPanel = ({ items, onRemove }: MyTodoPanelProps) => {
           <Toast message={toastMessage} type="error" onClose={() => setToastMessage(null)} />
         </div>
       )}
-
       {/* 제목 */}
       <h2 className="text-heading-1 text-stology-text-dark">내 할 일</h2>
       <p className="mt-1 text-[12px] text-stology-text-light">
@@ -85,7 +91,7 @@ export const MyTodoPanel = ({ items, onRemove }: MyTodoPanelProps) => {
 
       {/* 항목 목록 */}
       <ul className="mt-1 flex flex-col gap-1">
-        {items.map((item) => (
+        {displayItems.map((item) => (
           <MyTodoRow key={item.section} item={item} onClick={handleItemClick} />
         ))}
       </ul>
