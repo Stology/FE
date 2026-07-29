@@ -6,6 +6,8 @@ export interface MyTodoItem {
   summary: string;
   /** 상세 보기 이동 경로 */
   to: string;
+  /** 테스트용 목업 예외 상태 */
+  testStatus?: 'valid' | 'deleted' | 'no-permission';
 }
 
 /** 팀 활동 유형 */
@@ -24,6 +26,8 @@ export interface TeamActivityItem {
   timeAgo: string;
   /** 클릭 시 이동 경로 */
   to: string;
+  /** 테스트용 목업 예외 상태 */
+  testStatus?: 'valid' | 'deleted' | 'no-permission';
 }
 
 /** 내 할 일 - 자료/질문함/리포트 섹션 */
@@ -32,16 +36,19 @@ export const mockMyTodo: MyTodoItem[] = [
     section: '자료',
     summary: '검토 5 · 재업로드 2',
     to: '/studies/spring-study/upload',
+    testStatus: 'valid',
   },
   {
     section: '질문함',
     summary: '질문 7 · 답글 2',
     to: '/studies/spring-study/questions',
+    testStatus: 'deleted', // 삭제됨 테스트용
   },
   {
     section: '리포트',
     summary: '2개 스터디의 최신 리포트',
     to: '/studies/spring-study/reports',
+    testStatus: 'no-permission', // 권한 없음 테스트용
   },
 ];
 
@@ -55,14 +62,26 @@ export const mockTeamActivity: TeamActivityItem[] = [
     target: '연관 개념',
     timeAgo: '8분',
     to: '/studies/spring-study/knowledge',
+    testStatus: 'valid',
   },
   {
     id: 'spring-study-act-2',
     type: '답글',
     summary: '박서연님이 답글 등록',
-    detail: '해당 질문 펼침',
+    detail: '해당 질문 펼침 (삭제됨 테스트)',
     target: 'JPA 질문',
     timeAgo: '23분',
     to: '/studies/spring-study/questions',
+    testStatus: 'deleted',
+  },
+  {
+    id: 'spring-study-act-3',
+    type: '업로드',
+    summary: '김동현님이 자료 업로드',
+    detail: '해당 자료 확인 (권한 없음 테스트)',
+    target: 'Spring Security PDF',
+    timeAgo: '1시간',
+    to: '/studies/spring-study/upload',
+    testStatus: 'no-permission',
   },
 ];
