@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 
-import { httpClient } from '@/shared/api/http_client';
 import { getMockStudyById } from '@/shared/mocks/studies';
 import type { Study } from '@/shared/types/stology';
 
@@ -62,7 +61,16 @@ export const useInvite = (token?: string) => {
 
     try {
       setIsJoining(true);
-      await httpClient.post(`/api/invites/${token}/accept`);
+
+      // API 연동 전 임시로 토큰 검증 API 호출 모방 (네트워크 지연 모방)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      if (token === 'fail-token') {
+        throw new Error('스터디 인원이 가득 찼거나 만료되었습니다.');
+      }
+      // 실제 통신 부분 주석 처리 (SPA fallback 방지)
+      // await httpClient.post(`/api/invites/${token}/accept`);
+
       setJoinError(null);
       return true;
     } catch (err) {
