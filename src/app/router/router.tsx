@@ -14,15 +14,15 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    path: '/invite/:token',
-    element: <InvitePage />,
-  },
-  {
     element: <AuthGuard />,
     children: [
       {
         path: '/',
         element: <HomePage />,
+      },
+      {
+        path: '/invite/:token',
+        element: <InvitePage />,
       },
       {
         path: '/studies/:studyId',
