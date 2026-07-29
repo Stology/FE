@@ -11,7 +11,7 @@ export interface MyTodoItem {
 }
 
 /** 팀 활동 유형 */
-export type TeamActivityType = '구조' | '답글' | '업로드';
+export type TeamActivityType = '구조' | '답글';
 
 export interface TeamActivityItem {
   id: string;
@@ -71,12 +71,12 @@ export const baseMockTeamActivity: TeamActivityItem[] = [
   },
   {
     id: 'spring-study-act-3',
-    type: '업로드',
-    summary: '김동현님이 자료 업로드',
-    detail: '해당 자료 확인 (권한 없음 테스트)',
-    target: 'Spring Security PDF',
+    type: '구조',
+    summary: '지식 구조 권한 테스트',
+    detail: '해당 지식 구조 확인 (권한 없음 테스트)',
+    target: 'Spring Security 구조',
     timeAgo: '1시간',
-    to: '/studies/spring-study/upload',
+    to: '/studies/spring-study/knowledge',
   },
 ];
 
@@ -88,7 +88,12 @@ export const testMockMyTodo: MyTodoItem[] = baseMockMyTodo.map((item) => ({
 
 export const testMockTeamActivity: TeamActivityItem[] = baseMockTeamActivity.map((item) => ({
   ...item,
-  testStatus: item.type === '답글' ? 'deleted' : item.type === '업로드' ? 'no-permission' : 'valid',
+  testStatus:
+    item.id === 'spring-study-act-2'
+      ? 'deleted'
+      : item.id === 'spring-study-act-3'
+        ? 'no-permission'
+        : 'valid',
 }));
 
 export const mockMyTodo = import.meta.env.DEV ? testMockMyTodo : baseMockMyTodo;

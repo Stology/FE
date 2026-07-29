@@ -11,7 +11,6 @@ export type { TeamActivityItem, TeamActivityType };
 const typeChipClass: Record<TeamActivityType, string> = {
   구조: 'border-stology-text-light bg-stology-off-white text-stology-text-dark',
   답글: 'border-stology-royal-blue bg-[#EFF6FF] text-stology-royal-blue',
-  업로드: 'border-stology-electric-blue bg-[#DBEAFE] text-stology-royal-blue',
 };
 
 // ─── Row ─────────────────────────────────────────────────────────────────────
