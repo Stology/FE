@@ -31,29 +31,26 @@ export interface TeamActivityItem {
 }
 
 /** 내 할 일 - 자료/질문함/리포트 섹션 */
-export const mockMyTodo: MyTodoItem[] = [
+export const baseMockMyTodo: MyTodoItem[] = [
   {
     section: '자료',
     summary: '검토 5 · 재업로드 2',
     to: '/studies/spring-study/upload',
-    testStatus: 'valid',
   },
   {
     section: '질문함',
     summary: '질문 7 · 답글 2',
     to: '/studies/spring-study/questions',
-    testStatus: 'deleted', // 삭제됨 테스트용
   },
   {
     section: '리포트',
     summary: '2개 스터디의 최신 리포트',
     to: '/studies/spring-study/reports',
-    testStatus: 'no-permission', // 권한 없음 테스트용
   },
 ];
 
 /** 팀 활동 - 최신순 */
-export const mockTeamActivity: TeamActivityItem[] = [
+export const baseMockTeamActivity: TeamActivityItem[] = [
   {
     id: 'spring-study-act-1',
     type: '구조',
@@ -62,7 +59,6 @@ export const mockTeamActivity: TeamActivityItem[] = [
     target: '연관 개념',
     timeAgo: '8분',
     to: '/studies/spring-study/knowledge',
-    testStatus: 'valid',
   },
   {
     id: 'spring-study-act-2',
@@ -72,7 +68,6 @@ export const mockTeamActivity: TeamActivityItem[] = [
     target: 'JPA 질문',
     timeAgo: '23분',
     to: '/studies/spring-study/questions',
-    testStatus: 'deleted',
   },
   {
     id: 'spring-study-act-3',
@@ -82,6 +77,19 @@ export const mockTeamActivity: TeamActivityItem[] = [
     target: 'Spring Security PDF',
     timeAgo: '1시간',
     to: '/studies/spring-study/upload',
-    testStatus: 'no-permission',
   },
 ];
+
+export const testMockMyTodo: MyTodoItem[] = baseMockMyTodo.map((item) => ({
+  ...item,
+  testStatus:
+    item.section === '질문함' ? 'deleted' : item.section === '리포트' ? 'no-permission' : 'valid',
+}));
+
+export const testMockTeamActivity: TeamActivityItem[] = baseMockTeamActivity.map((item) => ({
+  ...item,
+  testStatus: item.type === '답글' ? 'deleted' : item.type === '업로드' ? 'no-permission' : 'valid',
+}));
+
+export const mockMyTodo = import.meta.env.DEV ? testMockMyTodo : baseMockMyTodo;
+export const mockTeamActivity = import.meta.env.DEV ? testMockTeamActivity : baseMockTeamActivity;

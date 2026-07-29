@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useActivityClick } from '../hooks/useActivityClick';
 
 import { cn } from '@/shared/lib/cn';
 import { Toast } from '@/shared/ui/Toast';
@@ -98,31 +97,10 @@ export const TeamActivityPanel = ({
   selectedStudy,
   studies,
 }: TeamActivityPanelProps) => {
-  const navigate = useNavigate();
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { handleItemClick, setToastMessage, toastMessage } = useActivityClick();
 
   const filtered =
     selectedStudy === 'all' ? items : items.filter((item) => item.id.startsWith(selectedStudy));
-
-  const handleItemClick = (item: TeamActivityItem) => {
-    // 1. 삭제된 대상 (HOM001-0300)
-    if (item.testStatus === 'deleted') {
-      // 대상 자료/질문/스터디가 삭제된 경우 이동하지 않음 (알림 없음)
-      return;
-    }
-
-    // 2. 권한 없음 (HOM001-0300)
-    if (item.testStatus === 'no-permission') {
-      // 권한이 없는 대상이면 이동하지 않고 상단 toast로 안내
-      setToastMessage('접근 권한이 없습니다.');
-      // 3초 후 토스트 닫기
-      setTimeout(() => setToastMessage(null), 3000);
-      return;
-    }
-
-    // 정상 이동
-    navigate(item.to);
-  };
 
   return (
     <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5 relative">
