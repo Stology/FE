@@ -88,6 +88,7 @@ interface TeamActivityPanelProps {
   studies: { id: string; name: string }[];
   selectedStudy: string;
   onStudyChange: (id: string) => void;
+  onRemove?: (id: string) => void;
 }
 
 export const TeamActivityPanel = ({
@@ -95,8 +96,9 @@ export const TeamActivityPanel = ({
   onStudyChange,
   selectedStudy,
   studies,
+  onRemove,
 }: TeamActivityPanelProps) => {
-  const { handleItemClick, setToastMessage, toastMessage } = useActivityClick();
+  const { handleItemClick, setToastMessage, toastMessage } = useActivityClick(onRemove);
 
   const filtered =
     selectedStudy === 'all' ? items : items.filter((item) => item.id.startsWith(selectedStudy));

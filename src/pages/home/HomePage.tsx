@@ -24,8 +24,8 @@ export const HomePage = () => {
     useState<CreatedStudyInvitation | null>(null);
 
   const { studies } = useMyStudies();
-  const { items: todoItems } = useMyTodo();
-  const { items: activityItems } = useTeamActivity(selectedStudy);
+  const { items: todoItems, removeItem: removeTodoItem } = useMyTodo();
+  const { items: activityItems, removeItem: removeActivityItem } = useTeamActivity(selectedStudy);
 
   return (
     <AppLayout>
@@ -49,12 +49,13 @@ export const HomePage = () => {
 
       {/* ── 내 할 일 + 팀 활동 ──────────────────────────────── */}
       <section className="mt-8 grid grid-cols-2 gap-6">
-        <MyTodoPanel items={todoItems} />
+        <MyTodoPanel items={todoItems} onRemove={removeTodoItem} />
         <TeamActivityPanel
           items={activityItems}
           studies={studies}
           selectedStudy={selectedStudy}
           onStudyChange={setSelectedStudy}
+          onRemove={removeActivityItem}
         />
       </section>
 

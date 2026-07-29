@@ -7,6 +7,7 @@ interface UseMyTodoResult {
   items: MyTodoItem[];
   isLoading: boolean;
   error: Error | null;
+  removeItem: (section: string) => void;
 }
 
 export const useMyTodo = (): UseMyTodoResult => {
@@ -43,5 +44,9 @@ export const useMyTodo = (): UseMyTodoResult => {
     };
   }, []);
 
-  return { error, isLoading, items };
+  const removeItem = (section: string) => {
+    setItems((prev) => prev.filter((item) => item.section !== section));
+  };
+
+  return { error, isLoading, items, removeItem };
 };

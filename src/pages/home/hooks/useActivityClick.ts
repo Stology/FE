@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export const useActivityClick = () => {
+export const useActivityClick = (onRemove?: (id: string) => void) => {
   const navigate = useNavigate();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -17,11 +17,21 @@ export const useActivityClick = () => {
   }, []);
 
   const handleItemClick = useCallback(
-    (item: { testStatus?: 'valid' | 'deleted' | 'no-permission'; to: string }) => {
+    (item: {
+      id?: string;
+      section?: string;
+      testStatus?: 'valid' | 'deleted' | 'no-permission';
+      to: string;
+    }) => {
       // 1. 삭제된 대상
       if (item.testStatus === 'deleted') {
         showToast('대상이 삭제되거나 상태가 변경되었습니다.');
-        // TODO: 목록 새로고침 및 건수 갱신 API 연동 필요 (HOM001-0300)
+
+        // 목록에서 제거하여 건수 재계산 (HOM001-0300 기획 명세 피드백 반영)
+        const identifier = item.id || item.section;
+        if (onRemove && identifier) {
+          onRemove(identifier);
+        }
         return;
       }
 
@@ -34,7 +44,7 @@ export const useActivityClick = () => {
       // 정상 이동
       navigate(item.to);
     },
-    [navigate, showToast],
+    [navigate, showToast, onRemove],
   );
 
   return {

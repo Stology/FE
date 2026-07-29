@@ -55,10 +55,11 @@ const MyTodoRow = ({ item, onClick }: MyTodoRowProps) => {
 
 interface MyTodoPanelProps {
   items: MyTodoItem[];
+  onRemove?: (id: string) => void;
 }
 
-export const MyTodoPanel = ({ items }: MyTodoPanelProps) => {
-  const { handleItemClick, setToastMessage, toastMessage } = useActivityClick();
+export const MyTodoPanel = ({ items, onRemove }: MyTodoPanelProps) => {
+  const { handleItemClick, setToastMessage, toastMessage } = useActivityClick(onRemove);
 
   return (
     <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5 relative">
