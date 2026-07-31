@@ -14,60 +14,6 @@ interface MaterialDetailModalProps {
   onClose: () => void;
 }
 
-const Hom001DetailRow = ({ item }: { item: MaterialTodoItem }) => {
-  const navigate = useNavigate();
-
-  const handleAction = () => {
-    if (item.status === '검토 필요') {
-      // 검토 REV001
-      navigate(`/studies/${encodeURIComponent(item.study)}/review/${item.id}`);
-    } else {
-      // 빈 업로드 UPL001
-      navigate(`/studies/${encodeURIComponent(item.study)}/upload`);
-    }
-  };
-
-  return (
-    <div className="flex h-[62px] items-center gap-4 rounded-[4px] border border-stology-border-light bg-white px-[15px] text-[11px]">
-      {/* 상태 */}
-      <span className="w-[96px] text-stology-text-dark">{item.status}</span>
-      {/* 자료 제목 */}
-      <span className="w-[262px] truncate font-bold text-stology-text-dark">{item.title}</span>
-      {/* 스터디 */}
-      <span className="w-[172px] truncate text-stology-text-dark">{item.study}</span>
-      {/* 주차 */}
-      <span className="w-[140px] text-stology-text-dark">{item.week}</span>
-      {/* 업로더/일 */}
-      <span className="w-[110px] text-stology-text-dark">
-        {item.uploader} · {item.date}
-      </span>
-      {/* 액션 CTA */}
-      <button
-        type="button"
-        onClick={handleAction}
-        disabled={item.state?.isLoading || item.state?.isError || item.state?.permissionDenied}
-        className={cn(
-          'flex-1 text-center font-bold',
-          item.state?.isLoading || item.state?.isError || item.state?.permissionDenied
-            ? 'text-stology-text-light cursor-not-allowed'
-            : 'text-stology-royal-blue hover:text-stology-electric-blue',
-        )}
-      >
-        {item.state?.isLoading
-          ? '로딩 중...'
-          : item.state?.isError
-            ? '오류 발생'
-            : item.state?.permissionDenied
-              ? '권한 부족'
-              : item.state?.isReadOnly
-                ? '읽기 전용'
-                : item.status === '검토 필요'
-                  ? '검토하기'
-                  : '재업로드'}
-      </button>
-    </div>
-  );
-};
 export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProps) => {
   const { filter, setFilter, items, counts } = useMaterialTodos();
 
@@ -135,5 +81,69 @@ export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProp
         </div>
       </div>
     </Modal>
+  );
+};
+
+interface Hom001DetailRowProps {
+  item: MaterialTodoItem;
+}
+
+const Hom001DetailRow = ({ item }: Hom001DetailRowProps) => {
+  const navigate = useNavigate();
+
+  const handleAction = () => {
+    if (item.status === '검토 필요') {
+      // 검토 REV001
+      navigate(`/studies/${encodeURIComponent(item.study.id)}/review/${item.id}`);
+    } else {
+      // 빈 업로드 UPL001
+      navigate(`/studies/${encodeURIComponent(item.study.id)}/upload`);
+    }
+  };
+
+  const isPermissionDenied = item.detail?.permission === 'none';
+  const isReadOnly = !!item.detail?.isReadOnly;
+  const isDisabled =
+    item.state?.isLoading || item.state?.isError || isPermissionDenied || isReadOnly;
+
+  return (
+    <div className="flex h-[62px] items-center gap-4 rounded-[4px] border border-stology-border-light bg-white px-[15px] text-[11px]">
+      {/* 상태 */}
+      <span className="w-[96px] text-stology-text-dark">{item.status}</span>
+      {/* 자료 제목 */}
+      <span className="w-[262px] truncate font-bold text-stology-text-dark">{item.title}</span>
+      {/* 스터디 */}
+      <span className="w-[172px] truncate text-stology-text-dark">{item.study.name}</span>
+      {/* 주차 */}
+      <span className="w-[140px] text-stology-text-dark">{item.week}</span>
+      {/* 업로더/일 */}
+      <span className="w-[110px] text-stology-text-dark">
+        {item.uploader} · {item.date}
+      </span>
+      {/* 액션 CTA */}
+      <button
+        type="button"
+        onClick={handleAction}
+        disabled={isDisabled}
+        className={cn(
+          'flex-1 text-center font-bold',
+          isDisabled
+            ? 'text-stology-text-light cursor-not-allowed'
+            : 'text-stology-royal-blue hover:text-stology-electric-blue',
+        )}
+      >
+        {item.state?.isLoading
+          ? '로딩 중...'
+          : item.state?.isError
+            ? '오류 발생'
+            : isPermissionDenied
+              ? '권한 부족'
+              : isReadOnly
+                ? '읽기 전용'
+                : item.status === '검토 필요'
+                  ? '검토하기'
+                  : '재업로드'}
+      </button>
+    </div>
   );
 };

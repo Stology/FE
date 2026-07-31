@@ -12,15 +12,16 @@ export interface MaterialDetailModel {
 export interface MaterialDetailState {
   isLoading: boolean;
   isError: boolean;
-  permissionDenied: boolean;
-  isReadOnly: boolean;
 }
 
 export interface MaterialTodoItem {
   id: string;
   status: MaterialTodoStatus;
   title: string;
-  study: string;
+  study: {
+    id: string;
+    name: string;
+  };
   week: string;
   uploader: string;
   date: string;
@@ -35,7 +36,7 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
     id: 'mat-1',
     status: '검토 필요',
     title: 'Spring Security 인증',
-    study: '백엔드 마스터',
+    study: { id: 'backend-master', name: '백엔드 마스터' },
     week: '3주차',
     uploader: '김민준',
     date: '07.16',
@@ -47,13 +48,13 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
       permission: 'read',
       isReadOnly: false,
     },
-    state: { isLoading: false, isError: false, permissionDenied: false, isReadOnly: false },
+    state: { isLoading: false, isError: false },
   },
   {
     id: 'mat-2',
     status: '검토 필요',
     title: 'JPA 연관관계 정리',
-    study: 'CS 스터디',
+    study: { id: 'cs-study', name: 'CS 스터디' },
     week: '2주차',
     uploader: '이서연',
     date: '07.16',
@@ -63,13 +64,13 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
       permission: 'none',
       isReadOnly: false,
     },
-    state: { isLoading: false, isError: false, permissionDenied: true, isReadOnly: false },
+    state: { isLoading: false, isError: false },
   },
   {
     id: 'mat-3',
     status: '추출 실패',
     title: '트랜잭션 격리 수준',
-    study: '백엔드 마스터',
+    study: { id: 'backend-master', name: '백엔드 마스터' },
     week: '3주차',
     uploader: '김스토',
     date: '07.15',
@@ -81,13 +82,13 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
       permission: 'read',
       isReadOnly: false,
     },
-    state: { isLoading: false, isError: true, permissionDenied: false, isReadOnly: false },
+    state: { isLoading: false, isError: true },
   },
   {
     id: 'mat-4',
     status: '검토 필요',
     title: '인덱스 성능 노트',
-    study: '알고리즘',
+    study: { id: 'algorithm', name: '알고리즘' },
     week: '1주차',
     uploader: '박도윤',
     date: '07.15',
@@ -103,7 +104,7 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
       permission: 'read',
       isReadOnly: true,
     },
-    state: { isLoading: false, isError: false, permissionDenied: false, isReadOnly: true },
+    state: { isLoading: false, isError: false },
   },
 ];
 
