@@ -19,9 +19,9 @@ interface ConfirmDialogProps {
 }
 
 export const ConfirmDialog = ({
-  cancelText = 'Cancel',
+  cancelText = '취소',
   children,
-  confirmText = 'Confirm',
+  confirmText = '확인',
   description,
   isLoading = false,
   isOpen,
@@ -48,9 +48,11 @@ export const ConfirmDialog = ({
       </>
     }
     isOpen={isOpen}
-    onClose={onCancel}
+    onClose={isLoading ? () => undefined : onCancel}
     title={title}
   >
     {children}
   </Modal>
 );
+
+export type { ConfirmDialogProps, ConfirmDialogVariant };
