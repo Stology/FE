@@ -6,6 +6,7 @@ import {
   CreateStudyCard,
   CreateStudyModal,
   InviteLinkModal,
+  MaterialDetailModal,
   MyTodoPanel,
   StudyCard,
   TeamActivityPanel,
@@ -15,6 +16,7 @@ import { useMyStudies, useMyTodo, useTeamActivity } from './hooks';
 export const HomePage = () => {
   const [selectedStudy, setSelectedStudy] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isMaterialDetailModalOpen, setIsMaterialDetailModalOpen] = useState(false);
   const [createdStudyInfo, setCreatedStudyInfo] = useState<{
     name: string;
     inviteToken: string;
@@ -61,7 +63,15 @@ export const HomePage = () => {
 
       {/* ── 내 할 일 + 팀 활동 ──────────────────────────────── */}
       <section className="mt-8 grid grid-cols-2 gap-6">
-        <MyTodoPanel items={todoItems} onRemove={removeTodoItem} />
+        <MyTodoPanel
+          items={todoItems}
+          onRemove={removeTodoItem}
+          onClickItem={(item) => {
+            if (item.section === '자료') {
+              setIsMaterialDetailModalOpen(true);
+            }
+          }}
+        />
         <TeamActivityPanel
           items={activityItems}
           studies={studies}
@@ -78,6 +88,10 @@ export const HomePage = () => {
         onSuccess={(createdStudy) => {
           setCreatedStudyInfo({ name: createdStudy.name, inviteToken: createdStudy.inviteToken });
         }}
+      />
+      <MaterialDetailModal
+        isOpen={isMaterialDetailModalOpen}
+        onClose={() => setIsMaterialDetailModalOpen(false)}
       />
 
       {/* ── 초대 링크 모달 ───────────────────────────────────── */}

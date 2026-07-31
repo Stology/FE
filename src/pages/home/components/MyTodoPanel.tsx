@@ -56,11 +56,12 @@ const MyTodoRow = ({ item, onClick }: MyTodoRowProps) => {
 interface MyTodoPanelProps {
   items: MyTodoItem[];
   onRemove?: (id: string) => void;
+  onClickItem?: (item: MyTodoItem) => void;
 }
 
 const DEFAULT_TODO_SECTIONS: MyTodoSection[] = ['자료', '질문함', '리포트'];
 
-export const MyTodoPanel = ({ items, onRemove }: MyTodoPanelProps) => {
+export const MyTodoPanel = ({ items, onRemove, onClickItem }: MyTodoPanelProps) => {
   const { handleItemClick, setToastMessage, toastMessage } = useActivityClick(onRemove);
 
   const displayItems = DEFAULT_TODO_SECTIONS.map((section) => {
@@ -92,7 +93,17 @@ export const MyTodoPanel = ({ items, onRemove }: MyTodoPanelProps) => {
       {/* 항목 목록 */}
       <ul className="mt-1 flex flex-col gap-1">
         {displayItems.map((item) => (
-          <MyTodoRow key={item.section} item={item} onClick={handleItemClick} />
+          <MyTodoRow
+            key={item.section}
+            item={item}
+            onClick={(clickedItem) => {
+              if (clickedItem.section === '자료' && onClickItem) {
+                onClickItem(clickedItem);
+              } else {
+                handleItemClick(clickedItem);
+              }
+            }}
+          />
         ))}
       </ul>
     </section>
