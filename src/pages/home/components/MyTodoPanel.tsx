@@ -15,16 +15,8 @@ const sectionChipClass: Record<MyTodoSection, string> = {
 
 // ─── Row ─────────────────────────────────────────────────────────────────────
 
-const MyTodoRow = ({ item, onClick }: { item: MyTodoItem; onClick?: () => void }) => {
+const MyTodoRow = ({ item }: { item: MyTodoItem }) => {
   const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else {
-      navigate(item.to);
-    }
-  };
 
   return (
     <li className="flex items-center gap-3 rounded-[4px] border border-stology-border-light bg-white px-3 py-[14px]">
@@ -46,7 +38,7 @@ const MyTodoRow = ({ item, onClick }: { item: MyTodoItem; onClick?: () => void }
       {/* 상세보기 CTA */}
       <button
         type="button"
-        onClick={handleClick}
+        onClick={() => navigate(item.to)}
         className="shrink-0 text-[10px] font-bold text-stology-text-light hover:text-stology-electric-blue"
       >
         상세보기
@@ -59,10 +51,9 @@ const MyTodoRow = ({ item, onClick }: { item: MyTodoItem; onClick?: () => void }
 
 interface MyTodoPanelProps {
   items: MyTodoItem[];
-  onClickItem?: (item: MyTodoItem) => void;
 }
 
-export const MyTodoPanel = ({ items, onClickItem }: MyTodoPanelProps) => (
+export const MyTodoPanel = ({ items }: MyTodoPanelProps) => (
   <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5">
     {/* 제목 */}
     <h2 className="text-heading-1 text-stology-text-dark">내 할 일</h2>
@@ -80,11 +71,7 @@ export const MyTodoPanel = ({ items, onClickItem }: MyTodoPanelProps) => (
     {/* 항목 목록 */}
     <ul className="mt-1 flex flex-col gap-1">
       {items.map((item) => (
-        <MyTodoRow
-          key={item.section}
-          item={item}
-          onClick={item.section === '자료' && onClickItem ? () => onClickItem(item) : undefined}
-        />
+        <MyTodoRow key={item.section} item={item} />
       ))}
     </ul>
   </section>
