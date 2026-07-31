@@ -6,7 +6,6 @@ import {
   CreateStudyCard,
   CreateStudyModal,
   InviteLinkModal,
-  MaterialDetailModal,
   MyTodoPanel,
   StudyCard,
   TeamActivityPanel,
@@ -21,7 +20,6 @@ interface CreatedStudyInvitation {
 export const HomePage = () => {
   const [selectedStudy, setSelectedStudy] = useState('all');
   const [isCreateStudyOpen, setIsCreateStudyOpen] = useState(false);
-  const [isMaterialDetailModalOpen, setIsMaterialDetailModalOpen] = useState(false);
   const [createdStudyInvitation, setCreatedStudyInvitation] =
     useState<CreatedStudyInvitation | null>(null);
 
@@ -51,14 +49,7 @@ export const HomePage = () => {
 
       {/* ── 내 할 일 + 팀 활동 ──────────────────────────────── */}
       <section className="mt-8 grid grid-cols-2 gap-6">
-        <MyTodoPanel
-          items={todoItems}
-          onClickItem={(item) => {
-            if (item.section === '자료') {
-              setIsMaterialDetailModalOpen(true);
-            }
-          }}
-        />
+        <MyTodoPanel items={todoItems} />
         <TeamActivityPanel
           items={activityItems}
           studies={studies}
@@ -77,10 +68,6 @@ export const HomePage = () => {
         isOpen={createdStudyInvitation !== null}
         onClose={() => setCreatedStudyInvitation(null)}
         studyName={createdStudyInvitation?.name ?? ''}
-      />
-      <MaterialDetailModal
-        isOpen={isMaterialDetailModalOpen}
-        onClose={() => setIsMaterialDetailModalOpen(false)}
       />
     </AppLayout>
   );
