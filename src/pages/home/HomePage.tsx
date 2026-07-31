@@ -6,6 +6,7 @@ import {
   CreateStudyCard,
   CreateStudyModal,
   InviteLinkModal,
+  MaterialDetailModal,
   MyTodoPanel,
   StudyCard,
   TeamActivityPanel,
@@ -17,6 +18,7 @@ export const HomePage = () => {
   const [selectedStudy, setSelectedStudy] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isQuestionDetailModalOpen, setIsQuestionDetailModalOpen] = useState(false);
+  const [isMaterialDetailModalOpen, setIsMaterialDetailModalOpen] = useState(false);
   const [createdStudyInfo, setCreatedStudyInfo] = useState<{
     name: string;
     inviteToken: string;
@@ -69,6 +71,8 @@ export const HomePage = () => {
           onClickItem={(item) => {
             if (item.section === '질문함') {
               setIsQuestionDetailModalOpen(true);
+            } else if (item.section === '자료') {
+              setIsMaterialDetailModalOpen(true);
             }
           }}
         />
@@ -92,6 +96,10 @@ export const HomePage = () => {
       <QuestionDetailModal
         isOpen={isQuestionDetailModalOpen}
         onClose={() => setIsQuestionDetailModalOpen(false)}
+      />
+      <MaterialDetailModal
+        isOpen={isMaterialDetailModalOpen}
+        onClose={() => setIsMaterialDetailModalOpen(false)}
       />
 
       {/* ── 초대 링크 모달 ───────────────────────────────────── */}
