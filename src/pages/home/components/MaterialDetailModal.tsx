@@ -45,14 +45,29 @@ const Hom001DetailRow = ({ item }: { item: MaterialTodoItem }) => {
       <button
         type="button"
         onClick={handleAction}
-        className="flex-1 text-center font-bold text-stology-royal-blue hover:text-stology-electric-blue"
+        disabled={item.state?.isLoading || item.state?.isError || item.state?.permissionDenied}
+        className={cn(
+          'flex-1 text-center font-bold',
+          item.state?.isLoading || item.state?.isError || item.state?.permissionDenied
+            ? 'text-stology-text-light cursor-not-allowed'
+            : 'text-stology-royal-blue hover:text-stology-electric-blue',
+        )}
       >
-        {item.status === '검토 필요' ? '검토하기' : '재업로드'}
+        {item.state?.isLoading
+          ? '로딩 중...'
+          : item.state?.isError
+            ? '오류 발생'
+            : item.state?.permissionDenied
+              ? '권한 부족'
+              : item.state?.isReadOnly
+                ? '읽기 전용'
+                : item.status === '검토 필요'
+                  ? '검토하기'
+                  : '재업로드'}
       </button>
     </div>
   );
 };
-
 export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProps) => {
   const { filter, setFilter, items, counts } = useMaterialTodos();
 
@@ -80,6 +95,7 @@ export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProp
               <button
                 key={label}
                 type="button"
+                aria-pressed={isActive}
                 onClick={() => setFilter(label)}
                 className={cn(
                   'flex h-[38px] w-[150px] items-center justify-center whitespace-pre-wrap rounded-[19px] border text-[12px] font-bold transition-colors',

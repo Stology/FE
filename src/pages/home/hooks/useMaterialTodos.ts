@@ -2,6 +2,20 @@ import { useMemo, useState } from 'react';
 
 export type MaterialTodoStatus = '검토 필요' | '추출 실패';
 
+export interface MaterialDetailModel {
+  content: string;
+  attachments: { name: string; fileType: string; downloadUrl: string }[];
+  permission: 'read' | 'write' | 'admin' | 'none';
+  isReadOnly: boolean;
+}
+
+export interface MaterialDetailState {
+  isLoading: boolean;
+  isError: boolean;
+  permissionDenied: boolean;
+  isReadOnly: boolean;
+}
+
 export interface MaterialTodoItem {
   id: string;
   status: MaterialTodoStatus;
@@ -10,6 +24,8 @@ export interface MaterialTodoItem {
   week: string;
   uploader: string;
   date: string;
+  detail?: MaterialDetailModel;
+  state?: MaterialDetailState;
 }
 
 export type MaterialTodoFilter = '전체' | '검토' | '재업로드 필요';
@@ -23,6 +39,15 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
     week: '3주차',
     uploader: '김민준',
     date: '07.16',
+    detail: {
+      content: 'Spring Security 인증 흐름에 대한 자료입니다.',
+      attachments: [
+        { name: 'security-flow.pdf', fileType: 'application/pdf', downloadUrl: '/downloads/1' },
+      ],
+      permission: 'read',
+      isReadOnly: false,
+    },
+    state: { isLoading: false, isError: false, permissionDenied: false, isReadOnly: false },
   },
   {
     id: 'mat-2',
@@ -32,6 +57,13 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
     week: '2주차',
     uploader: '이서연',
     date: '07.16',
+    detail: {
+      content: 'JPA 양방향 연관관계 정리 문서',
+      attachments: [],
+      permission: 'none',
+      isReadOnly: false,
+    },
+    state: { isLoading: false, isError: false, permissionDenied: true, isReadOnly: false },
   },
   {
     id: 'mat-3',
@@ -41,6 +73,15 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
     week: '3주차',
     uploader: '김스토',
     date: '07.15',
+    detail: {
+      content: '트랜잭션 격리 수준 비교표',
+      attachments: [
+        { name: 'isolation.pdf', fileType: 'application/pdf', downloadUrl: '/downloads/3' },
+      ],
+      permission: 'read',
+      isReadOnly: false,
+    },
+    state: { isLoading: false, isError: true, permissionDenied: false, isReadOnly: false },
   },
   {
     id: 'mat-4',
@@ -50,6 +91,19 @@ const MOCK_MATERIALS: MaterialTodoItem[] = [
     week: '1주차',
     uploader: '박도윤',
     date: '07.15',
+    detail: {
+      content: 'B-Tree 인덱스 구조와 성능 비교',
+      attachments: [
+        {
+          name: 'index-perf.xlsx',
+          fileType: 'application/vnd.ms-excel',
+          downloadUrl: '/downloads/4',
+        },
+      ],
+      permission: 'read',
+      isReadOnly: true,
+    },
+    state: { isLoading: false, isError: false, permissionDenied: false, isReadOnly: true },
   },
 ];
 

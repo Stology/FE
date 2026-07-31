@@ -83,7 +83,7 @@ export const MyTodoPanel = ({ items, onClickItem }: MyTodoPanelProps) => (
         <MyTodoRow
           key={item.section}
           item={item}
-          onClick={onClickItem ? () => onClickItem(item) : undefined}
+          onClick={item.section === '자료' && onClickItem ? () => onClickItem(item) : undefined}
         />
       ))}
     </ul>
