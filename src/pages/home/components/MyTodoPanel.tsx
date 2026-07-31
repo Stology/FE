@@ -97,7 +97,10 @@ export const MyTodoPanel = ({ items, onRemove, onClickItem }: MyTodoPanelProps) 
             key={item.section}
             item={item}
             onClick={(clickedItem) => {
-              if (clickedItem.section === '자료' && onClickItem) {
+              if (
+                (clickedItem.section === '질문함' || clickedItem.section === '자료') &&
+                onClickItem
+              ) {
                 onClickItem(clickedItem);
               } else {
                 handleItemClick(clickedItem);

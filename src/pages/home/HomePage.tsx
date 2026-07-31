@@ -10,12 +10,14 @@ import {
   MyTodoPanel,
   StudyCard,
   TeamActivityPanel,
+  QuestionDetailModal,
 } from './components';
 import { useMyStudies, useMyTodo, useTeamActivity } from './hooks';
 
 export const HomePage = () => {
   const [selectedStudy, setSelectedStudy] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isQuestionDetailModalOpen, setIsQuestionDetailModalOpen] = useState(false);
   const [isMaterialDetailModalOpen, setIsMaterialDetailModalOpen] = useState(false);
   const [createdStudyInfo, setCreatedStudyInfo] = useState<{
     name: string;
@@ -67,7 +69,9 @@ export const HomePage = () => {
           items={todoItems}
           onRemove={removeTodoItem}
           onClickItem={(item) => {
-            if (item.section === '자료') {
+            if (item.section === '질문함') {
+              setIsQuestionDetailModalOpen(true);
+            } else if (item.section === '자료') {
               setIsMaterialDetailModalOpen(true);
             }
           }}
@@ -88,6 +92,10 @@ export const HomePage = () => {
         onSuccess={(createdStudy) => {
           setCreatedStudyInfo({ name: createdStudy.name, inviteToken: createdStudy.inviteToken });
         }}
+      />
+      <QuestionDetailModal
+        isOpen={isQuestionDetailModalOpen}
+        onClose={() => setIsQuestionDetailModalOpen(false)}
       />
       <MaterialDetailModal
         isOpen={isMaterialDetailModalOpen}
