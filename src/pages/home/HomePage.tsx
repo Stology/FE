@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-import { AppLayout } from '@/shared/ui';
+import { AppLayout, ErrorMessage, Loading } from '@/shared/ui';
 
 import {
   CreateStudyCard,
@@ -14,22 +13,20 @@ import {
 } from './components';
 import { useMyStudies, useMyTodo, useTeamActivity } from './hooks';
 
-interface CreatedStudyInvitation {
-  inviteToken: string;
-  name: string;
-}
-
 export const HomePage = () => {
-  const navigate = useNavigate();
   const [selectedStudy, setSelectedStudy] = useState('all');
-  const [isCreateStudyOpen, setIsCreateStudyOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isQuestionDetailModalOpen, setIsQuestionDetailModalOpen] = useState(false);
-  const [createdStudyInvitation, setCreatedStudyInvitation] =
-    useState<CreatedStudyInvitation | null>(null);
+  const [createdStudyInfo, setCreatedStudyInfo] = useState<{
+    name: string;
+    inviteToken: string;
+  } | null>(null);
 
-  const { studies } = useMyStudies();
-  const { items: todoItems } = useMyTodo();
-  const { items: activityItems } = useTeamActivity(selectedStudy);
+  const { error: studiesError, isLoading: isStudiesLoading, studies } = useMyStudies();
+  const { items: todoItems, removeItem: removeTodoItem } = useMyTodo();
+  const { items: activityItems, removeItem: removeActivityItem } = useTeamActivity(selectedStudy);
+
+  const isStudiesEmpty = !isStudiesLoading && !studiesError && studies.length === 0;
 
   return (
     <AppLayout>
@@ -43,11 +40,24 @@ export const HomePage = () => {
       <section className="mt-7">
         <h2 className="text-heading-1 text-stology-text-dark">진행 중인 스터디</h2>
         <div className="mt-4 flex flex-wrap gap-4">
-          {studies.map((study) => (
-            <StudyCard key={study.id} study={study} />
-          ))}
-          {/* + 스터디 생성 카드 */}
-          <CreateStudyCard onClick={() => setIsCreateStudyOpen(true)} />
+          {isStudiesLoading ? (
+            <Loading className="w-full py-8" label="스터디 목록을 불러오는 중입니다..." />
+          ) : studiesError ? (
+            <ErrorMessage className="w-full max-w-md" message={studiesError.message} />
+          ) : (
+            <>
+              {isStudiesEmpty && (
+                <div className="flex items-center justify-center rounded-[8px] border border-dashed border-stology-border-light bg-stology-off-white px-6 py-4 text-body text-stology-text-light">
+                  참여 중인 스터디가 없습니다.
+                </div>
+              )}
+              {studies.map((study) => (
+                <StudyCard key={study.id} study={study} />
+              ))}
+              {/* + 스터디 생성 카드 */}
+              <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
+            </>
+          )}
         </div>
       </section>
 
@@ -55,11 +65,10 @@ export const HomePage = () => {
       <section className="mt-8 grid grid-cols-2 gap-6">
         <MyTodoPanel
           items={todoItems}
+          onRemove={removeTodoItem}
           onClickItem={(item) => {
             if (item.section === '질문함') {
               setIsQuestionDetailModalOpen(true);
-            } else {
-              navigate(item.to);
             }
           }}
         />
@@ -68,24 +77,32 @@ export const HomePage = () => {
           studies={studies}
           selectedStudy={selectedStudy}
           onStudyChange={setSelectedStudy}
+          onRemove={removeActivityItem}
         />
       </section>
 
+      {/* ── 스터디 생성 모달 ─────────────────────────────────── */}
       <CreateStudyModal
-        isOpen={isCreateStudyOpen}
-        onClose={() => setIsCreateStudyOpen(false)}
-        onSuccess={({ inviteToken, name }) => setCreatedStudyInvitation({ inviteToken, name })}
-      />
-      <InviteLinkModal
-        inviteToken={createdStudyInvitation?.inviteToken ?? ''}
-        isOpen={createdStudyInvitation !== null}
-        onClose={() => setCreatedStudyInvitation(null)}
-        studyName={createdStudyInvitation?.name ?? ''}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={(createdStudy) => {
+          setCreatedStudyInfo({ name: createdStudy.name, inviteToken: createdStudy.inviteToken });
+        }}
       />
       <QuestionDetailModal
         isOpen={isQuestionDetailModalOpen}
         onClose={() => setIsQuestionDetailModalOpen(false)}
       />
+
+      {/* ── 초대 링크 모달 ───────────────────────────────────── */}
+      {createdStudyInfo && (
+        <InviteLinkModal
+          isOpen={!!createdStudyInfo}
+          onClose={() => setCreatedStudyInfo(null)}
+          studyName={createdStudyInfo.name}
+          inviteToken={createdStudyInfo.inviteToken}
+        />
+      )}
     </AppLayout>
   );
 };

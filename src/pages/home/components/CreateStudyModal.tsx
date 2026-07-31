@@ -15,10 +15,14 @@ export interface CreateStudyModalProps {
 
 // Zod 검증 스키마 정의 (React Hook Form 연동)
 const createStudySchema = z.object({
-  name: z.string().trim().min(1, '스터디 이름을 입력해 주세요.'),
+  name: z
+    .string()
+    .trim()
+    .min(1, '스터디 이름을 입력해 주세요.')
+    .max(20, '스터디 이름은 20자 이내여야 합니다.'),
   templateId: z.string().min(1, '온톨로지 템플릿을 선택해 주세요.'),
   startedAt: z.string().min(1, '시작일을 선택해 주세요.'),
-  description: z.string().optional(),
+  description: z.string().max(100, '설명은 100자 이내여야 합니다.').optional(),
 });
 
 export type CreateStudyFormValues = z.infer<typeof createStudySchema>;
@@ -73,8 +77,9 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
     setValue,
     watch,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<CreateStudyFormValues>({
+    mode: 'onChange',
     defaultValues: {
       name: '',
       templateId: '',
@@ -150,6 +155,7 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
               label="스터디 이름 *"
               placeholder="예: 백엔드 마스터, CS 스터디"
               disabled={isSubmitting}
+              maxLength={20}
               error={errors.name?.message}
               {...register('name')}
             />
@@ -219,8 +225,10 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
               label="설명 (선택)"
               placeholder="스터디 목표나 전달사항을 입력해주세요."
               disabled={isSubmitting}
+              maxLength={100}
               {...register('description')}
               className="min-h-20"
+              error={errors.description?.message}
             />
           </div>
 
@@ -229,7 +237,12 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               닫기
             </Button>
-            <Button type="submit" variant="primary" isLoading={isSubmitting}>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={isSubmitting}
+              disabled={isSubmitting || !isValid}
+            >
               생성하기
             </Button>
           </div>
