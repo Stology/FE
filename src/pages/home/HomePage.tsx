@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { AppLayout } from '@/shared/ui';
 
@@ -9,6 +10,7 @@ import {
   MyTodoPanel,
   StudyCard,
   TeamActivityPanel,
+  QuestionDetailModal,
 } from './components';
 import { useMyStudies, useMyTodo, useTeamActivity } from './hooks';
 
@@ -18,8 +20,10 @@ interface CreatedStudyInvitation {
 }
 
 export const HomePage = () => {
+  const navigate = useNavigate();
   const [selectedStudy, setSelectedStudy] = useState('all');
   const [isCreateStudyOpen, setIsCreateStudyOpen] = useState(false);
+  const [isQuestionDetailModalOpen, setIsQuestionDetailModalOpen] = useState(false);
   const [createdStudyInvitation, setCreatedStudyInvitation] =
     useState<CreatedStudyInvitation | null>(null);
 
@@ -49,7 +53,16 @@ export const HomePage = () => {
 
       {/* ── 내 할 일 + 팀 활동 ──────────────────────────────── */}
       <section className="mt-8 grid grid-cols-2 gap-6">
-        <MyTodoPanel items={todoItems} />
+        <MyTodoPanel
+          items={todoItems}
+          onClickItem={(item) => {
+            if (item.section === '질문함') {
+              setIsQuestionDetailModalOpen(true);
+            } else {
+              navigate(item.to);
+            }
+          }}
+        />
         <TeamActivityPanel
           items={activityItems}
           studies={studies}
@@ -68,6 +81,10 @@ export const HomePage = () => {
         isOpen={createdStudyInvitation !== null}
         onClose={() => setCreatedStudyInvitation(null)}
         studyName={createdStudyInvitation?.name ?? ''}
+      />
+      <QuestionDetailModal
+        isOpen={isQuestionDetailModalOpen}
+        onClose={() => setIsQuestionDetailModalOpen(false)}
       />
     </AppLayout>
   );

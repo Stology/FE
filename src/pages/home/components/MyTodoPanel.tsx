@@ -15,7 +15,13 @@ const sectionChipClass: Record<MyTodoSection, string> = {
 
 // ─── Row ─────────────────────────────────────────────────────────────────────
 
-const MyTodoRow = ({ item }: { item: MyTodoItem }) => {
+const MyTodoRow = ({
+  item,
+  onClickItem,
+}: {
+  item: MyTodoItem;
+  onClickItem?: (item: MyTodoItem) => void;
+}) => {
   const navigate = useNavigate();
 
   return (
@@ -38,7 +44,7 @@ const MyTodoRow = ({ item }: { item: MyTodoItem }) => {
       {/* 상세보기 CTA */}
       <button
         type="button"
-        onClick={() => navigate(item.to)}
+        onClick={() => (onClickItem ? onClickItem(item) : navigate(item.to))}
         className="shrink-0 text-[10px] font-bold text-stology-text-light hover:text-stology-electric-blue"
       >
         상세보기
@@ -51,9 +57,10 @@ const MyTodoRow = ({ item }: { item: MyTodoItem }) => {
 
 interface MyTodoPanelProps {
   items: MyTodoItem[];
+  onClickItem?: (item: MyTodoItem) => void;
 }
 
-export const MyTodoPanel = ({ items }: MyTodoPanelProps) => (
+export const MyTodoPanel = ({ items, onClickItem }: MyTodoPanelProps) => (
   <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5">
     {/* 제목 */}
     <h2 className="text-heading-1 text-stology-text-dark">내 할 일</h2>
@@ -71,7 +78,7 @@ export const MyTodoPanel = ({ items }: MyTodoPanelProps) => (
     {/* 항목 목록 */}
     <ul className="mt-1 flex flex-col gap-1">
       {items.map((item) => (
-        <MyTodoRow key={item.section} item={item} />
+        <MyTodoRow key={item.section} item={item} onClickItem={onClickItem} />
       ))}
     </ul>
   </section>

@@ -9,3 +9,5 @@ export { InviteLinkModal } from './InviteLinkModal';
 export type { InviteLinkModalProps } from './InviteLinkModal';
 export { OntologySearchModal } from './OntologySearchModal';
 export type { OntologySearchModalProps, OntologyTemplate } from './OntologySearchModal';
+export { QuestionDetailModal } from './QuestionDetailModal';
+export type { QuestionDetailModalProps } from './QuestionDetailModal';
