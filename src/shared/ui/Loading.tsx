@@ -23,6 +23,10 @@ export const Loading = ({ className, label, size = 'md' }: LoadingProps) => (
         sizeClass[size],
       )}
     />
-    {label ? <span className="text-body">{label}</span> : <span className="sr-only">Loading</span>}
+    {label ? (
+      <span className="text-body">{label}</span>
+    ) : (
+      <span className="sr-only">불러오는 중입니다</span>
+    )}
   </div>
 );
