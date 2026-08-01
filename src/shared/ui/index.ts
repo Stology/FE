@@ -22,6 +22,7 @@ export { SectionTitle } from './SectionTitle';
 export { Select } from './Select';
 export { Tabs, type TabItem } from './Tabs';
 export { Textarea } from './Textarea';
-export { Toast } from './Toast';
+export { Toast, type ToastProps, type ToastType } from './Toast';
+export { ToastViewport } from './ToastViewport';
 export { Tooltip, type TooltipPlacement, type TooltipProps } from './Tooltip';
 export { WeeklyProgressList, type WeeklyProgressItem } from './WeeklyProgressList';
