@@ -6,30 +6,37 @@ import { LoginPage } from '@/pages/login/LoginPage';
 import { ReviewPage } from '@/pages/review/ReviewPage';
 import { StudyPage } from '@/pages/study/StudyPage';
 
+import { AuthGuard } from './AuthGuard';
+
 export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <HomePage />,
-  },
   {
     path: '/login',
     element: <LoginPage />,
   },
   {
-    path: '/invite/:token',
-    element: <InvitePage />,
-  },
-  {
-    path: '/studies/:studyId',
-    element: <Navigate to="knowledge" replace />,
-  },
-  {
-    path: '/studies/:studyId/:tab',
-    element: <StudyPage />,
-  },
-  {
-    path: '/studies/:studyId/review/:materialId',
-    element: <ReviewPage />,
+    element: <AuthGuard />,
+    children: [
+      {
+        path: '/',
+        element: <HomePage />,
+      },
+      {
+        path: '/invite/:token',
+        element: <InvitePage />,
+      },
+      {
+        path: '/studies/:studyId',
+        element: <Navigate to="knowledge" replace />,
+      },
+      {
+        path: '/studies/:studyId/:tab',
+        element: <StudyPage />,
+      },
+      {
+        path: '/studies/:studyId/review/:materialId',
+        element: <ReviewPage />,
+      },
+    ],
   },
   {
     path: '*',
