@@ -39,31 +39,29 @@ export const useAuthStore = create<AuthState>((set) => ({
 export { MOCK_AUTH_STORAGE_KEY };
 
 function readMockAuthSession() {
-  if (typeof window === 'undefined') return false;
-
-  try {
-    return window.sessionStorage.getItem(MOCK_AUTH_STORAGE_KEY) === 'true';
-  } catch {
-    return false;
-  }
+  return accessSessionStorage(
+    (storage) => storage.getItem(MOCK_AUTH_STORAGE_KEY) === 'true',
+    false,
+  );
 }
 
 function persistMockAuthSession() {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.sessionStorage.setItem(MOCK_AUTH_STORAGE_KEY, 'true');
-  } catch {
-    // Storage can be unavailable while in-memory authentication still works.
-  }
+  accessSessionStorage((storage) => storage.setItem(MOCK_AUTH_STORAGE_KEY, 'true'), undefined);
 }
 
 function clearMockAuthSession() {
-  if (typeof window === 'undefined') return;
+  accessSessionStorage((storage) => storage.removeItem(MOCK_AUTH_STORAGE_KEY), undefined);
+}
+
+function accessSessionStorage<Result>(
+  operation: (storage: Storage) => Result,
+  fallback: Result,
+): Result {
+  if (typeof window === 'undefined') return fallback;
 
   try {
-    window.sessionStorage.removeItem(MOCK_AUTH_STORAGE_KEY);
+    return operation(window.sessionStorage);
   } catch {
-    // Clearing an unavailable storage must not block logout.
+    return fallback;
   }
 }
