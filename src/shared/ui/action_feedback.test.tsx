@@ -98,4 +98,13 @@ describe('ConfirmDialog', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(handleCancel).not.toHaveBeenCalled();
   });
+
+  it('일반 상태에서 Escape를 누르면 취소한다', () => {
+    const handleCancel = vi.fn();
+
+    render(<ConfirmDialog isOpen onCancel={handleCancel} onConfirm={vi.fn()} title="작업 확인" />);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(handleCancel).toHaveBeenCalledOnce();
+  });
 });
