@@ -1,17 +1,25 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuthStore } from '@/shared/stores/useAuthStore';
+import { Loading } from '@/shared/ui';
 
 export const AuthGuard = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
   const location = useLocation();
 
+  if (!isInitialized) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-stology-off-white">
+        <Loading label="인증 상태를 확인하는 중입니다." size="lg" />
+      </main>
+    );
+  }
+
   if (!isAuthenticated) {
-    // 보호된 페이지 접근 시, 기존 목적지(pathname + search)를 기억하여 로그인 페이지로 이동
     const redirectUrl = encodeURIComponent(location.pathname + location.search);
     return <Navigate replace to={`/login?redirect=${redirectUrl}`} />;
   }
 
-  // 인증 성공 시 자식 라우트 렌더링
   return <Outlet />;
 };

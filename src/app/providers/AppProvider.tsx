@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { PropsWithChildren } from 'react';
+import { useEffect, type PropsWithChildren } from 'react';
 
+import { useAuthStore } from '@/shared/stores/useAuthStore';
 import { ToastViewport } from '@/shared/ui';
 
 const queryClient = new QueryClient({
@@ -12,9 +13,17 @@ const queryClient = new QueryClient({
   },
 });
 
-export const AppProvider = ({ children }: PropsWithChildren) => (
-  <QueryClientProvider client={queryClient}>
-    {children}
-    <ToastViewport />
-  </QueryClientProvider>
-);
+export const AppProvider = ({ children }: PropsWithChildren) => {
+  const initializeAuth = useAuthStore((state) => state.initialize);
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <ToastViewport />
+    </QueryClientProvider>
+  );
+};
