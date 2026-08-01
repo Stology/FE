@@ -10,6 +10,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
 });
 
@@ -61,5 +62,34 @@ describe('useAuthStore', () => {
       isInitialized: true,
     });
     expect(window.sessionStorage.getItem(MOCK_AUTH_STORAGE_KEY)).toBeNull();
+  });
+
+  it('저장소 조회가 차단되어도 로그아웃 상태로 초기화한다', () => {
+    vi.stubEnv('VITE_ENABLE_MOCK_AUTH', 'true');
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError');
+    });
+
+    expect(() => useAuthStore.getState().initialize()).not.toThrow();
+    expect(useAuthStore.getState()).toMatchObject({
+      isAuthenticated: false,
+      isInitialized: true,
+    });
+  });
+
+  it('저장소 쓰기와 삭제가 차단되어도 로그인과 로그아웃을 처리한다', () => {
+    vi.stubEnv('VITE_ENABLE_MOCK_AUTH', 'true');
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError');
+    });
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError');
+    });
+
+    expect(() => useAuthStore.getState().login()).not.toThrow();
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+
+    expect(() => useAuthStore.getState().logout()).not.toThrow();
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
 });
