@@ -1,9 +1,14 @@
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
+import { useAuthStore } from '@/shared/stores/useAuthStore';
+
 import { InviteNoticeCard } from './components/InviteNoticeCard';
 import { KakaoSymbolIcon } from './components/KakaoSymbolIcon';
 
 export const LoginPage = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const login = useAuthStore((state) => state.login);
   const redirectUrl = searchParams.get('redirect') || searchParams.get('redirect_url');
   const inviteToken = searchParams.get('invite') || searchParams.get('token');
 
@@ -13,14 +18,21 @@ export const LoginPage = () => {
 
   const handleKakaoLogin = () => {
     const kakaoAuthUrl = import.meta.env.VITE_KAKAO_AUTH_URL || '#';
+
     if (kakaoAuthUrl !== '#') {
       window.location.href = kakaoAuthUrl;
-    } else {
-      console.log('Kakao login initiated', { redirectUrl, inviteToken });
-      alert(
-        '카카오 로그인 연동 (VITE_KAKAO_AUTH_URL 환경 변수가 설정되면 카카오 OAuth 페이지로 이동합니다.)',
-      );
+      return;
     }
+
+    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+      login();
+      navigate(getSafeRedirectPath(redirectUrl), { replace: true });
+      return;
+    }
+
+    alert(
+      '카카오 로그인 연동 (VITE_KAKAO_AUTH_URL 환경 변수가 설정되면 카카오 OAuth 페이지로 이동합니다.)',
+    );
   };
 
   return (
@@ -62,3 +74,8 @@ export const LoginPage = () => {
     </main>
   );
 };
+
+function getSafeRedirectPath(redirectUrl: string | null) {
+  if (!redirectUrl?.startsWith('/') || redirectUrl.startsWith('//')) return '/';
+  return redirectUrl;
+}
