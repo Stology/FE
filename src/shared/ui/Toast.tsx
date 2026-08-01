@@ -3,9 +3,9 @@ import type { ReactNode } from 'react';
 
 import { cn } from '@/shared/lib/cn';
 
-type ToastType = 'success' | 'error' | 'info' | 'warning';
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
-interface ToastProps {
+export interface ToastProps {
   action?: ReactNode;
   className?: string;
   message: ReactNode;
@@ -54,7 +54,7 @@ export const Toast = ({
     </div>
     {onClose ? (
       <button
-        aria-label="Close notification"
+        aria-label="알림 닫기"
         className="shrink-0 rounded p-1 text-stology-text-light transition hover:bg-stology-off-white hover:text-stology-text-dark"
         onClick={onClose}
         type="button"
