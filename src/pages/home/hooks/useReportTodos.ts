@@ -55,11 +55,13 @@ export const useReportTodos = () => {
   }, [items]);
 
   const totalCount = items.length;
+  const completedCount = items.filter((item) => item.status === '생성 완료').length;
 
   return {
     items: sortedItems,
     counts: {
       total: totalCount,
+      completed: completedCount,
     },
   };
 };

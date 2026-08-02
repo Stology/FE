@@ -22,7 +22,7 @@ const ReportDetailRow = ({
     <div
       className={cn(
         'flex h-[62px] w-full items-center rounded-[4px] border border-stology-border-light bg-white px-[15px] text-[11px]',
-        !isCreated && 'opacity-42',
+        !isCreated && 'opacity-[42%]',
       )}
     >
       {/* 상태 */}
@@ -77,7 +77,7 @@ export const ReportDetailModal = ({ isOpen, onClose }: ReportDetailModalProps) =
             type="button"
             className="flex h-[38px] w-[150px] items-center justify-center rounded-[19px] border border-stology-text-dark bg-stology-text-dark text-[12px] font-bold text-white transition-colors"
           >
-            전체 스터디 &nbsp;{counts.total}
+            전체 스터디 &nbsp;{counts.completed}
           </button>
         </div>
 
