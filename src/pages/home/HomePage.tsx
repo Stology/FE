@@ -11,6 +11,7 @@ import {
   StudyCard,
   TeamActivityPanel,
   QuestionDetailModal,
+  ReportDetailModal,
 } from './components';
 import { useMyStudies, useMyTodo, useTeamActivity } from './hooks';
 
@@ -19,6 +20,7 @@ export const HomePage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isQuestionDetailModalOpen, setIsQuestionDetailModalOpen] = useState(false);
   const [isMaterialDetailModalOpen, setIsMaterialDetailModalOpen] = useState(false);
+  const [isReportDetailModalOpen, setIsReportDetailModalOpen] = useState(false);
   const [createdStudyInfo, setCreatedStudyInfo] = useState<{
     name: string;
     inviteToken: string;
@@ -73,6 +75,8 @@ export const HomePage = () => {
               setIsQuestionDetailModalOpen(true);
             } else if (item.section === '자료') {
               setIsMaterialDetailModalOpen(true);
+            } else if (item.section === '리포트') {
+              setIsReportDetailModalOpen(true);
             }
           }}
         />
@@ -100,6 +104,10 @@ export const HomePage = () => {
       <MaterialDetailModal
         isOpen={isMaterialDetailModalOpen}
         onClose={() => setIsMaterialDetailModalOpen(false)}
+      />
+      <ReportDetailModal
+        isOpen={isReportDetailModalOpen}
+        onClose={() => setIsReportDetailModalOpen(false)}
       />
 
       {/* ── 초대 링크 모달 ───────────────────────────────────── */}
