@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { MaterialReview } from '@/shared/types/stology';
@@ -16,6 +16,16 @@ const renderPage = (props: Parameters<typeof ReviewPage>[0] = {}) =>
   render(
     <MemoryRouter>
       <ReviewPage {...props} />
+    </MemoryRouter>,
+  );
+
+const renderReviewRoute = (path: string) =>
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route element={<p>홈 화면</p>} path="/" />
+        <Route element={<ReviewPage />} path="/studies/:studyId/review/:materialId" />
+      </Routes>
     </MemoryRouter>,
   );
 
@@ -140,6 +150,19 @@ describe('ReviewPage', () => {
     const cards = screen.getAllByRole('listitem');
     expect(within(cards[0]).getByRole('button', { name: '승인' })).toBeDisabled();
     expect(within(cards[0]).getByRole('button', { name: '반려' })).toBeDisabled();
+  });
+
+  it('종료된 스터디의 직접 검토 URL도 읽기 전용으로 표시한다', () => {
+    renderReviewRoute('/studies/ended-study/review/jwt-note');
+
+    expect(screen.getByRole('button', { name: '전체 승인' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '검토 마치기' })).toBeDisabled();
+  });
+
+  it('존재하지 않는 스터디의 직접 검토 URL은 홈으로 이동한다', () => {
+    renderReviewRoute('/studies/missing-study/review/jwt-note');
+
+    expect(screen.getByText('홈 화면')).toBeInTheDocument();
   });
 
   it('후보가 없으면 빈 상태를 표시한다', () => {

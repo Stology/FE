@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 
 import { getMockMaterialReview, mockMaterialReview } from '@/shared/mocks/materialReviews';
+import { getMockStudyById } from '@/shared/mocks/studies';
 import type { MaterialReview, NodeCandidate, ReviewAction } from '@/shared/types/stology';
 import { AppLayout, EmptyState, ErrorMessage, Loading, ProgressBar } from '@/shared/ui';
 
@@ -18,6 +19,7 @@ interface ReviewPageProps {
 
 interface ReviewRouteParams extends Record<string, string | undefined> {
   materialId?: string;
+  studyId?: string;
 }
 
 export const ReviewPage = ({
@@ -27,7 +29,9 @@ export const ReviewPage = ({
   onSubmit,
   review,
 }: ReviewPageProps) => {
-  const { materialId } = useParams<ReviewRouteParams>();
+  const { materialId, studyId } = useParams<ReviewRouteParams>();
+  const study = studyId ? getMockStudyById(studyId) : undefined;
+  const effectiveIsReadOnly = isReadOnly || study?.status === 'ended';
   const initialReview =
     review ?? (materialId ? getMockMaterialReview(materialId) : mockMaterialReview);
 
@@ -37,6 +41,10 @@ export const ReviewPage = ({
 
   const reviewedCount = candidates.filter((candidate) => candidate.myAction).length;
   const isSubmittable = candidates.length > 0 && reviewedCount === candidates.length;
+
+  if (studyId && !study) {
+    return <Navigate to="/" replace />;
+  }
 
   const applyAction = (candidateIds: string[], action: ReviewAction) => {
     setCandidates((current) =>
@@ -117,7 +125,7 @@ export const ReviewPage = ({
             <NodeCandidateCard
               candidate={candidate}
               index={index + 1}
-              isReadOnly={isReadOnly}
+              isReadOnly={effectiveIsReadOnly}
               isSelected={selectedIds.includes(candidate.id)}
               key={candidate.id}
               onAction={(candidateId, action) => applyAction([candidateId], action)}
@@ -138,7 +146,7 @@ export const ReviewPage = ({
         ) : null}
 
         <ReviewActionBar
-          isReadOnly={isReadOnly}
+          isReadOnly={effectiveIsReadOnly}
           isSubmittable={isSubmittable}
           onApproveAll={handleApproveAll}
           onBulkAction={handleBulkAction}
