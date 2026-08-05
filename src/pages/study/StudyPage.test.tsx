@@ -54,7 +54,7 @@ describe('StudyPage knowledge route', () => {
 
     expect(screen.getByRole('region', { name: '자료 업로드' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(
-      '/studies/spring-study/upload?materialId=jwt-note',
+      '/studies/spring-study/upload?materialId=mat-1',
     );
   });
 });
