@@ -16,14 +16,14 @@ describe('computeLayout', () => {
     const first = computeLayout(mockKnowledgeGraph, 2026);
     const second = computeLayout(mockKnowledgeGraph, 7);
 
-    let anyDifferent = false;
+    let hasDifference = false;
     for (let i = 0; i < first.positions.length; i += 1) {
       if (first.positions[i] !== second.positions[i]) {
-        anyDifferent = true;
+        hasDifference = true;
         break;
       }
     }
-    expect(anyDifferent).toBe(true);
+    expect(hasDifference).toBe(true);
   });
 
   it('모든 노드에 유한한 좌표를 부여한다', () => {

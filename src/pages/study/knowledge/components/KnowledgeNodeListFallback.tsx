@@ -49,7 +49,7 @@ export const KnowledgeNodeListFallback = ({
                   : isConnected
                     ? 'border-stology-electric-blue'
                     : 'border-stology-border-light',
-                isDimmed && 'opacity-40',
+                isDimmed && 'bg-stology-off-white',
               )}
               onClick={() => onNodeSelect?.(node.id)}
               type="button"

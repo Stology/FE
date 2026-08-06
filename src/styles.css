@@ -26,7 +26,7 @@ a {
 .stology-graph-canvas {
   display: block;
   height: 100%;
-  touch-action: none;
+  touch-action: pan-y;
   width: 100%;
 }
 

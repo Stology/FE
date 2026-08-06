@@ -149,8 +149,8 @@ export const createGraphEngine = (options: CreateGraphEngineOptions): GraphEngin
     selectedId = nodeId;
     hoverId = undefined;
     scene.clearDragOffsets();
-    updateRelationEyebrows();
     applyHighlightState();
+    updateRelationEyebrows();
 
     if (nodeId) {
       retargetFocusLayout();

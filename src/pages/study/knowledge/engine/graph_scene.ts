@@ -75,7 +75,7 @@ export class GraphScene {
   private readonly weekHaloScales: Float32Array;
   private readonly indexById = new Map<string, number>();
   private readonly neighbors = new Map<string, Set<string>>();
-  private readonly edgePairs: Array<{ a: number; b: number }> = [];
+  private readonly edgePairs: Array<{ a: number; b: number; isEvidence: boolean }> = [];
 
   private rootIndex = -1;
   private selectedIndex = -1;
@@ -219,7 +219,7 @@ export class GraphScene {
       const a = this.indexById.get(edge.source);
       const b = this.indexById.get(edge.target);
       if (a === undefined || b === undefined) continue;
-      this.edgePairs.push({ a, b });
+      this.edgePairs.push({ a, b, isEvidence: edge.kind === 'evidence' });
 
       const sourceSet = this.neighbors.get(edge.source) ?? new Set<string>();
       sourceSet.add(edge.target);
@@ -554,9 +554,9 @@ export class GraphScene {
   private writeEdgeColors(): void {
     const colors = this.edges.geometry.getAttribute('color') as THREE.BufferAttribute;
     const edgeColor = this.tmpColor.setHex(this.palette.edge);
-    this.graph.edges.forEach((edge, edgeIndex) => {
-      const vertex = edgeIndex * 2;
-      const isEvidence = edge.kind === 'evidence';
+    this.edgePairs.forEach((pair, pairIndex) => {
+      const vertex = pairIndex * 2;
+      const isEvidence = pair.isEvidence;
       const r = isEvidence ? edgeColor.r * 0.84 : edgeColor.r;
       const g = isEvidence ? edgeColor.g * 0.96 : edgeColor.g;
       const b = isEvidence ? Math.min(1, edgeColor.b * 1.08) : edgeColor.b;

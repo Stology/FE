@@ -67,6 +67,14 @@ describe('deriveActivation', () => {
 
     expect(result.state).toBe('inactive');
   });
+
+  it('연결된 자료의 주차 정보가 하나도 확인되지 않으면 비활성으로 계산한다', () => {
+    const edges = [{ kind: 'evidence', source: 'mat-1', target: 'jwt' }] as const;
+
+    const result = deriveActivation('jwt', [...edges], new Map());
+
+    expect(result).toEqual({ materialCount: 0, reinforcedWeeks: [], state: 'inactive' });
+  });
 });
 
 describe('computeDegree', () => {

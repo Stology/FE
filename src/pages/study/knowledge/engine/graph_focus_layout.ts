@@ -58,6 +58,7 @@ export class GraphFocusLayout {
       const source = indexById.get(edge.source);
       const target = indexById.get(edge.target);
       if (source === undefined || target === undefined) continue;
+      if (source === target) continue;
       this.setPreferredRelation(adjacencyMaps[source], target, edge.kind);
       this.setPreferredRelation(adjacencyMaps[target], source, edge.kind);
     }
@@ -227,16 +228,16 @@ export class GraphFocusLayout {
                   [dx, dy, dz] = fibonacciDirection(other, Math.max(2, nodeCount));
                   distance = 1;
                 }
-                const indexFixed = this.tiers[index] <= 1;
-                const otherFixed = this.tiers[other] <= 1;
-                if (indexFixed && otherFixed) continue;
+                const isIndexFixed = this.tiers[index] <= 1;
+                const isOtherFixed = this.tiers[other] <= 1;
+                if (isIndexFixed && isOtherFixed) continue;
 
                 const push = minimum - distance;
                 const nx = dx / distance;
                 const ny = dy / distance;
                 const nz = dz / distance;
-                const indexShare = indexFixed ? 0 : otherFixed ? 1 : 0.5;
-                const otherShare = otherFixed ? 0 : indexFixed ? 1 : 0.5;
+                const indexShare = isIndexFixed ? 0 : isOtherFixed ? 1 : 0.5;
+                const otherShare = isOtherFixed ? 0 : isIndexFixed ? 1 : 0.5;
 
                 positions[offset] -= nx * push * indexShare;
                 positions[offset + 1] -= ny * push * indexShare;

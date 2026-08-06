@@ -26,6 +26,10 @@ export const deriveActivation = (
     .map((materialId) => materialWeekById.get(materialId))
     .filter((week): week is number => week !== undefined);
 
+  if (weeks.length === 0) {
+    return { materialCount: 0, reinforcedWeeks: [], state: 'inactive' };
+  }
+
   const activatedWeek = Math.min(...weeks);
   const reinforcedWeeks = Array.from(new Set(weeks.filter((week) => week > activatedWeek))).sort(
     (a, b) => a - b,
@@ -33,7 +37,7 @@ export const deriveActivation = (
 
   return {
     activatedWeek,
-    materialCount: linkedMaterialIds.length,
+    materialCount: weeks.length,
     reinforcedWeeks,
     state: 'active',
   };

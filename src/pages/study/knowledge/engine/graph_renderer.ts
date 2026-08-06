@@ -19,13 +19,18 @@ export class GraphRenderer {
     this.canvas.setAttribute('aria-hidden', 'true');
     container.insertBefore(this.canvas, container.firstChild);
 
-    this.renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      canvas: this.canvas,
-      powerPreference: 'high-performance',
-      premultipliedAlpha: true,
-    });
+    try {
+      this.renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: true,
+        canvas: this.canvas,
+        powerPreference: 'high-performance',
+        premultipliedAlpha: true,
+      });
+    } catch (error) {
+      this.canvas.remove();
+      throw error;
+    }
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1;

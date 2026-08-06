@@ -24,17 +24,18 @@ export interface LayoutResult {
   bounds: number;
 }
 
-export const nodeRadius = (node: KnowledgeGraph['nodes'][number]): number => {
+export function nodeRadius(node: KnowledgeGraph['nodes'][number]): number {
   if (node.type === 'concept' && node.isRoot) return ROOT_NODE_RADIUS;
   if (node.type === 'material') return MATERIAL_NODE_RADIUS;
   return CONCEPT_BASE_RADIUS + node.importance * CONCEPT_IMPORTANCE_STEP;
-};
+}
 
-const importanceNorm = (importance: number): number =>
-  Math.min(1, Math.max(0, (importance - 1) / 4));
+function importanceNorm(importance: number): number {
+  return Math.min(1, Math.max(0, (importance - 1) / 4));
+}
 
 /** 공간 해시 그리드로 최소 간격을 확보한다(O(n²) 전수 비교를 피함). */
-const relax = (positions: Float32Array, radii: Float32Array, count: number): void => {
+function relax(positions: Float32Array, radii: Float32Array, count: number): void {
   const key = (x: number, y: number, z: number) =>
     `${Math.floor(x / RELAX_CELL_SIZE)}|${Math.floor(y / RELAX_CELL_SIZE)}|${Math.floor(z / RELAX_CELL_SIZE)}`;
 
@@ -66,15 +67,20 @@ const relax = (positions: Float32Array, radii: Float32Array, count: number): voi
               const dx = positions[j * 3] - ix;
               const dy = positions[j * 3 + 1] - iy;
               const dz = positions[j * 3 + 2] - iz;
-              const distanceSq = dx * dx + dy * dy + dz * dz;
+              let distanceSq = dx * dx + dy * dy + dz * dz;
               const minDistance = radii[i] + radii[j] + MIN_GAP;
-              if (distanceSq >= minDistance * minDistance || distanceSq === 0) continue;
+              if (distanceSq >= minDistance * minDistance) continue;
 
-              const distance = Math.sqrt(distanceSq) || 0.0001;
+              let [ux, uy, uz] = [dx, dy, dz];
+              if (distanceSq === 0) {
+                [ux, uy, uz] = fibonacciDirection(j, Math.max(2, count));
+                distanceSq = 1;
+              }
+              const distance = Math.sqrt(distanceSq);
               const push = (minDistance - distance) / 2;
-              const nx = dx / distance;
-              const ny = dy / distance;
-              const nz = dz / distance;
+              const nx = ux / distance;
+              const ny = uy / distance;
+              const nz = uz / distance;
 
               positions[i * 3] -= nx * push;
               positions[i * 3 + 1] -= ny * push;
@@ -90,14 +96,14 @@ const relax = (positions: Float32Array, radii: Float32Array, count: number): voi
     }
     if (!moved) break;
   }
-};
+}
 
 /**
  * 1회성 결정론적 3D 배치. 지속적인 force simulation 없이 seed 기반으로 한 번만 계산한다.
  * 클러스터 앵커는 Fibonacci sphere, 클러스터 내부 노드는 앵커 주변 3D volume에 분산하고,
  * 중요도가 높을수록 중심에 가깝게, 자료 노드는 연결된 concept 바깥쪽 레이어에 놓는다.
  */
-export const computeLayout = (graph: KnowledgeGraph, seed: number = LAYOUT_SEED): LayoutResult => {
+export function computeLayout(graph: KnowledgeGraph, seed: number = LAYOUT_SEED): LayoutResult {
   const random = createRandom(seed);
   const count = graph.nodes.length;
   const positions = new Float32Array(count * 3);
@@ -194,4 +200,4 @@ export const computeLayout = (graph: KnowledgeGraph, seed: number = LAYOUT_SEED)
   }
 
   return { bounds, positions, radii };
-};
+}

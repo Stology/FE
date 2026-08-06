@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+import { cn } from '@/shared/lib/cn';
 import type { KnowledgeGraph } from '@/shared/types/stology';
 
 import { createGraphEngine, type GraphEngine } from '../engine/graph_engine';
@@ -36,7 +37,11 @@ export const KnowledgeGraphCanvas = ({
   const labelLayerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<GraphEngine | undefined>(undefined);
   const onNodeSelectRef = useRef(onNodeSelect);
-  onNodeSelectRef.current = onNodeSelect;
+  const [isEngineReady, setIsEngineReady] = useState(false);
+
+  useEffect(() => {
+    onNodeSelectRef.current = onNodeSelect;
+  }, [onNodeSelect]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -56,16 +61,26 @@ export const KnowledgeGraphCanvas = ({
       // WebGL을 지원하지 않는 환경(구형 브라우저, 일부 저사양 기기, 테스트 환경)에서는
       // 3D 캔버스를 포기하고 접근성 폴백 목록만으로 동작하도록 조용히 물러난다.
       console.warn('지식 구조 3D 렌더러를 초기화하지 못했습니다.', error);
+      setIsEngineReady(false);
       return;
     }
 
     engineRef.current = engine;
+    engine.setSelection(selectedNodeId);
+    engine.setFilters({
+      activeOnly: activityFilter === 'active',
+      week: weekFilter === 'all' ? null : weekFilter,
+    });
+    setIsEngineReady(true);
 
     return () => {
       engineRef.current = undefined;
+      setIsEngineReady(false);
       engine.dispose();
     };
     // 그래프 identity 변경 시에만 엔진을 재생성한다(필터/선택 변경은 아래 effect에서 명령형으로 처리).
+    // 초기 상태는 위에서 1회 적용하므로, 아래 effect의 의존성에는 graph를 넣지 않는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph]);
 
   useEffect(() => {
@@ -84,7 +99,10 @@ export const KnowledgeGraphCanvas = ({
   return (
     <div className="space-y-3">
       <div
-        className="relative h-[520px] w-full overflow-hidden rounded-lg border border-stology-border-light bg-stology-off-white"
+        className={cn(
+          'relative w-full overflow-hidden rounded-lg border border-stology-border-light bg-stology-off-white',
+          isEngineReady ? 'h-[520px]' : 'h-0 border-0',
+        )}
         ref={containerRef}
       >
         <div
