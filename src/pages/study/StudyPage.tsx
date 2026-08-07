@@ -16,6 +16,7 @@ import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
+import { useSubmitMaterial, useUploadedMaterials } from './upload/hooks';
 import { MaterialUploadPage } from './upload/MaterialUploadPage';
 
 interface StudyRouteParams extends Record<string, string | undefined> {
@@ -109,12 +110,20 @@ interface MaterialUploadTabProps {
 
 const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
   const navigate = useNavigate();
+  const materialsQuery = useUploadedMaterials(study.id, study.currentWeek);
+  const submitMaterial = useSubmitMaterial(study.id);
 
   return (
     <MaterialUploadPage
       currentWeek={study.currentWeek}
+      errorMessage={materialsQuery.error ? '대기 중인 자료를 불러오지 못했습니다.' : null}
+      isLoading={materialsQuery.isLoading}
       isReadOnly={study.status === 'ended'}
+      isSubmitting={submitMaterial.isPending}
+      materials={materialsQuery.data}
       onMaterialReview={() => navigate(`/studies/${study.id}/review`)}
+      onRetry={() => materialsQuery.refetch()}
+      onSubmit={(draft) => submitMaterial.mutate(draft)}
     />
   );
 };

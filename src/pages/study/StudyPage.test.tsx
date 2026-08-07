@@ -89,6 +89,11 @@ describe('StudyPage knowledge route', () => {
           },
         });
       }
+      if (url.includes('/upload')) {
+        return Promise.resolve({
+          data: { code: 'OK', message: '', result: { files: [] }, success: true },
+        });
+      }
       return Promise.resolve({
         data: {
           code: 'OK',

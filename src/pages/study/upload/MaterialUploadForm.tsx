@@ -64,6 +64,7 @@ export const MaterialUploadForm = ({
     onSubmit?.({
       content: mode === 'text' ? values.content : undefined,
       description: values.description.trim() || undefined,
+      file: mode === 'file' ? files[0] : undefined,
       fileName: mode === 'file' ? files[0]?.name : undefined,
       mode,
       title: values.title.trim(),

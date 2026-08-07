@@ -84,6 +84,7 @@ export interface NodeCandidate {
 export interface MaterialDraft {
   content?: string;
   description?: string;
+  file?: File;
   fileName?: string;
   mode: UploadMode;
   title: string;
