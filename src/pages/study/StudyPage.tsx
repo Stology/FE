@@ -11,6 +11,7 @@ import {
 import type { Study } from '@/shared/types/stology';
 import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 
+import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
@@ -81,6 +82,7 @@ interface KnowledgeGraphTabProps {
 
 const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => {
   const navigate = useNavigate();
+  const graphQuery = useKnowledgeGraph(study.id);
 
   return (
     <KnowledgeGraphPage
@@ -88,10 +90,15 @@ const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => {
         { length: Math.max(0, study.currentWeek) },
         (_, index) => index + 1,
       )}
+      errorMessage={graphQuery.error ? '지식 구조를 불러오지 못했습니다.' : null}
+      graph={graphQuery.data}
+      isLoading={graphQuery.isLoading}
       isReadOnly={study.status === 'ended'}
       onMaterialOpen={(material) =>
         navigate(`/studies/${study.id}/upload?materialId=${encodeURIComponent(material.id)}`)
       }
+      onRetry={() => graphQuery.refetch()}
+      studyId={study.id}
     />
   );
 };
@@ -107,7 +114,7 @@ const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
     <MaterialUploadPage
       currentWeek={study.currentWeek}
       isReadOnly={study.status === 'ended'}
-      onMaterialReview={(material) => navigate(`/studies/${study.id}/review/${material.id}`)}
+      onMaterialReview={() => navigate(`/studies/${study.id}/review`)}
     />
   );
 };

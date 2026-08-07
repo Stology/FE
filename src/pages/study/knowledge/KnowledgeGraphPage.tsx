@@ -8,6 +8,7 @@ import { Button, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 import { KnowledgeGraphCanvas } from './components/KnowledgeGraphCanvas';
 import { KnowledgeGraphToolbar } from './components/KnowledgeGraphToolbar';
 import { KnowledgeNodeInspector } from './components/KnowledgeNodeInspector';
+import { useKnowledgeNodeMaterials } from './hooks';
 import {
   filterConceptNodes,
   type KnowledgeActivityFilter,
@@ -23,6 +24,8 @@ interface KnowledgeGraphPageProps {
   isReadOnly?: boolean;
   onMaterialOpen?: (material: WeeklyRecordMaterial) => void;
   onRetry?: () => void;
+  /** 주어지면 선택 노드의 관련 자료를 노드 상세 API로 불러온다(그래프 목록엔 자료가 없음, 3-2 결정). */
+  studyId?: string;
 }
 
 export const KnowledgeGraphPage = ({
@@ -33,10 +36,12 @@ export const KnowledgeGraphPage = ({
   isReadOnly = false,
   onMaterialOpen,
   onRetry,
+  studyId,
 }: KnowledgeGraphPageProps) => {
   const [activityFilter, setActivityFilter] = useState<KnowledgeActivityFilter>('all');
   const [weekFilter, setWeekFilter] = useState<KnowledgeWeekFilter>('all');
   const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>();
+  const { data: selectedNodeMaterials } = useKnowledgeNodeMaterials(studyId, selectedNodeId);
 
   const nodesById = useMemo(
     () => new Map<string, KnowledgeNode>(graph.nodes.map((node) => [node.id, node])),
@@ -153,6 +158,7 @@ export const KnowledgeGraphPage = ({
           <div>{renderGraphContent()}</div>
           <KnowledgeNodeInspector
             graph={graph}
+            materials={studyId ? selectedNodeMaterials : undefined}
             node={selectedNode}
             onMaterialOpen={onMaterialOpen}
             onNodeSelect={handleNodeSelect}

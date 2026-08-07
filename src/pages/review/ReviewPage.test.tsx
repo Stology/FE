@@ -2,59 +2,88 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { MaterialReview } from '@/shared/types/stology';
+import { httpClient } from '@/shared/api/http_client';
+import type { NodeCandidate } from '@/shared/types/stology';
 
 import { ReviewPage } from './ReviewPage';
 
-afterEach(cleanup);
+vi.mock('@/shared/api/http_client', () => ({
+  httpClient: { get: vi.fn(), patch: vi.fn() },
+}));
+
+afterEach(() => {
+  cleanup();
+  vi.mocked(httpClient.get).mockReset();
+  vi.mocked(httpClient.patch).mockReset();
+});
+
+const createQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
 
 const renderPage = (props: Parameters<typeof ReviewPage>[0] = {}) =>
   render(
-    <MemoryRouter>
-      <ReviewPage {...props} />
-    </MemoryRouter>,
+    <QueryClientProvider client={createQueryClient()}>
+      <MemoryRouter>
+        <ReviewPage {...props} />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 const renderReviewRoute = (path: string) =>
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route element={<p>홈 화면</p>} path="/" />
-        <Route element={<ReviewPage />} path="/studies/:studyId/review/:materialId" />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={createQueryClient()}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route element={<p>홈 화면</p>} path="/" />
+          <Route element={<ReviewPage />} path="/studies/:studyId/review" />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
-const emptyReview: MaterialReview = {
-  candidates: [],
-  material: {
-    id: 'empty-note',
-    isOwn: false,
-    status: 'needs_review',
-    title: '빈 자료',
-    uploadedAt: '2026-03-16',
-    uploaderName: '이영희',
-    week: 3,
+const mockCandidates: NodeCandidate[] = [
+  {
+    approverNames: ['김철수', '이영희'],
+    id: 'jwt',
+    matchReason: 'AI 매칭 근거: 자료 원문에서 해당 개념과 관계를 추출함',
+    name: 'JWT',
+    rejecterNames: [],
+    reviewerCount: 4,
   },
-  reviewerCount: 4,
-};
+  {
+    approverNames: ['김철수', '이영희'],
+    id: 'refresh-token',
+    matchReason: 'AI 매칭 근거: 자료 원문에서 해당 개념과 관계를 추출함',
+    myAction: 'approved',
+    name: 'Refresh Token',
+    rejecterNames: [],
+    reviewerCount: 4,
+  },
+  {
+    approverNames: ['김철수', '이영희'],
+    id: 'session',
+    matchReason: 'AI 매칭 근거: 자료 원문에서 해당 개념과 관계를 추출함',
+    myAction: 'rejected',
+    name: 'Session',
+    rejecterNames: ['박민수'],
+    reviewerCount: 4,
+  },
+];
 
 describe('ReviewPage', () => {
-  it('자료 배너와 검토 진행률을 표시한다', () => {
-    renderPage();
+  it('검토 진행률을 표시한다', () => {
+    renderPage({ candidates: mockCandidates });
 
-    expect(
-      screen.getByText(/JWT 정리 노트 \/ 업로더 김철수 \/ 업로드일 2026-03-15 \/ 3주차/),
-    ).toBeInTheDocument();
     expect(screen.getByText('2/3 검토 완료')).toBeInTheDocument();
   });
 
   it('후보별 AI 매칭 근거와 승인자, 반려자를 표시한다', () => {
-    renderPage();
+    renderPage({ candidates: mockCandidates });
 
     expect(screen.getByText('노드 후보 1: JWT')).toBeInTheDocument();
     expect(screen.getAllByText('현재 상태: 2/4명 승인')).toHaveLength(2);
@@ -64,7 +93,7 @@ describe('ReviewPage', () => {
   });
 
   it('후보를 승인하면 진행률이 올라간다', () => {
-    renderPage();
+    renderPage({ candidates: mockCandidates });
 
     expect(screen.getByText('2/3 검토 완료')).toBeInTheDocument();
 
@@ -75,7 +104,7 @@ describe('ReviewPage', () => {
   });
 
   it('모든 후보를 검토하기 전에는 검토 마치기를 비활성화한다', () => {
-    renderPage();
+    renderPage({ candidates: mockCandidates });
 
     expect(screen.getByRole('button', { name: '검토 마치기' })).toBeDisabled();
     expect(screen.getByText('모든 후보를 검토하면 제출할 수 있습니다')).toBeInTheDocument();
@@ -84,7 +113,7 @@ describe('ReviewPage', () => {
   it('전체 승인 후 검토를 제출한다', () => {
     const handleSubmit = vi.fn();
 
-    renderPage({ onSubmit: handleSubmit });
+    renderPage({ candidates: mockCandidates, onSubmit: handleSubmit });
     fireEvent.click(screen.getByRole('button', { name: '전체 승인' }));
 
     const submitButton = screen.getByRole('button', { name: '검토 마치기' });
@@ -98,7 +127,7 @@ describe('ReviewPage', () => {
   });
 
   it('선택된 후보 수를 표시하고 선택이 없으면 일괄 액션을 비활성화한다', () => {
-    renderPage();
+    renderPage({ candidates: mockCandidates });
 
     expect(screen.getByText('선택된 후보 0개')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '선택 승인' })).toBeDisabled();
@@ -112,7 +141,7 @@ describe('ReviewPage', () => {
   });
 
   it('선택한 후보만 일괄 반려한다', () => {
-    renderPage();
+    renderPage({ candidates: mockCandidates });
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'JWT 후보 선택' }));
     fireEvent.click(screen.getByRole('button', { name: '선택 반려' }));
@@ -126,7 +155,7 @@ describe('ReviewPage', () => {
   });
 
   it('선택한 후보만 일괄 승인한다', () => {
-    renderPage();
+    renderPage({ candidates: mockCandidates });
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'JWT 후보 선택' }));
     fireEvent.click(screen.getByRole('button', { name: '선택 승인' }));
@@ -140,7 +169,7 @@ describe('ReviewPage', () => {
   });
 
   it('종료된 스터디는 모든 검토 액션을 비활성화한다', () => {
-    renderPage({ isReadOnly: true });
+    renderPage({ candidates: mockCandidates, isReadOnly: true });
 
     expect(screen.getByRole('button', { name: '전체 승인' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '선택 승인' })).toBeDisabled();
@@ -152,28 +181,70 @@ describe('ReviewPage', () => {
     expect(within(cards[0]).getByRole('button', { name: '반려' })).toBeDisabled();
   });
 
-  it('종료된 스터디의 직접 검토 URL도 읽기 전용으로 표시한다', () => {
-    renderReviewRoute('/studies/ended-study/review/jwt-note');
+  it('종료된 스터디의 직접 검토 URL에서 실 API로 후보를 불러와 읽기 전용으로 표시한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string) => {
+      if (url.includes('/node/get-examination-info')) {
+        return Promise.resolve({
+          data: {
+            code: 'OK',
+            message: '',
+            result: {
+              nodeCandidates: [
+                {
+                  memberVoteInfos: [],
+                  nodeCandidateId: 1,
+                  numberOfAcceptedStudyMembers: 0,
+                  numberOfStudyMembers: 4,
+                  studyNodeId: 10,
+                },
+              ],
+            },
+            success: true,
+          },
+        });
+      }
+      return Promise.resolve({
+        data: {
+          code: 'OK',
+          message: '',
+          result: {
+            activeLevel: 1,
+            definition: '',
+            isActive: true,
+            materialCount: 0,
+            nodeId: 10,
+            recentMaterials: [],
+            relations: {},
+            title: 'JWT',
+          },
+          success: true,
+        },
+      });
+    });
+
+    renderReviewRoute('/studies/ended-study/review');
+
+    await waitFor(() => expect(screen.getByText('노드 후보 1: JWT')).toBeInTheDocument());
 
     expect(screen.getByRole('button', { name: '전체 승인' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '검토 마치기' })).toBeDisabled();
   });
 
   it('존재하지 않는 스터디의 직접 검토 URL은 홈으로 이동한다', () => {
-    renderReviewRoute('/studies/missing-study/review/jwt-note');
+    renderReviewRoute('/studies/missing-study/review');
 
     expect(screen.getByText('홈 화면')).toBeInTheDocument();
   });
 
   it('후보가 없으면 빈 상태를 표시한다', () => {
-    renderPage({ review: emptyReview });
+    renderPage({ candidates: [] });
 
     expect(screen.getByText('검토할 후보가 없습니다')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '검토 마치기' })).not.toBeInTheDocument();
   });
 
   it('오류가 있으면 오류를 표시한다', () => {
-    renderPage({ errorMessage: '네트워크 오류' });
+    renderPage({ candidates: [], errorMessage: '네트워크 오류' });
 
     expect(screen.getByText('AI 후보를 불러오지 못했습니다')).toBeInTheDocument();
   });

@@ -19,6 +19,8 @@ import { KnowledgeRelationToggle } from './KnowledgeRelationToggle';
 
 interface KnowledgeNodeInspectorProps {
   graph: KnowledgeGraph;
+  /** 주어지면 graph 기반 계산 대신 이 목록을 그대로 쓴다(실 API: 노드 상세 조회 결과). */
+  materials?: WeeklyRecordMaterial[];
   node?: KnowledgeConceptNode;
   onMaterialOpen?: (material: WeeklyRecordMaterial) => void;
   onNodeSelect?: (nodeId: string) => void;
@@ -29,6 +31,7 @@ const VISIBLE_CONNECTION_COUNT = 3;
 
 export const KnowledgeNodeInspector = ({
   graph,
+  materials: materialsProp,
   node,
   onMaterialOpen,
   onNodeSelect,
@@ -58,7 +61,7 @@ export const KnowledgeNodeInspector = ({
   }
 
   const status = deriveWeekStatus(node, weekFilter);
-  const materials = getNodeMaterials(node.id, graph);
+  const materials = materialsProp ?? getNodeMaterials(node.id, graph);
   const relationOptions = buildRelationOptions(node.id, graph.edges, nodesById);
   const relatedNodes = relationOptions.find((option) => option.kind === relationKind)?.nodes ?? [];
   const visibleNodes = isExpanded ? relatedNodes : relatedNodes.slice(0, VISIBLE_CONNECTION_COUNT);

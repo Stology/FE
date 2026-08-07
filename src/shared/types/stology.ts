@@ -78,11 +78,6 @@ export interface NodeCandidate {
   myAction?: ReviewAction;
   name: string;
   rejecterNames: string[];
-}
-
-export interface MaterialReview {
-  candidates: NodeCandidate[];
-  material: Material;
   reviewerCount: number;
 }
 
