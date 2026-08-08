@@ -1,7 +1,7 @@
 import { useActivityClick } from '../hooks/useActivityClick';
 
 import { cn } from '@/shared/lib/cn';
-import { Toast } from '@/shared/ui/Toast';
+import { Select, Toast } from '@/shared/ui';
 import type { TeamActivityItem, TeamActivityType } from '../mocks';
 
 export type { TeamActivityItem, TeamActivityType };
@@ -67,18 +67,19 @@ interface StudyFilterProps {
 }
 
 const StudyFilter = ({ onChange, selected, studies }: StudyFilterProps) => (
-  <select
+  <Select
+    aria-label="스터디 필터"
+    className="h-auto w-auto rounded-[4px] border-stology-text-light px-2 py-1 text-[11px] focus:ring-0"
     value={selected}
     onChange={(e) => onChange(e.target.value)}
-    className="rounded-[4px] border border-stology-text-light bg-white px-2 py-1 text-[11px] font-medium text-stology-text-dark focus:outline-none"
   >
-    <option value="all">전체 스터디 ▾</option>
+    <option value="all">전체 스터디</option>
     {studies.map((s) => (
       <option key={s.id} value={s.id}>
         {s.name}
       </option>
     ))}
-  </select>
+  </Select>
 );
 
 // ─── Panel ───────────────────────────────────────────────────────────────────
