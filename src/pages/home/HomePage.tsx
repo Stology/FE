@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { AppLayout, ErrorMessage, Loading } from '@/shared/ui';
+import { AppLayout, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
 import {
   CreateStudyCard,
@@ -51,9 +51,10 @@ export const HomePage = () => {
           ) : (
             <>
               {isStudiesEmpty && (
-                <div className="flex items-center justify-center rounded-[8px] border border-dashed border-stology-border-light bg-stology-off-white px-6 py-4 text-body text-stology-text-light">
-                  참여 중인 스터디가 없습니다.
-                </div>
+                <EmptyState
+                  className="min-h-0 w-full max-w-md px-6 py-4"
+                  title="참여 중인 스터디가 없습니다."
+                />
               )}
               {studies.map((study) => (
                 <StudyCard key={study.id} study={study} />
