@@ -9,7 +9,7 @@ export const useUploadedMaterials = (studyId: string | undefined, currentWeek: n
     enabled: Boolean(studyId),
     queryFn: () =>
       getStudyUploadFiles(studyId as string).then((files) =>
-        files.map((file, index) => mapRecentFileToMaterial(file, index, currentWeek)),
+        files.map((file) => mapRecentFileToMaterial(file, currentWeek)),
       ),
     queryKey: ['study-upload-files', studyId],
   });

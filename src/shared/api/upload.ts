@@ -7,6 +7,7 @@ export interface RecentFileRes {
   createdAt: string;
   dataState: DataState;
   dataTitle: string;
+  materialId: number;
   studyId: number;
   uploaderMemberId: number;
   uploaderName: string;
