@@ -16,7 +16,13 @@ import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
-import { useSubmitMaterial, useUploadedMaterials } from './upload/hooks';
+import {
+  useAnalyzeMaterial,
+  useSubmitMaterial,
+  useUpdateMaterial,
+  useUploadedMaterials,
+  useUploadSSE,
+} from './upload/hooks';
 import { MaterialUploadPage } from './upload/MaterialUploadPage';
 
 interface StudyRouteParams extends Record<string, string | undefined> {
@@ -112,15 +118,27 @@ const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
   const navigate = useNavigate();
   const materialsQuery = useUploadedMaterials(study.id, study.currentWeek);
   const submitMaterial = useSubmitMaterial(study.id);
+  const updateMaterial = useUpdateMaterial(study.id);
+  const analyzeMaterial = useAnalyzeMaterial(study.id);
+  useUploadSSE(study.status === 'ended' ? undefined : study.id);
 
   return (
     <MaterialUploadPage
       currentWeek={study.currentWeek}
       errorMessage={materialsQuery.error ? '대기 중인 자료를 불러오지 못했습니다.' : null}
+      isEditSubmitting={updateMaterial.isPending}
       isLoading={materialsQuery.isLoading}
       isReadOnly={study.status === 'ended'}
       isSubmitting={submitMaterial.isPending}
       materials={materialsQuery.data}
+      onMaterialEdit={(material, payload) =>
+        updateMaterial.mutate({
+          content: payload.content,
+          dataTitle: payload.title,
+          materialId: Number(material.id),
+        })
+      }
+      onMaterialReanalyze={(material) => analyzeMaterial.mutate(Number(material.id))}
       onMaterialReview={() => navigate(`/studies/${study.id}/review`)}
       onRetry={() => materialsQuery.refetch()}
       onSubmit={(draft) => submitMaterial.mutate(draft)}

@@ -34,3 +34,25 @@ export const uploadMaterial = async (studyId: string, req: UploadMaterialReq): P
 
   await httpClient.post<ApiResponse<unknown>>(`/api/study/${studyId}/upload`, formData);
 };
+
+export interface UpdateMaterialReq {
+  content?: string;
+  dataTitle: string;
+}
+
+export const updateMaterial = async (
+  studyId: string,
+  materialId: number,
+  req: UpdateMaterialReq,
+): Promise<void> => {
+  await httpClient.patch<ApiResponse<unknown>>(
+    `/api/study/${studyId}/studyMaterial/${materialId}/upload`,
+    req,
+  );
+};
+
+export const analyzeMaterial = async (studyId: string, materialId: number): Promise<void> => {
+  await httpClient.post<ApiResponse<unknown>>(
+    `/api/study/${studyId}/studyMaterial/${materialId}/analyze`,
+  );
+};
