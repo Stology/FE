@@ -177,6 +177,15 @@ describe('StudyPage reports route', () => {
 });
 
 describe('StudyPage weekly records route', () => {
+  it('does not request weekly records for a non-numeric study ID', async () => {
+    renderStudyRoute('/studies/spring-study/records');
+
+    expect(await screen.findByText('유효하지 않은 스터디 ID입니다.')).toBeInTheDocument();
+    expect(
+      vi.mocked(httpClient.get).mock.calls.some(([url]) => String(url).includes('/active-nodes')),
+    ).toBe(false);
+  });
+
   it('loads weekly nodes and fetches materials when a node is expanded', async () => {
     vi.mocked(httpClient.get).mockImplementation((url: string) => {
       if (url.endsWith('/active-nodes')) {
