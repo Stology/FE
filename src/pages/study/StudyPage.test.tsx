@@ -370,16 +370,24 @@ describe('StudyPage weekly records route', () => {
 
 describe('StudyPage questions route', () => {
   it('질문 목록을 서버 페이지 기준으로 조회하고 페이지를 전환한다', async () => {
-    vi.mocked(httpClient.get).mockImplementation((_url: string, config) =>
-      Promise.resolve(createQuestionsResponse(config?.params?.page ?? 0)),
+    vi.mocked(httpClient.get).mockImplementation((url: string, config) =>
+      Promise.resolve(
+        url.endsWith('/question/10')
+          ? questionDetailResponse
+          : createQuestionsResponse(config?.params?.page ?? 0),
+      ),
     );
 
     renderStudyRoute('/studies/1/questions');
 
     expect(await screen.findByText('1페이지 질문')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '질문 작성' })).not.toBeInTheDocument();
     expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question', {
       params: { page: 0, size: 10 },
     });
+
+    fireEvent.click(screen.getByRole('button', { name: /1페이지 질문/ }));
+    expect(await screen.findByText('Refresh Token은 어디에 저장하나요?')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '2페이지' }));
 
@@ -387,6 +395,13 @@ describe('StudyPage questions route', () => {
     expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question', {
       params: { page: 1, size: 10 },
     });
+
+    fireEvent.click(screen.getByRole('button', { name: '1페이지' }));
+
+    expect(await screen.findByRole('button', { name: /1페이지 질문/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('질문을 펼치면 상세와 답글 및 첨부 이미지를 조회한다', async () => {

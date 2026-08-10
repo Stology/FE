@@ -290,6 +290,7 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
 
   return (
     <QuestionsPage
+      canMutate={false}
       errorMessage={
         questionsStudyId
           ? questionsQuery.error
@@ -299,6 +300,7 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
       }
       isLoading={questionsQuery.isLoading || questionsQuery.isFetching}
       isReadOnly={study.status === 'ended' || questionsQuery.data?.studyEnded === true}
+      key={page}
       onPageChange={handlePageChange}
       onQuestionSelect={handleQuestionSelect}
       onRetry={questionsStudyId ? () => questionsQuery.refetch() : undefined}

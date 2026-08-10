@@ -11,6 +11,7 @@ import { QuestionListItem } from './QuestionListItem';
 import { QuestionPagination } from './QuestionPagination';
 
 interface QuestionsPageProps {
+  canMutate?: boolean;
   errorMessage?: string | null;
   isLoading?: boolean;
   isReadOnly?: boolean;
@@ -35,6 +36,7 @@ interface QuestionsPageProps {
 const DEFAULT_PAGE_SIZE = 3;
 
 export const QuestionsPage = ({
+  canMutate = true,
   errorMessage,
   isLoading = false,
   isReadOnly = false,
@@ -52,6 +54,7 @@ export const QuestionsPage = ({
   questions: controlledQuestions,
   totalPages: controlledTotalPages,
 }: QuestionsPageProps) => {
+  const isMutationDisabled = isReadOnly || !canMutate;
   const validPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
   const [internalQuestions, setInternalQuestions] = useState(mockQuestions);
   const [internalQuestionDetails, setInternalQuestionDetails] = useState(mockQuestionDetails);
@@ -264,7 +267,7 @@ export const QuestionsPage = ({
       <>
         <div className="mb-2.5 flex items-center justify-between gap-4">
           <p className="text-[11px] leading-[16.5px] text-stology-text-light">최신순 고정 정렬</p>
-          {!isReadOnly ? (
+          {!isMutationDisabled ? (
             <Button
               className="bg-stology-deep-navy hover:bg-stology-royal-blue"
               leftIcon={<PenLine aria-hidden size={14} />}
@@ -295,7 +298,7 @@ export const QuestionsPage = ({
                   {questionDetails[question.id] ? (
                     <QuestionDetailPanel
                       detail={questionDetails[question.id]}
-                      isReadOnly={isReadOnly}
+                      isReadOnly={isMutationDisabled}
                       onQuestionDelete={() =>
                         setDeleteTarget({ questionId: question.id, type: 'question' })
                       }
