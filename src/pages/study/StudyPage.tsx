@@ -15,6 +15,7 @@ import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
+import { useWeeklyRecords } from './records/hooks/useWeeklyRecords';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
 import {
   useAnalyzeMaterial,
@@ -174,12 +175,19 @@ const WeeklyRecordsTab = ({ study }: WeeklyRecordsTabProps) => {
     );
   }, [availableWeeks]);
 
+  const recordsQuery = useWeeklyRecords(study.id, selectedWeek);
+
   return (
     <WeeklyRecordsPage
       availableWeeks={availableWeeks}
+      concepts={recordsQuery.data}
+      errorMessage={recordsQuery.error ? '주차별 기록을 불러오지 못했습니다.' : null}
+      isLoading={recordsQuery.isLoading}
       isReadOnly={study.status === 'ended'}
+      onRetry={() => recordsQuery.refetch()}
       onWeekChange={setSelectedWeek}
       selectedWeek={selectedWeek}
+      studyId={study.id}
     />
   );
 };

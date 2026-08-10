@@ -176,6 +176,65 @@ describe('StudyPage reports route', () => {
   });
 });
 
+describe('StudyPage weekly records route', () => {
+  it('loads weekly nodes and fetches materials when a node is expanded', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string) => {
+      if (url.endsWith('/active-nodes')) {
+        return Promise.resolve({
+          data: {
+            code: 'NODE200_1',
+            errorDetail: null,
+            isSuccess: true,
+            message: '주차별 활성 노드를 조회했습니다.',
+            result: {
+              nodes: [{ activationWeek: 1, activeLevel: 1, studyNodeId: 10, title: 'JWT' }],
+            },
+          },
+        });
+      }
+
+      if (url.endsWith('/node/10/info')) {
+        return Promise.resolve({
+          data: {
+            code: 'NODE200_2',
+            errorDetail: null,
+            isSuccess: true,
+            message: '노드 자료를 조회했습니다.',
+            result: {
+              materials: [
+                {
+                  createdAt: '2026-03-15T10:30:00',
+                  dataTitle: 'JWT 정리 노트',
+                  presignedUrl: 'https://example.com/jwt.md',
+                  studyMaterialId: 20,
+                  updatedAt: '2026-03-15T10:30:00',
+                  uploaderName: '김철수',
+                },
+              ],
+              studyNodeId: 10,
+            },
+          },
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    renderStudyRoute('/studies/1/records');
+
+    const nodeButton = await screen.findByRole('button', { name: /JWT/ });
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/active-nodes', {
+      params: { week: 1 },
+    });
+
+    fireEvent.click(nodeButton);
+
+    expect(await screen.findByText('JWT 정리 노트')).toBeInTheDocument();
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/node/10/info');
+  });
+});
+
 describe('StudyPage questions route', () => {
   it('질문함 경로에서 질문 목록과 작성 기능을 표시한다', () => {
     renderStudyRoute('/studies/spring-study/questions');
