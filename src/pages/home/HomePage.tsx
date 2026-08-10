@@ -31,6 +31,8 @@ export const HomePage = () => {
   const {
     items: activityItems,
     removeItem: removeActivityItem,
+    isLoading: isActivityLoading,
+    error: activityError,
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
@@ -96,6 +98,8 @@ export const HomePage = () => {
           hasNextPage={hasNextPage}
           fetchNextPage={fetchNextPage}
           isFetchingNextPage={isFetchingNextPage}
+          isLoading={isActivityLoading}
+          error={activityError}
         />
       </section>
 

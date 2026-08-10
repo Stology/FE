@@ -54,7 +54,7 @@ export const OntologySearchModal = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | undefined>(initialSelectedId);
 
-  const { data: templates = [], isLoading } = useTemplates();
+  const { data: templates = [], isLoading, isError } = useTemplates();
 
   const filteredTemplates = templates.filter(
     (t) =>
@@ -108,6 +108,10 @@ export const OntologySearchModal = ({
           <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
             {isLoading ? (
               <Loading label="템플릿 목록을 불러오는 중..." className="py-8" />
+            ) : isError ? (
+              <div className="py-8 text-center text-xs text-red-500 border border-dashed rounded-xl">
+                템플릿을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
+              </div>
             ) : filteredTemplates.length > 0 ? (
               filteredTemplates.map((template) => {
                 const isSelected = selectedId === template.id;

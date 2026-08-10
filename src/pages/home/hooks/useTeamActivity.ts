@@ -15,7 +15,8 @@ interface UseTeamActivityResult {
 
 export const useTeamActivity = (studyId?: string): UseTeamActivityResult => {
   const queryClient = useQueryClient();
-  const numericStudyId = studyId && studyId !== 'all' ? Number(studyId) : null;
+  const parsedStudyId = studyId && studyId !== 'all' ? Number(studyId) : NaN;
+  const numericStudyId = Number.isInteger(parsedStudyId) ? parsedStudyId : null;
 
   const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useInfiniteQuery({
