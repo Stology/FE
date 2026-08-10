@@ -1,3 +1,4 @@
+import { useRef, useCallback } from 'react';
 import { useActivityClick } from '../hooks/useActivityClick';
 
 import { cn } from '@/shared/lib/cn';
@@ -90,6 +91,9 @@ interface TeamActivityPanelProps {
   selectedStudy: string;
   onStudyChange: (id: string) => void;
   onRemove?: (id: string) => void;
+  hasNextPage?: boolean;
+  fetchNextPage?: () => void;
+  isFetchingNextPage?: boolean;
 }
 
 export const TeamActivityPanel = ({
@@ -98,8 +102,25 @@ export const TeamActivityPanel = ({
   selectedStudy,
   studies,
   onRemove,
+  hasNextPage,
+  fetchNextPage,
+  isFetchingNextPage,
 }: TeamActivityPanelProps) => {
   const { handleItemClick, setToastMessage, toastMessage } = useActivityClick(onRemove);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (isFetchingNextPage) return;
+      if (observerRef.current) observerRef.current.disconnect();
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasNextPage && fetchNextPage) {
+          fetchNextPage();
+        }
+      });
+      if (node) observerRef.current.observe(node);
+    },
+    [isFetchingNextPage, hasNextPage, fetchNextPage],
+  );
 
   const filtered =
     selectedStudy === 'all' ? items : items.filter((item) => item.id.startsWith(selectedStudy));
@@ -143,10 +164,15 @@ export const TeamActivityPanel = ({
 
       {/* 항목 목록 */}
       {filtered.length > 0 ? (
-        <ul className="mt-1 flex flex-col gap-1">
+        <ul className="mt-1 flex flex-col gap-1 overflow-y-auto">
           {filtered.map((item) => (
             <TeamActivityRow key={item.id} item={item} onClick={handleItemClick} />
           ))}
+          {/* 무한 스크롤 옵저버 타겟 */}
+          <div ref={loadMoreRef} className="h-4" />
+          {isFetchingNextPage && (
+            <p className="text-center text-[10px] text-stology-text-light py-2">불러오는 중...</p>
+          )}
         </ul>
       ) : (
         <p className="mt-4 rounded-[2px] border border-dashed border-stology-border-light px-3 py-1 text-[10px] text-stology-text-light">

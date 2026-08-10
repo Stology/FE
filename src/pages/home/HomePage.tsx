@@ -28,7 +28,13 @@ export const HomePage = () => {
 
   const { error: studiesError, isLoading: isStudiesLoading, studies } = useMyStudies();
   const { items: todoItems, removeItem: removeTodoItem } = useMyTodo();
-  const { items: activityItems, removeItem: removeActivityItem } = useTeamActivity(selectedStudy);
+  const {
+    items: activityItems,
+    removeItem: removeActivityItem,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useTeamActivity(selectedStudy);
 
   const isStudiesEmpty = !isStudiesLoading && !studiesError && studies.length === 0;
 
@@ -87,6 +93,9 @@ export const HomePage = () => {
           selectedStudy={selectedStudy}
           onStudyChange={setSelectedStudy}
           onRemove={removeActivityItem}
+          hasNextPage={hasNextPage}
+          fetchNextPage={fetchNextPage}
+          isFetchingNextPage={isFetchingNextPage}
         />
       </section>
 

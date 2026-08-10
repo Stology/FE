@@ -1,53 +1,86 @@
-import { useEffect, useState } from 'react';
-
-import { httpClient } from '@/shared/api/http_client';
-import { mockTeamActivity, type TeamActivityItem } from '../mocks';
+import { useMemo } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { homeApi } from '@/shared/api/home';
+import { type TeamActivityItem } from '../mocks';
 
 interface UseTeamActivityResult {
   items: TeamActivityItem[];
   isLoading: boolean;
   error: Error | null;
+  hasNextPage: boolean;
+  fetchNextPage: () => void;
+  isFetchingNextPage: boolean;
   removeItem: (id: string) => void;
 }
 
 export const useTeamActivity = (studyId?: string): UseTeamActivityResult => {
-  const [items, setItems] = useState<TeamActivityItem[]>(mockTeamActivity);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
+  const numericStudyId = studyId && studyId !== 'all' ? Number(studyId) : null;
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ['teamActivity', numericStudyId],
+      queryFn: ({ pageParam }) => homeApi.getTeamTodos(numericStudyId!, pageParam),
+      getNextPageParam: (lastPage) =>
+        lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+      enabled: numericStudyId !== null,
+      initialPageParam: undefined as string | undefined,
+    });
 
-    const loadActivity = async () => {
-      try {
-        setIsLoading(true);
-        const res = await httpClient.get<TeamActivityItem[]>('/api/home/activity', {
-          params: studyId && studyId !== 'all' ? { studyId } : undefined,
-          signal: controller.signal,
-        });
+  const items = useMemo(() => {
+    if (!data) return [];
 
-        setItems(Array.isArray(res.data) ? res.data : mockTeamActivity);
-        setError(null);
-      } catch (err: unknown) {
-        if ((err as { name?: string }).name !== 'CanceledError') {
-          setItems(mockTeamActivity);
-          setError(err instanceof Error ? err : new Error('팀 활동을 불러오지 못했습니다.'));
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadActivity();
-
-    return () => {
-      controller.abort();
-    };
-  }, [studyId]);
+    return data.pages.flatMap((page) =>
+      page.activities.map(
+        (act) =>
+          ({
+            id: `${act.studyId}-${act.targetId}-${act.activityType}-${act.occurredAt}`,
+            type: act.activityType === 'NODE' ? '구조' : '답글',
+            summary: act.event,
+            detail: act.activityType === 'NODE' ? '지식 구조 변경' : '답글이 등록되었습니다',
+            target: act.targetId.toString(), // Mocked as string, might need real target text from event
+            timeAgo: new Date(act.occurredAt).toLocaleDateString(), // ToDo: convert to time ago format
+            to: `/studies/${act.studyId}/${act.activityType === 'NODE' ? 'knowledge' : 'questions'}`,
+          }) as TeamActivityItem,
+      ),
+    );
+  }, [data]);
 
   const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    // In a real scenario, this might call a backend API to hide the activity.
+    // For now, we will just invalidate the query or optimistically update the cache.
+    // Since the API doesn't provide a delete endpoint for activity, we just do nothing or update cache.
+    queryClient.setQueryData(['teamActivity', numericStudyId], (oldData: unknown) => {
+      if (!oldData) return oldData;
+      const data = oldData as {
+        pages: {
+          activities: {
+            studyId: number;
+            targetId: number;
+            activityType: string;
+            occurredAt: string;
+          }[];
+        }[];
+      };
+      return {
+        ...data,
+        pages: data.pages.map((page) => ({
+          ...page,
+          activities: page.activities.filter(
+            (act) => `${act.studyId}-${act.targetId}-${act.activityType}-${act.occurredAt}` !== id,
+          ),
+        })),
+      };
+    });
   };
 
-  return { error, isLoading, items, removeItem };
+  return {
+    items,
+    isLoading,
+    error: error as Error | null,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    removeItem,
+  };
 };
