@@ -46,11 +46,11 @@ const LocationProbe = () => {
 };
 
 describe('StudyPage route validation', () => {
-  it('존재하지 않는 스터디는 홈으로 이동한다', () => {
-    renderStudyRoute('/studies/missing-study/knowledge');
+  it('mock 목록에 없는 studyId는 홈으로 보내지 않고 API 오류로 표시한다', async () => {
+    renderStudyRoute('/studies/unknown-study/knowledge');
 
-    expect(screen.getByText('홈 화면')).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent('/');
+    expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();
+    expect(await screen.findByText('지식 구조를 불러오지 못했습니다')).toBeInTheDocument();
   });
 
   it('지원하지 않는 탭은 지식 구조로 이동한다', () => {
@@ -66,6 +66,15 @@ describe('StudyPage route validation', () => {
 });
 
 describe('StudyPage knowledge route', () => {
+  it('mock 목록에 없어도 실 API 응답이 있으면 정상적으로 그래프를 표시한다', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue(emptyGraphResponse);
+
+    renderStudyRoute('/studies/4/knowledge');
+
+    expect(await screen.findByRole('region', { name: '지식 구조' })).toBeInTheDocument();
+    expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();
+  });
+
   it('연결 자료를 선택하면 자료 업로드 탭으로 이동한다', async () => {
     vi.mocked(httpClient.get).mockImplementation((url: string) => {
       if (url.includes('/knowledge-graph/nodes/')) {
