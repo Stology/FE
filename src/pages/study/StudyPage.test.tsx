@@ -24,6 +24,31 @@ const emptyGraphResponse = {
   data: { code: 'OK', message: '', result: { edges: [], nodes: [] }, success: true },
 };
 
+const createWeeklyReportResponse = (currentWeek: number) => ({
+  data: {
+    code: 'REPORT200_1',
+    errorDetail: null,
+    message: '주차별 전체 리포트를 조회했습니다.',
+    result: {
+      aiReviewContent: `${currentWeek}주차 학습 요약입니다.`,
+      currentWeek,
+      memberActivityStatisticsList: [],
+      newActiveNodeCount: 1,
+      newActiveNodePercentage: 50,
+      recommendedNodeList: [],
+      reinforcedNodeCount: 1,
+      reinforcedNodePercentage: 50,
+      reportId: currentWeek,
+      totalNodeCount: 2,
+      totalWeeks: 3,
+      weeklyCoreNodeList: [
+        { materialCount: 1, nodeName: `주차 ${currentWeek} 핵심 노드`, state: '신규 활성화' },
+      ],
+    },
+    success: true,
+  },
+});
+
 const createQueryClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 const renderStudyRoute = (path: string) =>
@@ -157,14 +182,37 @@ describe('StudyPage questions route', () => {
 });
 
 describe('StudyPage reports route', () => {
-  it('주차별 리포트 경로에서 선택된 주차의 리포트를 표시한다', () => {
-    renderStudyRoute('/studies/spring-study/reports');
+  it('최신 리포트를 조회하고 선택한 주차를 다시 조회한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((_url: string, config) =>
+      Promise.resolve(createWeeklyReportResponse(config?.params?.week ?? 3)),
+    );
 
-    expect(screen.getByRole('heading', { level: 1, name: '3주차 리포트' })).toBeInTheDocument();
+    renderStudyRoute('/studies/1/reports');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '3주차 리포트' }),
+    ).toBeInTheDocument();
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/report/all', {
+      params: undefined,
+    });
 
     fireEvent.click(screen.getByRole('button', { name: '2주차' }));
 
-    expect(screen.getByRole('heading', { level: 1, name: '2주차 리포트' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '2주차 리포트' }),
+    ).toBeInTheDocument();
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/report/all', {
+      params: { week: 2 },
+    });
+  });
+
+  it('숫자가 아닌 스터디 ID에서는 리포트를 요청하지 않는다', async () => {
+    renderStudyRoute('/studies/spring-study/reports');
+
+    expect(await screen.findByText('주소의 스터디 ID를 확인해 주세요.')).toBeInTheDocument();
+    expect(
+      vi.mocked(httpClient.get).mock.calls.some(([url]) => String(url).includes('/report/all')),
+    ).toBe(false);
   });
 
   it('종료된 스터디의 리포트를 읽기 전용으로 표시한다', () => {

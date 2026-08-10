@@ -1,6 +1,7 @@
 ﻿import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useMemo, useState } from 'react';
+import { isAxiosError } from 'axios';
 
 import {
   getMockStudyById,
@@ -17,6 +18,7 @@ import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { useWeeklyRecords } from './records/hooks/useWeeklyRecords';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
+import { useWeeklyReport } from './reports/hooks/useWeeklyReport';
 import {
   useAnalyzeMaterial,
   useSubmitMaterial,
@@ -204,28 +206,39 @@ interface WeeklyReportTabProps {
 }
 
 const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
-  const availableWeeks = useMemo(
-    () => Array.from({ length: Math.max(0, study.currentWeek) }, (_, index) => index + 1),
-    [study.currentWeek],
-  );
-  const [selectedWeek, setSelectedWeek] = useState<number | undefined>(
-    availableWeeks[availableWeeks.length - 1],
-  );
+  const reportStudyId = /^\d+$/.test(study.id) ? study.id : undefined;
+  const [availableWeeks, setAvailableWeeks] = useState<number[]>([]);
+  const [selectedWeek, setSelectedWeek] = useState<number | undefined>();
+  const reportQuery = useWeeklyReport(reportStudyId, selectedWeek);
 
   useEffect(() => {
-    setSelectedWeek((currentWeek) =>
-      currentWeek !== undefined && availableWeeks.includes(currentWeek)
-        ? currentWeek
-        : availableWeeks[availableWeeks.length - 1],
+    if (!reportQuery.data) return;
+
+    setAvailableWeeks(
+      Array.from({ length: Math.max(0, reportQuery.data.totalWeeks) }, (_, index) => index + 1),
     );
-  }, [availableWeeks]);
+  }, [reportQuery.data]);
+
+  const isReportNotFound =
+    isAxiosError(reportQuery.error) && reportQuery.error.response?.status === 404;
 
   return (
     <WeeklyReportPage
       availableWeeks={availableWeeks}
+      errorMessage={
+        reportStudyId
+          ? reportQuery.error && !isReportNotFound
+            ? '잠시 후 다시 시도해 주세요.'
+            : null
+          : '주소의 스터디 ID를 확인해 주세요.'
+      }
+      isLoading={reportQuery.isLoading}
       isReadOnly={study.status === 'ended'}
+      onRetry={reportStudyId ? () => reportQuery.refetch() : undefined}
       onWeekChange={setSelectedWeek}
+      report={reportQuery.data?.report}
       selectedWeek={selectedWeek}
+      useMockFallback={false}
     />
   );
 };
