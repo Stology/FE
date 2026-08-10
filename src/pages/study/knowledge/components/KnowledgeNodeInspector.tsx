@@ -19,8 +19,13 @@ import { KnowledgeRelationToggle } from './KnowledgeRelationToggle';
 
 interface KnowledgeNodeInspectorProps {
   graph: KnowledgeGraph;
+  /** 주어지면 graph 기반 계산 대신 이 목록을 그대로 쓴다(실 API: 노드 상세 조회 결과). */
+  materials?: WeeklyRecordMaterial[];
+  materialsError?: boolean;
+  materialsIsLoading?: boolean;
   node?: KnowledgeConceptNode;
   onMaterialOpen?: (material: WeeklyRecordMaterial) => void;
+  onMaterialsRetry?: () => void;
   onNodeSelect?: (nodeId: string) => void;
   weekFilter: KnowledgeWeekFilter;
 }
@@ -29,8 +34,12 @@ const VISIBLE_CONNECTION_COUNT = 3;
 
 export const KnowledgeNodeInspector = ({
   graph,
+  materials: materialsProp,
+  materialsError = false,
+  materialsIsLoading = false,
   node,
   onMaterialOpen,
+  onMaterialsRetry,
   onNodeSelect,
   weekFilter,
 }: KnowledgeNodeInspectorProps) => {
@@ -58,7 +67,7 @@ export const KnowledgeNodeInspector = ({
   }
 
   const status = deriveWeekStatus(node, weekFilter);
-  const materials = getNodeMaterials(node.id, graph);
+  const materials = materialsProp ?? getNodeMaterials(node.id, graph);
   const relationOptions = buildRelationOptions(node.id, graph.edges, nodesById);
   const relatedNodes = relationOptions.find((option) => option.kind === relationKind)?.nodes ?? [];
   const visibleNodes = isExpanded ? relatedNodes : relatedNodes.slice(0, VISIBLE_CONNECTION_COUNT);
@@ -79,9 +88,24 @@ export const KnowledgeNodeInspector = ({
       <p className="mt-2 text-[13px] leading-5 text-stology-text-light">정의: {node.definition}</p>
 
       <h4 className="mt-6 text-label text-stology-text-dark">
-        관련 자료 {materials.length}개 · 최신순
+        {materialsIsLoading || materialsError
+          ? '관련 자료'
+          : `관련 자료 ${materials.length}개 · 최신순`}
       </h4>
-      {materials.length === 0 ? (
+      {materialsIsLoading ? (
+        <p className="mt-2 text-caption text-stology-text-light" role="status">
+          관련 자료를 불러오는 중입니다...
+        </p>
+      ) : materialsError ? (
+        <div className="mt-2 flex items-center gap-2" role="alert">
+          <p className="text-caption text-stology-reject">관련 자료를 불러오지 못했습니다.</p>
+          {onMaterialsRetry ? (
+            <Button onClick={onMaterialsRetry} size="sm" variant="ghost">
+              다시 시도
+            </Button>
+          ) : null}
+        </div>
+      ) : materials.length === 0 ? (
         <p className="mt-2 text-caption text-stology-text-light">아직 연결된 자료가 없습니다.</p>
       ) : (
         <ul className="mt-2 space-y-1.5">

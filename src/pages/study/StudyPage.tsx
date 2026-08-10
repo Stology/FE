@@ -11,16 +11,29 @@ import {
 import type { Study } from '@/shared/types/stology';
 import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 
+import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
+import {
+  useAnalyzeMaterial,
+  useSubmitMaterial,
+  useUpdateMaterial,
+  useUploadedMaterials,
+  useUploadSSE,
+} from './upload/hooks';
 import { MaterialUploadPage } from './upload/MaterialUploadPage';
 
 interface StudyRouteParams extends Record<string, string | undefined> {
   studyId: string;
   tab?: string;
 }
+
+// 스터디 상세 조회 API가 아직 없어(스터디 CRUD는 김이슬님 담당) mock 목록으로만 이름/주차/
+// 종료 여부를 알 수 있다. mock에 없는 studyId(실 서버 전용 등)는 최소한의 기본값으로 렌더링을
+// 계속하고, 각 탭의 실제 데이터는 자신의 API 호출로 별도 로딩/에러 처리한다(홈으로 보내지 않음).
+const FALLBACK_STUDY_CURRENT_WEEK = 1;
 
 export const StudyPage = () => {
   const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
@@ -29,10 +42,14 @@ export const StudyPage = () => {
     return <Navigate to="/" replace />;
   }
 
-  const study = getMockStudyById(studyId);
-  if (!study) {
-    return <Navigate to="/" replace />;
-  }
+  const study: Study = getMockStudyById(studyId) ?? {
+    currentWeek: FALLBACK_STUDY_CURRENT_WEEK,
+    id: studyId,
+    memberCount: 0,
+    name: studyId,
+    startedAt: '',
+    status: 'active',
+  };
 
   const meta = getMockStudyTabById(tab);
   if (!meta) {
@@ -52,18 +69,16 @@ export const StudyPage = () => {
           }))}
         />
       </Card>
-      {tab === 'knowledge' && study ? (
+      {tab === 'knowledge' ? (
         <KnowledgeGraphTab key={study.id} study={study} />
-      ) : tab === 'upload' && study ? (
+      ) : tab === 'upload' ? (
         <MaterialUploadTab key={study.id} study={study} />
-      ) : tab === 'questions' && study ? (
-        <QuestionsPage isReadOnly={study.status === 'ended'} />
-      ) : tab === 'records' && study ? (
-        <WeeklyRecordsTab key={study.id} study={study} />
-      ) : tab === 'reports' && study ? (
-        <WeeklyReportTab key={study.id} study={study} />
-      ) : tab === 'questions' && study ? (
+      ) : tab === 'questions' ? (
         <QuestionsTab key={study.id} study={study} />
+      ) : tab === 'records' ? (
+        <WeeklyRecordsTab key={study.id} study={study} />
+      ) : tab === 'reports' ? (
+        <WeeklyReportTab key={study.id} study={study} />
       ) : (
         <PagePlaceholder
           code={meta.code}
@@ -81,6 +96,7 @@ interface KnowledgeGraphTabProps {
 
 const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => {
   const navigate = useNavigate();
+  const graphQuery = useKnowledgeGraph(study.id);
 
   return (
     <KnowledgeGraphPage
@@ -88,10 +104,15 @@ const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => {
         { length: Math.max(0, study.currentWeek) },
         (_, index) => index + 1,
       )}
+      errorMessage={graphQuery.error ? '지식 구조를 불러오지 못했습니다.' : null}
+      graph={graphQuery.data}
+      isLoading={graphQuery.isLoading}
       isReadOnly={study.status === 'ended'}
       onMaterialOpen={(material) =>
         navigate(`/studies/${study.id}/upload?materialId=${encodeURIComponent(material.id)}`)
       }
+      onRetry={() => graphQuery.refetch()}
+      studyId={study.id}
     />
   );
 };
@@ -102,12 +123,32 @@ interface MaterialUploadTabProps {
 
 const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
   const navigate = useNavigate();
+  const materialsQuery = useUploadedMaterials(study.id, study.currentWeek);
+  const submitMaterial = useSubmitMaterial(study.id);
+  const updateMaterial = useUpdateMaterial(study.id);
+  const analyzeMaterial = useAnalyzeMaterial(study.id);
+  useUploadSSE(study.status === 'ended' ? undefined : study.id);
 
   return (
     <MaterialUploadPage
       currentWeek={study.currentWeek}
+      errorMessage={materialsQuery.error ? '대기 중인 자료를 불러오지 못했습니다.' : null}
+      isEditSubmitting={updateMaterial.isPending}
+      isLoading={materialsQuery.isLoading}
       isReadOnly={study.status === 'ended'}
-      onMaterialReview={(material) => navigate(`/studies/${study.id}/review/${material.id}`)}
+      isSubmitting={submitMaterial.isPending}
+      materials={materialsQuery.data}
+      onMaterialEdit={(material, payload) =>
+        updateMaterial.mutateAsync({
+          content: payload.content,
+          dataTitle: payload.title,
+          materialId: Number(material.id),
+        })
+      }
+      onMaterialReanalyze={(material) => analyzeMaterial.mutate(Number(material.id))}
+      onMaterialReview={() => navigate(`/studies/${study.id}/review`)}
+      onRetry={() => materialsQuery.refetch()}
+      onSubmit={(draft) => submitMaterial.mutateAsync(draft)}
     />
   );
 };

@@ -94,7 +94,7 @@ const Hom001DetailRow = ({ item }: Hom001DetailRowProps) => {
   const handleAction = () => {
     if (item.status === '검토 필요') {
       // 검토 REV001
-      navigate(`/studies/${encodeURIComponent(item.study.id)}/review/${item.id}`);
+      navigate(`/studies/${encodeURIComponent(item.study.id)}/review`);
     } else {
       // 빈 업로드 UPL001
       navigate(`/studies/${encodeURIComponent(item.study.id)}/upload`);
