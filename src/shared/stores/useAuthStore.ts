@@ -12,11 +12,16 @@ interface AuthState {
 
 const MOCK_AUTH_STORAGE_KEY = 'stology.mock-authenticated';
 
+let isInitializing = false;
+
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isInitialized: false,
   accessToken: null,
   initialize: async () => {
+    if (isInitializing) return;
+    isInitializing = true;
+
     if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
       const hasMockSession = readMockAuthSession();
       set({
@@ -24,14 +29,18 @@ export const useAuthStore = create<AuthState>((set) => ({
         isInitialized: true,
         accessToken: hasMockSession ? 'mock-token' : null,
       });
+      isInitializing = false;
       return;
     }
 
     try {
       const { accessToken } = await authApi.reissue();
       set({ isAuthenticated: true, isInitialized: true, accessToken });
-    } catch {
+    } catch (error) {
+      console.error('Reissue failed:', error);
       set({ isAuthenticated: false, isInitialized: true, accessToken: null });
+    } finally {
+      isInitializing = false;
     }
   },
   login: () => {
