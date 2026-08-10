@@ -18,6 +18,7 @@ interface WeeklyReportPageProps {
   onWeekChange?: (week: number) => void;
   report?: WeeklyReport;
   selectedWeek?: number;
+  useMockFallback?: boolean;
 }
 
 export const WeeklyReportPage = ({
@@ -29,6 +30,7 @@ export const WeeklyReportPage = ({
   onWeekChange,
   report,
   selectedWeek,
+  useMockFallback = true,
 }: WeeklyReportPageProps) => {
   const lastAvailableWeek = availableWeeks[availableWeeks.length - 1];
   const [internalWeek, setInternalWeek] = useState(() => selectedWeek ?? lastAvailableWeek);
@@ -43,7 +45,7 @@ export const WeeklyReportPage = ({
   const visibleReport =
     report?.week === activeWeek
       ? report
-      : activeWeek === undefined
+      : !useMockFallback || activeWeek === undefined
         ? undefined
         : getMockWeeklyReport(activeWeek);
 
