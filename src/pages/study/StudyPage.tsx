@@ -15,6 +15,7 @@ import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
+import { useWeeklyRecords } from './records/hooks/useWeeklyRecords';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
 import {
   useAnalyzeMaterial,
@@ -158,6 +159,7 @@ interface WeeklyRecordsTabProps {
 }
 
 const WeeklyRecordsTab = ({ study }: WeeklyRecordsTabProps) => {
+  const recordsStudyId = /^\d+$/.test(study.id) ? study.id : undefined;
   const availableWeeks = useMemo(
     () => Array.from({ length: Math.max(0, study.currentWeek) }, (_, index) => index + 1),
     [study.currentWeek],
@@ -174,12 +176,25 @@ const WeeklyRecordsTab = ({ study }: WeeklyRecordsTabProps) => {
     );
   }, [availableWeeks]);
 
+  const recordsQuery = useWeeklyRecords(recordsStudyId, selectedWeek);
+
   return (
     <WeeklyRecordsPage
       availableWeeks={availableWeeks}
+      concepts={recordsQuery.data ?? []}
+      errorMessage={
+        recordsStudyId
+          ? recordsQuery.error
+            ? '주차별 기록을 불러오지 못했습니다.'
+            : null
+          : '유효하지 않은 스터디 ID입니다.'
+      }
+      isLoading={recordsQuery.isLoading}
       isReadOnly={study.status === 'ended'}
+      onRetry={recordsStudyId ? () => recordsQuery.refetch() : undefined}
       onWeekChange={setSelectedWeek}
       selectedWeek={selectedWeek}
+      studyId={recordsStudyId}
     />
   );
 };

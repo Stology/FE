@@ -17,6 +17,7 @@ interface WeeklyRecordsPageProps {
   onRetry?: () => void;
   onWeekChange?: (week: number) => void;
   selectedWeek?: number;
+  studyId?: string;
 }
 
 export const WeeklyRecordsPage = ({
@@ -29,6 +30,7 @@ export const WeeklyRecordsPage = ({
   onRetry,
   onWeekChange,
   selectedWeek,
+  studyId,
 }: WeeklyRecordsPageProps) => {
   const [internalWeek, setInternalWeek] = useState(() => selectedWeek ?? availableWeeks[0]);
   const [openConceptIds, setOpenConceptIds] = useState<string[]>([]);
@@ -117,6 +119,7 @@ export const WeeklyRecordsPage = ({
             key={concept.id}
             onDownload={onMaterialDownload}
             onToggle={() => handleConceptToggle(concept.id)}
+            studyId={studyId}
           />
         ))}
       </div>

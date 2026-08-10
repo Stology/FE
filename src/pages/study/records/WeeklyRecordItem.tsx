@@ -4,11 +4,14 @@ import { cn } from '@/shared/lib/cn';
 import type { WeeklyRecordConcept, WeeklyRecordMaterial } from '@/shared/types/stology';
 import { Button } from '@/shared/ui';
 
+import { useWeeklyRecordMaterials } from './hooks/useWeeklyRecordMaterials';
+
 interface WeeklyRecordItemProps {
   concept: WeeklyRecordConcept;
   isOpen: boolean;
   onDownload?: (material: WeeklyRecordMaterial) => void;
   onToggle: () => void;
+  studyId?: string;
 }
 
 const statusLabel = {
@@ -62,9 +65,12 @@ export const WeeklyRecordItem = ({
   isOpen,
   onDownload,
   onToggle,
+  studyId,
 }: WeeklyRecordItemProps) => {
   const panelId = `weekly-record-${concept.id}-panel`;
   const triggerId = `weekly-record-${concept.id}-trigger`;
+  const materialsQuery = useWeeklyRecordMaterials(studyId, concept.id, isOpen);
+  const materials = studyId ? (materialsQuery.data ?? []) : concept.materials;
 
   const handleDownload = (material: WeeklyRecordMaterial) => {
     if (onDownload) {
@@ -114,8 +120,19 @@ export const WeeklyRecordItem = ({
           id={panelId}
           role="region"
         >
-          {concept.materials.length > 0 ? (
-            concept.materials.map((material) => (
+          {materialsQuery.isLoading ? (
+            <p className="py-5 text-center text-[13px] text-stology-text-light" role="status">
+              연결 자료를 불러오는 중입니다.
+            </p>
+          ) : materialsQuery.error ? (
+            <div className="flex flex-col items-center gap-3 py-4" role="alert">
+              <p className="text-[13px] text-red-600">연결 자료를 불러오지 못했습니다.</p>
+              <Button onClick={() => materialsQuery.refetch()} size="sm" variant="outline">
+                다시 시도
+              </Button>
+            </div>
+          ) : materials.length > 0 ? (
+            materials.map((material) => (
               <div
                 className="flex min-h-[62px] flex-col items-stretch justify-between gap-3 rounded-[5.5px] border border-stology-border-light bg-stology-off-white px-4 py-[15px] sm:flex-row sm:items-center sm:gap-4"
                 key={material.id}
