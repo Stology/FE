@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { getMockStudyById } from '@/shared/mocks/studies';
+import type { NodeVoteReq } from '@/shared/api/review';
 import type { NodeCandidate, ReviewAction } from '@/shared/types/stology';
 import { AppLayout, EmptyState, ErrorMessage, Loading, ProgressBar } from '@/shared/ui';
 
@@ -34,6 +35,9 @@ export const ReviewPage = ({
   onSubmit,
 }: ReviewPageProps) => {
   const { studyId } = useParams<ReviewRouteParams>();
+  // 스터디 목록/상태 조회 API가 아직 연동 전이라 mock 목록으로만 종료 여부를 판단할 수 있다.
+  // mock에 없는 studyId(실 서버 전용 등)는 종료되지 않은 것으로 간주한다 — 존재하지 않는
+  // studyId는 아래 API 호출이 실패해 에러 상태로 자연스럽게 드러난다(홈으로 리다이렉트하지 않음).
   const study = studyId ? getMockStudyById(studyId) : undefined;
   const effectiveIsReadOnly = isReadOnly || study?.status === 'ended';
 
@@ -44,6 +48,7 @@ export const ReviewPage = ({
   const [candidates, setCandidates] = useState<NodeCandidate[]>(candidatesProp ?? []);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const hasHydratedRef = useRef(false);
 
   // 백그라운드 refetch가 검토 중인 로컬 승인/반려 선택을 덮어쓰지 않도록, 최초 1회만 반영한다.
@@ -59,10 +64,6 @@ export const ReviewPage = ({
   const isLoading = isControlled ? isLoadingProp : fetchResult.isLoading;
   const errorMessage = isControlled ? errorMessageProp : (fetchResult.error?.message ?? null);
 
-  if (studyId && !study) {
-    return <Navigate to="/" replace />;
-  }
-
   const applyAction = (candidateIds: string[], action: ReviewAction) => {
     setCandidates((current) =>
       current.map((candidate) =>
@@ -70,6 +71,7 @@ export const ReviewPage = ({
       ),
     );
     setIsSubmitted(false);
+    setSubmitError(null);
   };
 
   const handleSelectChange = (candidateId: string, isSelected: boolean) => {
@@ -92,20 +94,47 @@ export const ReviewPage = ({
   };
 
   const handleSubmit = () => {
-    setIsSubmitted(true);
-    onSubmit?.(candidates);
+    if (isControlled) {
+      setIsSubmitted(true);
+      onSubmit?.(candidates);
+      return;
+    }
 
-    if (isControlled || !studyId) return;
+    if (!studyId) return;
 
-    const votes = candidates
+    setSubmitError(null);
+
+    const votes: NodeVoteReq[] = [];
+    let hasUnmatchedCandidate = false;
+
+    candidates
       .filter((candidate) => candidate.myAction)
-      .map((candidate) => ({
-        nodeCandidateId: Number(candidate.id),
-        studyNodeId: fetchResult.studyNodeIdByCandidateId.get(candidate.id) ?? 0,
-        voteType: candidate.myAction === 'approved' ? ('ACCEPT' as const) : ('DENY' as const),
-      }));
+      .forEach((candidate) => {
+        const studyNodeId = fetchResult.studyNodeIdByCandidateId.get(candidate.id);
+        if (studyNodeId === undefined) {
+          hasUnmatchedCandidate = true;
+          return;
+        }
 
-    submitVotes.mutate(votes);
+        votes.push({
+          nodeCandidateId: Number(candidate.id),
+          studyNodeId,
+          voteType: candidate.myAction === 'approved' ? 'ACCEPT' : 'DENY',
+        });
+      });
+
+    if (hasUnmatchedCandidate) {
+      setSubmitError('일부 후보 정보를 확인하지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+      return;
+    }
+
+    submitVotes.mutate(votes, {
+      onError: () => setSubmitError('검토 제출에 실패했습니다. 다시 시도해 주세요.'),
+      onSuccess: () => {
+        setIsSubmitted(true);
+        onSubmit?.(candidates);
+      },
+    });
   };
 
   const renderContent = () => {
@@ -178,6 +207,12 @@ export const ReviewPage = ({
           >
             검토를 제출했습니다.
           </p>
+        ) : null}
+
+        {submitError ? (
+          <div role="alert">
+            <ErrorMessage message={submitError} title="검토 제출에 실패했습니다" />
+          </div>
         ) : null}
 
         <ReviewActionBar

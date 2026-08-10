@@ -132,7 +132,7 @@ const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
       isSubmitting={submitMaterial.isPending}
       materials={materialsQuery.data}
       onMaterialEdit={(material, payload) =>
-        updateMaterial.mutate({
+        updateMaterial.mutateAsync({
           content: payload.content,
           dataTitle: payload.title,
           materialId: Number(material.id),
@@ -141,7 +141,7 @@ const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
       onMaterialReanalyze={(material) => analyzeMaterial.mutate(Number(material.id))}
       onMaterialReview={() => navigate(`/studies/${study.id}/review`)}
       onRetry={() => materialsQuery.refetch()}
-      onSubmit={(draft) => submitMaterial.mutate(draft)}
+      onSubmit={(draft) => submitMaterial.mutateAsync(draft)}
     />
   );
 };

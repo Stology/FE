@@ -41,7 +41,7 @@ export const KnowledgeGraphPage = ({
   const [activityFilter, setActivityFilter] = useState<KnowledgeActivityFilter>('all');
   const [weekFilter, setWeekFilter] = useState<KnowledgeWeekFilter>('all');
   const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>();
-  const { data: selectedNodeMaterials } = useKnowledgeNodeMaterials(studyId, selectedNodeId);
+  const nodeMaterialsQuery = useKnowledgeNodeMaterials(studyId, selectedNodeId);
 
   const nodesById = useMemo(
     () => new Map<string, KnowledgeNode>(graph.nodes.map((node) => [node.id, node])),
@@ -158,9 +158,12 @@ export const KnowledgeGraphPage = ({
           <div>{renderGraphContent()}</div>
           <KnowledgeNodeInspector
             graph={graph}
-            materials={studyId ? selectedNodeMaterials : undefined}
+            materials={studyId ? nodeMaterialsQuery.data : undefined}
+            materialsError={studyId ? nodeMaterialsQuery.isError : false}
+            materialsIsLoading={studyId ? nodeMaterialsQuery.isLoading : false}
             node={selectedNode}
             onMaterialOpen={onMaterialOpen}
+            onMaterialsRetry={studyId ? () => nodeMaterialsQuery.refetch() : undefined}
             onNodeSelect={handleNodeSelect}
             weekFilter={weekFilter}
           />

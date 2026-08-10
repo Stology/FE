@@ -17,11 +17,11 @@ interface MaterialUploadPageProps {
   isReadOnly?: boolean;
   isSubmitting?: boolean;
   materials?: Material[];
-  onMaterialEdit?: (material: Material, payload: MaterialEditPayload) => void;
+  onMaterialEdit?: (material: Material, payload: MaterialEditPayload) => void | Promise<void>;
   onMaterialReanalyze?: (material: Material) => void;
   onMaterialReview?: (material: Material) => void;
   onRetry?: () => void;
-  onSubmit?: (draft: MaterialDraft) => void;
+  onSubmit?: (draft: MaterialDraft) => void | Promise<void>;
 }
 
 export const MaterialUploadPage = ({
@@ -41,13 +41,14 @@ export const MaterialUploadPage = ({
   const [submittedTitle, setSubmittedTitle] = useState<string | null>(null);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
 
-  const handleSubmit = (draft: MaterialDraft) => {
+  const handleSubmit = async (draft: MaterialDraft) => {
+    await onSubmit?.(draft);
     setSubmittedTitle(draft.title);
-    onSubmit?.(draft);
   };
 
-  const handleEditSubmit = (payload: MaterialEditPayload) => {
-    if (editingMaterial) onMaterialEdit?.(editingMaterial, payload);
+  const handleEditSubmit = async (payload: MaterialEditPayload) => {
+    if (!editingMaterial) return;
+    await onMaterialEdit?.(editingMaterial, payload);
     setEditingMaterial(null);
   };
 

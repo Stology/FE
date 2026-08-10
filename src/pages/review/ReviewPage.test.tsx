@@ -230,10 +230,64 @@ describe('ReviewPage', () => {
     expect(screen.getByRole('button', { name: '검토 마치기' })).toBeDisabled();
   });
 
-  it('존재하지 않는 스터디의 직접 검토 URL은 홈으로 이동한다', () => {
-    renderReviewRoute('/studies/missing-study/review');
+  it('투표 제출이 실패하면 성공 메시지 대신 오류를 표시한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string) => {
+      if (url.includes('/node/get-examination-info')) {
+        return Promise.resolve({
+          data: {
+            code: 'OK',
+            message: '',
+            result: {
+              nodeCandidates: [
+                {
+                  memberVoteInfos: [],
+                  nodeCandidateId: 1,
+                  numberOfAcceptedStudyMembers: 0,
+                  numberOfStudyMembers: 4,
+                  studyNodeId: 10,
+                },
+              ],
+            },
+            success: true,
+          },
+        });
+      }
+      return Promise.resolve({
+        data: {
+          code: 'OK',
+          message: '',
+          result: {
+            activeLevel: 1,
+            definition: '',
+            isActive: true,
+            materialCount: 0,
+            nodeId: 10,
+            recentMaterials: [],
+            relations: {},
+            title: 'JWT',
+          },
+          success: true,
+        },
+      });
+    });
+    vi.mocked(httpClient.patch).mockRejectedValue(new Error('network error'));
 
-    expect(screen.getByText('홈 화면')).toBeInTheDocument();
+    renderReviewRoute('/studies/spring-study/review');
+
+    await waitFor(() => expect(screen.getByText('노드 후보 1: JWT')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: '전체 승인' }));
+    fireEvent.click(screen.getByRole('button', { name: '검토 마치기' }));
+
+    expect(await screen.findByText('검토 제출에 실패했습니다')).toBeInTheDocument();
+    expect(screen.queryByText('검토를 제출했습니다.')).not.toBeInTheDocument();
+  });
+
+  it('mock 목록에 없는 studyId는 홈으로 보내지 않고 API 오류로 표시한다', async () => {
+    renderReviewRoute('/studies/unknown-study/review');
+
+    expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();
+    expect(await screen.findByText('AI 후보를 불러오지 못했습니다')).toBeInTheDocument();
   });
 
   it('후보가 없으면 빈 상태를 표시한다', () => {
