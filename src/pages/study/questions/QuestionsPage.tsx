@@ -23,8 +23,13 @@ interface QuestionsPageProps {
   onRetry?: () => void;
   page?: number;
   pageSize?: number;
+  questionDetailStates?: Record<
+    string,
+    { errorMessage?: string | null; isLoading: boolean; onRetry?: () => void }
+  >;
   questionDetails?: Record<string, QuestionDetail>;
   questions?: QuestionSummary[];
+  totalPages?: number;
 }
 
 const DEFAULT_PAGE_SIZE = 3;
@@ -42,8 +47,10 @@ export const QuestionsPage = ({
   onRetry,
   page,
   pageSize = DEFAULT_PAGE_SIZE,
+  questionDetailStates = {},
   questionDetails: controlledQuestionDetails,
   questions: controlledQuestions,
+  totalPages: controlledTotalPages,
 }: QuestionsPageProps) => {
   const validPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
   const [internalQuestions, setInternalQuestions] = useState(mockQuestions);
@@ -58,7 +65,7 @@ export const QuestionsPage = ({
   >(null);
   const questions = controlledQuestions ?? internalQuestions;
   const questionDetails = controlledQuestionDetails ?? internalQuestionDetails;
-  const totalPages = Math.ceil(questions.length / validPageSize);
+  const totalPages = controlledTotalPages ?? Math.ceil(questions.length / validPageSize);
   const lastPage = Math.max(1, totalPages);
   const [internalPage, setInternalPage] = useState(1);
   const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(() => new Set());
@@ -69,10 +76,10 @@ export const QuestionsPage = ({
   );
   const requestedPage = page ?? internalPage;
   const activePage = Math.min(Math.max(requestedPage, 1), lastPage);
-  const visibleQuestions = questions.slice(
-    (activePage - 1) * validPageSize,
-    activePage * validPageSize,
-  );
+  const visibleQuestions =
+    controlledTotalPages === undefined
+      ? questions.slice((activePage - 1) * validPageSize, activePage * validPageSize)
+      : questions;
 
   useEffect(() => {
     if (page !== undefined) return;
@@ -98,7 +105,7 @@ export const QuestionsPage = ({
     setRepliesByQuestion((currentReplies) => ({
       ...currentReplies,
       [questionId]: [
-        ...(currentReplies[questionId] ?? []),
+        ...(currentReplies[questionId] ?? questionDetails[questionId]?.replies ?? []),
         {
           id: `${questionId}-reply-${crypto.randomUUID()}`,
           authorName: '김스토',
@@ -113,8 +120,8 @@ export const QuestionsPage = ({
   const handleReplyUpdate = (questionId: string, replyId: string, content: string) => {
     setRepliesByQuestion((currentReplies) => ({
       ...currentReplies,
-      [questionId]: (currentReplies[questionId] ?? []).map((reply) =>
-        reply.id === replyId ? { ...reply, content } : reply,
+      [questionId]: (currentReplies[questionId] ?? questionDetails[questionId]?.replies ?? []).map(
+        (reply) => (reply.id === replyId ? { ...reply, content } : reply),
       ),
     }));
   };
@@ -279,7 +286,11 @@ export const QuestionsPage = ({
                   key={question.id}
                   onSelect={handleQuestionToggle}
                   question={question}
-                  replyCount={(repliesByQuestion[question.id] ?? []).length}
+                  replyCount={
+                    repliesByQuestion[question.id]?.length ??
+                    questionDetails[question.id]?.replies.length ??
+                    question.replyCount
+                  }
                 >
                   {questionDetails[question.id] ? (
                     <QuestionDetailPanel
@@ -302,8 +313,28 @@ export const QuestionsPage = ({
                       onReplyUpdate={(replyId, content) =>
                         handleReplyUpdate(question.id, replyId, content)
                       }
-                      replies={repliesByQuestion[question.id] ?? []}
+                      replies={
+                        repliesByQuestion[question.id] ?? questionDetails[question.id].replies
+                      }
                     />
+                  ) : questionDetailStates[question.id]?.isLoading ? (
+                    <Loading className="min-h-36" label="질문 상세를 불러오는 중입니다" />
+                  ) : questionDetailStates[question.id]?.errorMessage ? (
+                    <div className="flex min-h-36 flex-col items-center justify-center gap-3 px-5 py-4">
+                      <ErrorMessage
+                        message={questionDetailStates[question.id].errorMessage ?? ''}
+                        title="질문 상세를 불러오지 못했습니다"
+                      />
+                      {questionDetailStates[question.id].onRetry ? (
+                        <Button
+                          onClick={questionDetailStates[question.id].onRetry}
+                          size="sm"
+                          variant="outline"
+                        >
+                          다시 시도
+                        </Button>
+                      ) : null}
+                    </div>
                   ) : null}
                 </QuestionListItem>
               ))}
