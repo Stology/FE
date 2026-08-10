@@ -78,17 +78,13 @@ export interface NodeCandidate {
   myAction?: ReviewAction;
   name: string;
   rejecterNames: string[];
-}
-
-export interface MaterialReview {
-  candidates: NodeCandidate[];
-  material: Material;
   reviewerCount: number;
 }
 
 export interface MaterialDraft {
   content?: string;
   description?: string;
+  file?: File;
   fileName?: string;
   mode: UploadMode;
   title: string;
