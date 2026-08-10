@@ -207,17 +207,16 @@ interface WeeklyReportTabProps {
 
 const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
   const reportStudyId = /^\d+$/.test(study.id) ? study.id : undefined;
-  const [availableWeeks, setAvailableWeeks] = useState<number[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<number | undefined>();
   const reportQuery = useWeeklyReport(reportStudyId, selectedWeek);
-
-  useEffect(() => {
-    if (!reportQuery.data) return;
-
-    setAvailableWeeks(
-      Array.from({ length: Math.max(0, reportQuery.data.totalWeeks) }, (_, index) => index + 1),
-    );
-  }, [reportQuery.data]);
+  const availableWeeks = useMemo(
+    () =>
+      Array.from(
+        { length: Math.max(0, reportQuery.data?.totalWeeks ?? 0) },
+        (_, index) => index + 1,
+      ),
+    [reportQuery.data?.totalWeeks],
+  );
 
   const isReportNotFound =
     isAxiosError(reportQuery.error) && reportQuery.error.response?.status === 404;
@@ -232,7 +231,7 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
             : null
           : '주소의 스터디 ID를 확인해 주세요.'
       }
-      isLoading={reportQuery.isLoading}
+      isLoading={reportQuery.isLoading || reportQuery.isFetching}
       isReadOnly={study.status === 'ended'}
       onRetry={reportStudyId ? () => reportQuery.refetch() : undefined}
       onWeekChange={setSelectedWeek}

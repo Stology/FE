@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -213,6 +213,40 @@ describe('StudyPage reports route', () => {
     expect(
       vi.mocked(httpClient.get).mock.calls.some(([url]) => String(url).includes('/report/all')),
     ).toBe(false);
+  });
+
+  it('실패한 리포트를 재시도하는 동안 로딩 상태를 표시한다', async () => {
+    let resolveRetry: ((value: ReturnType<typeof createWeeklyReportResponse>) => void) | undefined;
+    const retryResponse = new Promise<ReturnType<typeof createWeeklyReportResponse>>((resolve) => {
+      resolveRetry = resolve;
+    });
+
+    let reportRequestCount = 0;
+    vi.mocked(httpClient.get).mockImplementation((url: string) => {
+      if (!url.includes('/report/all')) {
+        return Promise.resolve({
+          data: { code: 'OK', errorDetail: null, message: '', result: [], success: true },
+        });
+      }
+
+      reportRequestCount += 1;
+      return reportRequestCount === 1 ? Promise.reject(new Error('Network Error')) : retryResponse;
+    });
+
+    renderStudyRoute('/studies/1/reports');
+
+    expect(await screen.findByText('주차별 리포트를 불러오지 못했습니다')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    await waitFor(() => expect(reportRequestCount).toBe(2));
+    expect(await screen.findByText('주차별 리포트를 불러오는 중입니다')).toBeInTheDocument();
+
+    act(() => resolveRetry?.(createWeeklyReportResponse(3)));
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '3주차 리포트' }),
+    ).toBeInTheDocument();
   });
 
   it('종료된 스터디의 리포트를 읽기 전용으로 표시한다', () => {
