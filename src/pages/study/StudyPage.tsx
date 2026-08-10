@@ -30,6 +30,11 @@ interface StudyRouteParams extends Record<string, string | undefined> {
   tab?: string;
 }
 
+// 스터디 상세 조회 API가 아직 없어(스터디 CRUD는 김이슬님 담당) mock 목록으로만 이름/주차/
+// 종료 여부를 알 수 있다. mock에 없는 studyId(실 서버 전용 등)는 최소한의 기본값으로 렌더링을
+// 계속하고, 각 탭의 실제 데이터는 자신의 API 호출로 별도 로딩/에러 처리한다(홈으로 보내지 않음).
+const FALLBACK_STUDY_CURRENT_WEEK = 1;
+
 export const StudyPage = () => {
   const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
 
@@ -37,10 +42,14 @@ export const StudyPage = () => {
     return <Navigate to="/" replace />;
   }
 
-  const study = getMockStudyById(studyId);
-  if (!study) {
-    return <Navigate to="/" replace />;
-  }
+  const study: Study = getMockStudyById(studyId) ?? {
+    currentWeek: FALLBACK_STUDY_CURRENT_WEEK,
+    id: studyId,
+    memberCount: 0,
+    name: studyId,
+    startedAt: '',
+    status: 'active',
+  };
 
   const meta = getMockStudyTabById(tab);
   if (!meta) {
@@ -60,18 +69,16 @@ export const StudyPage = () => {
           }))}
         />
       </Card>
-      {tab === 'knowledge' && study ? (
+      {tab === 'knowledge' ? (
         <KnowledgeGraphTab key={study.id} study={study} />
-      ) : tab === 'upload' && study ? (
+      ) : tab === 'upload' ? (
         <MaterialUploadTab key={study.id} study={study} />
-      ) : tab === 'questions' && study ? (
-        <QuestionsPage isReadOnly={study.status === 'ended'} />
-      ) : tab === 'records' && study ? (
-        <WeeklyRecordsTab key={study.id} study={study} />
-      ) : tab === 'reports' && study ? (
-        <WeeklyReportTab key={study.id} study={study} />
-      ) : tab === 'questions' && study ? (
+      ) : tab === 'questions' ? (
         <QuestionsTab key={study.id} study={study} />
+      ) : tab === 'records' ? (
+        <WeeklyRecordsTab key={study.id} study={study} />
+      ) : tab === 'reports' ? (
+        <WeeklyReportTab key={study.id} study={study} />
       ) : (
         <PagePlaceholder
           code={meta.code}
