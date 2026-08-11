@@ -284,6 +284,7 @@ describe('StudyPage reports route', () => {
     renderStudyRoute('/studies/1/reports');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('잠시 후 다시 시도해 주세요.');
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
   });
 
   it('실패한 리포트를 재시도하는 동안 로딩 상태를 표시한다', async () => {
@@ -402,6 +403,7 @@ describe('StudyPage weekly records route', () => {
     renderStudyRoute('/studies/1/records');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('잠시 후 다시 시도해 주세요.');
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
   });
 });
 
@@ -485,5 +487,6 @@ describe('StudyPage questions route', () => {
     renderStudyRoute('/studies/1/questions');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('잠시 후 다시 시도해 주세요.');
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
   });
 });

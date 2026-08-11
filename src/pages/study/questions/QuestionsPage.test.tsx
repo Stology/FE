@@ -10,7 +10,10 @@ import { mockQuestionDetails, mockQuestions } from '@/shared/mocks/questions';
 
 import { QuestionsPage as QuestionsPageComponent } from './QuestionsPage';
 
-type QuestionsPageProps = ComponentProps<typeof QuestionsPageComponent>;
+interface QuestionsPageProps extends ComponentProps<typeof QuestionsPageComponent> {
+  initialQuestionDetails?: ComponentProps<typeof QuestionsPageComponent>['initialQuestionDetails'];
+  initialQuestions?: ComponentProps<typeof QuestionsPageComponent>['initialQuestions'];
+}
 
 const QuestionsPage = (props: QuestionsPageProps) => (
   <QuestionsPageComponent
