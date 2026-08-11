@@ -51,7 +51,7 @@ describe('KnowledgeGraphPage', () => {
       screen.getByText('정의: 서버가 발급하는 자가 검증 가능한 인증 토큰'),
     ).toBeInTheDocument();
     expect(screen.getByText('관련 자료 3개 · 최신순')).toBeInTheDocument();
-    expect(screen.getByText('토큰 재발급 전략 · 김철수 · 2026-03-27')).toBeInTheDocument();
+    expect(screen.getByText('토큰 재발급 전략')).toBeInTheDocument();
   });
 
   it('연결 관계 토글로 선택한 관계의 연결 노드만 표시한다', () => {
@@ -136,15 +136,31 @@ describe('KnowledgeGraphPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('관련 자료를 클릭하면 원본 자료 열기를 요청한다', () => {
+  it('원본 자료 보기 링크를 클릭하면 관련자료 팝업을 연다', () => {
     const handleMaterialOpen = vi.fn();
 
     renderPage({ onMaterialOpen: handleMaterialOpen });
     selectNode('JWT');
-    fireEvent.click(screen.getByRole('button', { name: '토큰 재발급 전략 · 김철수 · 2026-03-27' }));
+    fireEvent.click(screen.getByRole('button', { name: '[원본 자료 보기]' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'JWT 관련자료' });
+
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('토큰 재발급 전략')).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getAllByRole('button', { name: '다운로드' })[0]);
 
     expect(handleMaterialOpen).toHaveBeenCalledOnce();
     expect(handleMaterialOpen).toHaveBeenCalledWith(expect.objectContaining({ id: 'mat-3' }));
+  });
+
+  it('관련자료 팝업의 닫기 버튼을 클릭하면 팝업을 닫는다', () => {
+    renderPage();
+    selectNode('JWT');
+    fireEvent.click(screen.getByRole('button', { name: '[원본 자료 보기]' }));
+    fireEvent.click(screen.getByRole('button', { name: '닫기' }));
+
+    expect(screen.queryByRole('dialog', { name: 'JWT 관련자료' })).not.toBeInTheDocument();
   });
 
   it('노드가 없으면 빈 상태를 표시한다', () => {

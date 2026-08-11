@@ -170,22 +170,23 @@ describe('StudyPage knowledge route', () => {
 
   it('연결 자료를 선택하면 자료 업로드 탭으로 이동한다', async () => {
     vi.mocked(httpClient.get).mockImplementation((url: string) => {
-      if (url.includes('/knowledge-graph/nodes/')) {
+      if (url.includes('/node/1/info')) {
         return Promise.resolve({
           data: {
             code: 'OK',
             message: '',
             result: {
-              activeLevel: 1,
-              definition: '서버가 발급하는 자가 검증 가능한 인증 토큰',
-              isActive: true,
-              materialCount: 1,
-              nodeId: 1,
-              recentMaterials: [
-                { createdAt: '2026-03-27', id: 7, memberName: '김철수', title: 'JWT 정리 노트' },
+              materials: [
+                {
+                  createdAt: '2026-03-27T10:30:00',
+                  dataTitle: 'JWT 정리 노트',
+                  presignedUrl: 'https://example.com/jwt.md',
+                  studyMaterialId: 7,
+                  updatedAt: '2026-03-27T10:30:00',
+                  uploaderName: '김철수',
+                },
               ],
-              relations: {},
-              title: 'JWT',
+              studyNodeId: 1,
             },
             success: true,
           },
@@ -223,8 +224,9 @@ describe('StudyPage knowledge route', () => {
     await waitFor(() => screen.getByRole('button', { name: 'JWT 노드' }));
     fireEvent.click(screen.getByRole('button', { name: 'JWT 노드' }));
 
-    await waitFor(() => screen.getByRole('button', { name: /JWT 정리 노트/ }));
-    fireEvent.click(screen.getByRole('button', { name: /JWT 정리 노트/ }));
+    await waitFor(() => screen.getByRole('button', { name: '[원본 자료 보기]' }));
+    fireEvent.click(screen.getByRole('button', { name: '[원본 자료 보기]' }));
+    fireEvent.click(screen.getByRole('button', { name: '다운로드' }));
 
     expect(screen.getByRole('region', { name: '자료 업로드' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(

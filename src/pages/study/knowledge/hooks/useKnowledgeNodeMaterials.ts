@@ -1,13 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { getKnowledgeGraphNode } from '@/shared/api/knowledge';
+import { getWeeklyRecordNodeInfo } from '@/shared/api/weekly_records';
+import type { WeeklyRecordMaterial } from '@/shared/types/stology';
 
-import { mapNodeDetailMaterials } from '../model/knowledge_api_mapper';
+function getNodeMaterials(
+  response: Awaited<ReturnType<typeof getWeeklyRecordNodeInfo>>,
+): WeeklyRecordMaterial[] {
+  return response.materials.map((material) => ({
+    downloadUrl: material.presignedUrl,
+    id: String(material.studyMaterialId),
+    title: material.dataTitle,
+    uploadedAt: material.createdAt.split('T')[0] || material.createdAt,
+    uploaderName: material.uploaderName,
+  }));
+}
 
 /**
- * 선택된 노드의 관련 자료 목록. 그래프 목록 API엔 자료가 없어(3-2 결정) 노드
- * 상세 API를 따로 불러야 한다. relations/definition은 그래프 목록 edges/description으로
- * 이미 충분해서 여기선 recentMaterials만 쓴다.
+ * 선택된 노드의 전체 원본 자료 목록. 원본 자료 API의 응답을 팝업 표시 모델로 변환한다.
  */
 export const useKnowledgeNodeMaterials = (
   studyId: string | undefined,
@@ -16,6 +25,6 @@ export const useKnowledgeNodeMaterials = (
   useQuery({
     enabled: Boolean(studyId) && Boolean(nodeId),
     queryFn: () =>
-      getKnowledgeGraphNode(studyId as string, Number(nodeId)).then(mapNodeDetailMaterials),
+      getWeeklyRecordNodeInfo(studyId as string, nodeId as string).then(getNodeMaterials),
     queryKey: ['knowledge-graph', 'node-materials', studyId, nodeId],
   });
