@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LockKeyhole, RotateCcw } from 'lucide-react';
 
-import { getMockWeeklyRecord, mockWeeklyRecordWeeks } from '@/shared/mocks/weeklyRecords';
 import type { WeeklyRecordConcept, WeeklyRecordMaterial } from '@/shared/types/stology';
 import { Button, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
@@ -21,8 +20,8 @@ interface WeeklyRecordsPageProps {
 }
 
 export const WeeklyRecordsPage = ({
-  availableWeeks = mockWeeklyRecordWeeks,
-  concepts,
+  availableWeeks = [],
+  concepts = [],
   errorMessage,
   isLoading = false,
   isReadOnly = false,
@@ -39,8 +38,7 @@ export const WeeklyRecordsPage = ({
     (internalWeek !== undefined && availableWeeks.includes(internalWeek)
       ? internalWeek
       : availableWeeks[0]);
-  const visibleConcepts =
-    concepts ?? (activeWeek === undefined ? [] : (getMockWeeklyRecord(activeWeek)?.concepts ?? []));
+  const visibleConcepts = concepts;
 
   useEffect(() => {
     setOpenConceptIds([]);

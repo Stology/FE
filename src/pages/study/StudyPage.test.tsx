@@ -110,6 +110,13 @@ const questionDetailResponse = {
   },
 };
 
+function createHttpStatusError(status: number) {
+  return {
+    isAxiosError: true,
+    response: { status },
+  };
+}
+
 const createQueryClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 const renderStudyRoute = (path: string) =>
@@ -260,6 +267,26 @@ describe('StudyPage reports route', () => {
     ).toBe(false);
   });
 
+  it('404 응답이면 생성된 리포트가 없는 상태로 표시한다', async () => {
+    vi.mocked(httpClient.get).mockRejectedValue(createHttpStatusError(404));
+
+    renderStudyRoute('/studies/1/reports');
+
+    expect(
+      await screen.findByRole('heading', { name: '생성된 주차별 리포트가 없습니다.' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it.each([403, 500])('%s 응답이면 리포트 오류 상태를 표시한다', async (status) => {
+    vi.mocked(httpClient.get).mockRejectedValue(createHttpStatusError(status));
+
+    renderStudyRoute('/studies/1/reports');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('잠시 후 다시 시도해 주세요.');
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
+  });
+
   it('실패한 리포트를 재시도하는 동안 로딩 상태를 표시한다', async () => {
     let resolveRetry: ((value: ReturnType<typeof createWeeklyReportResponse>) => void) | undefined;
     const retryResponse = new Promise<ReturnType<typeof createWeeklyReportResponse>>((resolve) => {
@@ -369,6 +396,15 @@ describe('StudyPage weekly records route', () => {
     expect(await screen.findByText('JWT 정리 노트')).toBeInTheDocument();
     expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/node/10/info');
   });
+
+  it.each([403, 500])('%s 응답이면 주차별 기록 오류 상태를 표시한다', async (status) => {
+    vi.mocked(httpClient.get).mockRejectedValue(createHttpStatusError(status));
+
+    renderStudyRoute('/studies/1/records');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('잠시 후 다시 시도해 주세요.');
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
+  });
 });
 
 describe('StudyPage questions route', () => {
@@ -443,5 +479,14 @@ describe('StudyPage questions route', () => {
     expect(
       vi.mocked(httpClient.get).mock.calls.some(([url]) => String(url).includes('/question')),
     ).toBe(false);
+  });
+
+  it.each([403, 404, 500])('%s 응답이면 질문함 오류 상태를 표시한다', async (status) => {
+    vi.mocked(httpClient.get).mockRejectedValue(createHttpStatusError(status));
+
+    renderStudyRoute('/studies/1/questions');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('잠시 후 다시 시도해 주세요.');
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
   });
 });

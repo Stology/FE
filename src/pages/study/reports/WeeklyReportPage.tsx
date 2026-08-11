@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LockKeyhole, RotateCcw } from 'lucide-react';
 
-import { getMockWeeklyReport, mockWeeklyReportWeeks } from '@/shared/mocks/weeklyReports';
 import type { WeeklyReport } from '@/shared/types/stology';
 import { Button, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
@@ -18,11 +17,10 @@ interface WeeklyReportPageProps {
   onWeekChange?: (week: number) => void;
   report?: WeeklyReport;
   selectedWeek?: number;
-  useMockFallback?: boolean;
 }
 
 export const WeeklyReportPage = ({
-  availableWeeks = mockWeeklyReportWeeks,
+  availableWeeks = [],
   errorMessage,
   isLoading = false,
   isReadOnly = false,
@@ -30,7 +28,6 @@ export const WeeklyReportPage = ({
   onWeekChange,
   report,
   selectedWeek,
-  useMockFallback = true,
 }: WeeklyReportPageProps) => {
   const lastAvailableWeek = availableWeeks[availableWeeks.length - 1];
   const [internalWeek, setInternalWeek] = useState(() => selectedWeek ?? lastAvailableWeek);
@@ -42,12 +39,7 @@ export const WeeklyReportPage = ({
       : internalWeek !== undefined && availableWeeks.includes(internalWeek)
         ? internalWeek
         : lastAvailableWeek;
-  const visibleReport =
-    report?.week === activeWeek
-      ? report
-      : !useMockFallback || activeWeek === undefined
-        ? undefined
-        : getMockWeeklyReport(activeWeek);
+  const visibleReport = report?.week === activeWeek ? report : undefined;
 
   useEffect(() => {
     if (selectedWeek !== undefined) return;

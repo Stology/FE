@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PenLine, RotateCcw } from 'lucide-react';
 
-import { mockQuestionDetails, mockQuestions } from '@/shared/mocks/questions';
 import type { QuestionDetail, QuestionReply, QuestionSummary } from '@/shared/types/stology';
 import { Button, ConfirmDialog, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
@@ -14,6 +13,8 @@ import { stripQuestionImageTokens } from './model/question_mutation_content';
 interface QuestionsPageProps {
   canMutate?: boolean;
   errorMessage?: string | null;
+  initialQuestionDetails?: Record<string, QuestionDetail>;
+  initialQuestions?: QuestionSummary[];
   isLoading?: boolean;
   isReadOnly?: boolean;
   onPageChange?: (page: number) => void;
@@ -41,6 +42,8 @@ const DEFAULT_PAGE_SIZE = 3;
 export const QuestionsPage = ({
   canMutate = true,
   errorMessage,
+  initialQuestionDetails = {},
+  initialQuestions = [],
   isLoading = false,
   isReadOnly = false,
   onPageChange,
@@ -61,8 +64,8 @@ export const QuestionsPage = ({
 }: QuestionsPageProps) => {
   const isMutationDisabled = isReadOnly || !canMutate;
   const validPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
-  const [internalQuestions, setInternalQuestions] = useState(mockQuestions);
-  const [internalQuestionDetails, setInternalQuestionDetails] = useState(mockQuestionDetails);
+  const [internalQuestions, setInternalQuestions] = useState(initialQuestions);
+  const [internalQuestionDetails, setInternalQuestionDetails] = useState(initialQuestionDetails);
   const [questionForm, setQuestionForm] = useState<
     { mode: 'create' } | { mode: 'edit'; questionId: string } | null
   >(null);
