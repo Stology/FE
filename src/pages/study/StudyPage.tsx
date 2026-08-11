@@ -15,6 +15,8 @@ import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { useQuestionDetails, useQuestions } from './questions/hooks/useQuestions';
+import { useQuestionMutations } from './questions/hooks/useQuestionMutations';
+import { buildQuestionMutationContent } from './questions/model/question_mutation_content';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { useWeeklyRecords } from './records/hooks/useWeeklyRecords';
@@ -255,6 +257,14 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
   const [requestedQuestionIds, setRequestedQuestionIds] = useState<string[]>([]);
   const questionsQuery = useQuestions(questionsStudyId, page - 1, QUESTIONS_PAGE_SIZE);
   const detailQueries = useQuestionDetails(questionsStudyId, requestedQuestionIds);
+  const {
+    createAnswerMutation,
+    createQuestionMutation,
+    deleteAnswerMutation,
+    deleteQuestionMutation,
+    updateAnswerMutation,
+    updateQuestionMutation,
+  } = useQuestionMutations(questionsStudyId);
 
   const questionDetails = Object.fromEntries(
     requestedQuestionIds.flatMap((questionId, index) => {
@@ -288,9 +298,59 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
     );
   };
 
+  async function handleQuestionCreate(values: { content: string; images: File[]; title: string }) {
+    await createQuestionMutation.mutateAsync({
+      ...values,
+      content: buildQuestionMutationContent(values.content, [], values.images),
+    });
+    setPage(1);
+  }
+
+  async function handleQuestionUpdate(
+    questionId: string,
+    values: { content: string; images: File[]; title: string },
+  ) {
+    await updateQuestionMutation.mutateAsync({
+      ...values,
+      content: buildQuestionMutationContent(
+        values.content,
+        questionDetails[questionId]?.images ?? [],
+        values.images,
+      ),
+      questionId,
+    });
+  }
+
+  async function handleQuestionDelete(questionId: string) {
+    await deleteQuestionMutation.mutateAsync(questionId);
+    setRequestedQuestionIds((currentIds) => currentIds.filter((id) => id !== questionId));
+  }
+
+  async function handleReplyCreate(questionId: string, content: string, images: File[]) {
+    await createAnswerMutation.mutateAsync({
+      content: buildQuestionMutationContent(content, [], images),
+      images,
+      questionId,
+    });
+  }
+
+  async function handleReplyUpdate(questionId: string, replyId: string, content: string) {
+    const reply = questionDetails[questionId]?.replies.find(({ id }) => id === replyId);
+    await updateAnswerMutation.mutateAsync({
+      answerId: replyId,
+      content: buildQuestionMutationContent(content, reply?.images ?? [], []),
+      images: [],
+      questionId,
+    });
+  }
+
+  async function handleReplyDelete(questionId: string, replyId: string) {
+    await deleteAnswerMutation.mutateAsync({ answerId: replyId, questionId });
+  }
+
   return (
     <QuestionsPage
-      canMutate={false}
+      canMutate={Boolean(questionsStudyId)}
       errorMessage={
         questionsStudyId
           ? questionsQuery.error
@@ -302,7 +362,13 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
       isReadOnly={study.status === 'ended' || questionsQuery.data?.studyEnded === true}
       key={page}
       onPageChange={handlePageChange}
+      onQuestionCreate={handleQuestionCreate}
+      onQuestionDelete={handleQuestionDelete}
       onQuestionSelect={handleQuestionSelect}
+      onQuestionUpdate={handleQuestionUpdate}
+      onReplyCreate={handleReplyCreate}
+      onReplyDelete={handleReplyDelete}
+      onReplyUpdate={handleReplyUpdate}
       onRetry={questionsStudyId ? () => questionsQuery.refetch() : undefined}
       page={page}
       pageSize={QUESTIONS_PAGE_SIZE}

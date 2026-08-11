@@ -4,14 +4,16 @@ import { ImagePlus } from 'lucide-react';
 import type { QuestionDetail, QuestionImage, QuestionReply } from '@/shared/types/stology';
 import { Button, Input } from '@/shared/ui';
 
+import { stripQuestionImageTokens } from './model/question_mutation_content';
+
 interface QuestionDetailPanelProps {
   detail: QuestionDetail;
   isReadOnly?: boolean;
   onQuestionDelete?: () => void;
   onQuestionEdit?: () => void;
-  onReplyCreate: (content: string) => void;
+  onReplyCreate: (content: string, images: File[]) => Promise<void> | void;
   onReplyDelete?: (replyId: string) => void;
-  onReplyUpdate: (replyId: string, content: string) => void;
+  onReplyUpdate: (replyId: string, content: string) => Promise<void> | void;
   replies: QuestionReply[];
 }
 
@@ -27,38 +29,54 @@ export const QuestionDetailPanel = ({
 }: QuestionDetailPanelProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [replyContent, setReplyContent] = useState('');
-  const [attachmentName, setAttachmentName] = useState('');
+  const [attachment, setAttachment] = useState<File>();
   const [editingReplyId, setEditingReplyId] = useState<string>();
   const [editingContent, setEditingContent] = useState('');
+  const [isReplySubmitting, setIsReplySubmitting] = useState(false);
+  const [isReplyUpdating, setIsReplyUpdating] = useState(false);
 
-  const handleReplySubmit = (event: FormEvent<HTMLFormElement>) => {
+  async function handleReplySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedContent = replyContent.trim();
     if (!trimmedContent) return;
 
-    onReplyCreate(trimmedContent);
-    setReplyContent('');
-    setAttachmentName('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+    setIsReplySubmitting(true);
+    try {
+      await onReplyCreate(trimmedContent, attachment ? [attachment] : []);
+      setReplyContent('');
+      setAttachment(undefined);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch {
+      // The mutation layer reports the error. Preserve the reply for retry.
+    } finally {
+      setIsReplySubmitting(false);
+    }
+  }
 
-  const startEditing = (reply: QuestionReply) => {
+  function startEditing(reply: QuestionReply) {
     setEditingReplyId(reply.id);
-    setEditingContent(reply.content);
-  };
+    setEditingContent(stripQuestionImageTokens(reply.content));
+  }
 
-  const cancelEditing = () => {
+  function cancelEditing() {
     setEditingReplyId(undefined);
     setEditingContent('');
-  };
+  }
 
-  const saveEditing = (replyId: string) => {
+  async function saveEditing(replyId: string) {
     const trimmedContent = editingContent.trim();
     if (!trimmedContent) return;
 
-    onReplyUpdate(replyId, trimmedContent);
-    cancelEditing();
-  };
+    setIsReplyUpdating(true);
+    try {
+      await onReplyUpdate(replyId, trimmedContent);
+      cancelEditing();
+    } catch {
+      // The mutation layer reports the error. Keep edit mode open for retry.
+    } finally {
+      setIsReplyUpdating(false);
+    }
+  }
 
   return (
     <div className="px-[18px] pb-[18px]">
@@ -99,24 +117,27 @@ export const QuestionDetailPanel = ({
           <input
             accept="image/*"
             className="sr-only"
-            onChange={(event) => setAttachmentName(event.target.files?.[0]?.name ?? '')}
+            disabled={isReplySubmitting}
+            onChange={(event) => setAttachment(event.target.files?.[0])}
             ref={fileInputRef}
             type="file"
           />
           <Button
-            aria-label={attachmentName ? `첨부 이미지 변경: ${attachmentName}` : '이미지 첨부'}
+            aria-label={attachment ? `첨부 이미지 변경: ${attachment.name}` : '이미지 첨부'}
+            disabled={isReplySubmitting}
             leftIcon={<ImagePlus aria-hidden size={14} />}
             onClick={() => fileInputRef.current?.click()}
             variant="outline"
           >
-            <span className="max-w-40 truncate" title={attachmentName || undefined}>
-              {attachmentName || '이미지 첨부'}
+            <span className="max-w-40 truncate" title={attachment?.name}>
+              {attachment?.name || '이미지 첨부'}
             </span>
           </Button>
           <div className="min-w-0 flex-1">
             <Input
               aria-label="답글 내용"
               className="h-9"
+              disabled={isReplySubmitting}
               onChange={(event) => setReplyContent(event.target.value)}
               placeholder="답글을 입력하세요"
               value={replyContent}
@@ -125,6 +146,7 @@ export const QuestionDetailPanel = ({
           <Button
             className="bg-stology-deep-navy hover:bg-stology-royal-blue"
             disabled={!replyContent.trim()}
+            isLoading={isReplySubmitting}
             type="submit"
           >
             답글 작성
@@ -155,6 +177,7 @@ export const QuestionDetailPanel = ({
                     <Input
                       aria-label={`${reply.authorName} 답글 수정 내용`}
                       className="h-9"
+                      disabled={isReplyUpdating}
                       onChange={(event) => setEditingContent(event.target.value)}
                       value={editingContent}
                     />
@@ -173,12 +196,18 @@ export const QuestionDetailPanel = ({
                       <>
                         <Button
                           disabled={!editingContent.trim()}
+                          isLoading={isReplyUpdating}
                           onClick={() => saveEditing(reply.id)}
                           size="sm"
                         >
                           저장
                         </Button>
-                        <Button onClick={cancelEditing} size="sm" variant="outline">
+                        <Button
+                          disabled={isReplyUpdating}
+                          onClick={cancelEditing}
+                          size="sm"
+                          variant="outline"
+                        >
                           취소
                         </Button>
                       </>
