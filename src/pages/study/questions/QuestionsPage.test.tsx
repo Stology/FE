@@ -2,14 +2,34 @@
 
 import '@testing-library/jest-dom/vitest';
 
+import type { ComponentProps } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { QuestionsPage } from './QuestionsPage';
+import { mockQuestionDetails, mockQuestions } from '@/shared/mocks/questions';
+
+import { QuestionsPage as QuestionsPageComponent } from './QuestionsPage';
+
+type QuestionsPageProps = ComponentProps<typeof QuestionsPageComponent>;
+
+const QuestionsPage = (props: QuestionsPageProps) => (
+  <QuestionsPageComponent
+    initialQuestionDetails={mockQuestionDetails}
+    initialQuestions={mockQuestions}
+    {...props}
+  />
+);
 
 afterEach(cleanup);
 
 describe('QuestionsPage', () => {
+  it('데이터를 전달하지 않으면 목 질문 대신 빈 상태를 표시한다', () => {
+    render(<QuestionsPageComponent />);
+
+    expect(screen.getByText('아직 질문이 없습니다.')).toBeInTheDocument();
+    expect(screen.queryByText('Refresh Token 저장 위치가 궁금합니다')).not.toBeInTheDocument();
+  });
+
   it('최신 질문의 목록 정보를 표시한다', () => {
     render(<QuestionsPage />);
 

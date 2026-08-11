@@ -190,7 +190,7 @@ const WeeklyRecordsTab = ({ study }: WeeklyRecordsTabProps) => {
       errorMessage={
         recordsStudyId
           ? recordsQuery.error
-            ? '주차별 기록을 불러오지 못했습니다.'
+            ? '잠시 후 다시 시도해 주세요.'
             : null
           : '유효하지 않은 스터디 ID입니다.'
       }
@@ -240,7 +240,6 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
       onWeekChange={setSelectedWeek}
       report={reportQuery.data?.report}
       selectedWeek={selectedWeek}
-      useMockFallback={false}
     />
   );
 };

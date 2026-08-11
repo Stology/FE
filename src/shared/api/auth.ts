@@ -2,7 +2,6 @@ import { httpClient } from './http_client';
 import type { ApiResponse } from './types';
 
 export interface ReissueRes {
-  userId: number;
   accessToken: string;
 }
 
