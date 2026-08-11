@@ -10,25 +10,31 @@ const focusableSelector =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface ModalProps {
+  bodyClassName?: string;
   children: ReactNode;
   className?: string;
   description?: string;
   footer?: ReactNode;
   isOpen: boolean;
   onClose: () => void;
+  overlayClassName?: string;
   showCloseButton?: boolean;
   title: string;
+  titleClassName?: string;
 }
 
 export const Modal = ({
+  bodyClassName,
   children,
   className,
   description,
   footer,
   isOpen,
   onClose,
+  overlayClassName,
   showCloseButton = false,
   title,
+  titleClassName,
 }: ModalProps) => {
   const titleId = useId();
   const descriptionId = useId();
@@ -88,7 +94,12 @@ export const Modal = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,25,47,0.28)] px-4 py-8">
+    <div
+      className={cn(
+        'fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,25,47,0.28)] px-4 py-8',
+        overlayClassName,
+      )}
+    >
       <section
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
@@ -103,7 +114,10 @@ export const Modal = ({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-heading-2 text-stology-text-dark" id={titleId}>
+            <h2
+              className={cn('text-heading-2 text-stology-text-dark', titleClassName)}
+              id={titleId}
+            >
               {title}
             </h2>
             {description ? (
@@ -124,7 +138,7 @@ export const Modal = ({
             </Button>
           ) : null}
         </div>
-        <div className="mt-5">{children}</div>
+        <div className={cn('mt-5', bodyClassName)}>{children}</div>
         {footer ? <div className="mt-5 flex justify-end gap-2">{footer}</div> : null}
       </section>
     </div>,

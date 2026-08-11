@@ -223,8 +223,9 @@ describe('StudyPage knowledge route', () => {
     await waitFor(() => screen.getByRole('button', { name: 'JWT 노드' }));
     fireEvent.click(screen.getByRole('button', { name: 'JWT 노드' }));
 
-    await waitFor(() => screen.getByRole('button', { name: /JWT 정리 노트/ }));
-    fireEvent.click(screen.getByRole('button', { name: /JWT 정리 노트/ }));
+    await waitFor(() => screen.getByRole('button', { name: '[원본 자료 보기]' }));
+    fireEvent.click(screen.getByRole('button', { name: '[원본 자료 보기]' }));
+    fireEvent.click(screen.getByRole('button', { name: '다운로드' }));
 
     expect(screen.getByRole('region', { name: '자료 업로드' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(

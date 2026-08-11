@@ -16,6 +16,7 @@ import {
 } from '../model/knowledge_mapper';
 import { buildRelationOptions, RELATION_ORDER } from '../model/knowledge_relations';
 import { KnowledgeRelationToggle } from './KnowledgeRelationToggle';
+import { SourceMaterialsModal } from './SourceMaterialsModal';
 
 interface KnowledgeNodeInspectorProps {
   graph: KnowledgeGraph;
@@ -45,10 +46,12 @@ export const KnowledgeNodeInspector = ({
 }: KnowledgeNodeInspectorProps) => {
   const [relationKind, setRelationKind] = useState<ConceptRelationKind>(RELATION_ORDER[0]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMaterialsModalOpen, setIsMaterialsModalOpen] = useState(false);
 
   useEffect(() => {
     setRelationKind(RELATION_ORDER[0]);
     setIsExpanded(false);
+    setIsMaterialsModalOpen(false);
   }, [node?.id]);
 
   const nodesById = useMemo(
@@ -108,20 +111,32 @@ export const KnowledgeNodeInspector = ({
       ) : materials.length === 0 ? (
         <p className="mt-2 text-caption text-stology-text-light">아직 연결된 자료가 없습니다.</p>
       ) : (
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-2">
           {materials.map((material) => (
-            <li key={material.id}>
-              <button
-                className="w-full rounded text-left text-[13px] leading-5 text-stology-text-dark underline-offset-2 transition hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stology-electric-blue"
-                onClick={() => onMaterialOpen?.(material)}
-                type="button"
-              >
-                {material.title} · {material.uploaderName} · {material.uploadedAt}
-              </button>
+            <li
+              className="border-b border-stology-off-white py-[7px] text-[11px] leading-[16.5px] text-stology-text-dark"
+              key={material.id}
+            >
+              <span aria-hidden>- </span>
+              <span className="font-semibold">{material.title}</span>
+              <span>
+                {' '}
+                · {material.uploaderName} · {material.uploadedAt}
+              </span>
             </li>
           ))}
         </ul>
       )}
+
+      {!materialsIsLoading && !materialsError && materials.length > 0 ? (
+        <button
+          className="mt-2 self-start rounded text-[11px] font-bold leading-[16.5px] text-stology-electric-blue transition hover:text-stology-royal-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stology-electric-blue"
+          onClick={() => setIsMaterialsModalOpen(true)}
+          type="button"
+        >
+          [원본 자료 보기]
+        </button>
+      ) : null}
 
       <h4 className="mt-6 text-label text-stology-text-dark">연결 관계</h4>
       <KnowledgeRelationToggle
@@ -160,6 +175,14 @@ export const KnowledgeNodeInspector = ({
           ) : null}
         </>
       )}
+
+      <SourceMaterialsModal
+        isOpen={isMaterialsModalOpen}
+        materials={materials}
+        nodeLabel={node.label}
+        onClose={() => setIsMaterialsModalOpen(false)}
+        onMaterialOpen={onMaterialOpen}
+      />
     </aside>
   );
 };
