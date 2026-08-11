@@ -21,7 +21,7 @@ interface QuestionFormModalProps {
   isOpen: boolean;
   mode?: 'create' | 'edit';
   onClose: () => void;
-  onSubmit: (values: QuestionFormValues) => void;
+  onSubmit: (values: QuestionFormValues) => Promise<void> | void;
 }
 
 const emptyValues: Pick<QuestionFormValues, 'content' | 'title'> = {
@@ -58,6 +58,7 @@ export const QuestionFormModal = ({
 }: QuestionFormModalProps) => {
   const formId = useId();
   const [images, setImages] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const initialContent = initialValues.content;
   const initialTitle = initialValues.title;
   const {
@@ -85,13 +86,20 @@ export const QuestionFormModal = ({
     onClose();
   };
 
-  const submitQuestion = handleSubmit((values) => {
-    onSubmit({
-      content: values.content.trim(),
-      images,
-      title: values.title.trim(),
-    });
-    closeModal();
+  const submitQuestion = handleSubmit(async (values) => {
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        content: values.content.trim(),
+        images,
+        title: values.title.trim(),
+      });
+      closeModal();
+    } catch {
+      // The mutation layer reports the error. Keep the form open for retry.
+    } finally {
+      setIsSubmitting(false);
+    }
   });
 
   const handleImagePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -118,16 +126,16 @@ export const QuestionFormModal = ({
     <Modal
       footer={
         <>
-          <Button onClick={closeModal} variant="outline">
+          <Button disabled={isSubmitting} onClick={closeModal} variant="outline">
             닫기
           </Button>
-          <Button disabled={!isValid} form={formId} type="submit">
+          <Button disabled={!isValid} form={formId} isLoading={isSubmitting} type="submit">
             {isEditing ? '수정하기' : '질문하기'}
           </Button>
         </>
       }
       isOpen={isOpen}
-      onClose={closeModal}
+      onClose={isSubmitting ? () => undefined : closeModal}
       title={isEditing ? '질문 수정' : '질문 작성'}
     >
       <form className="space-y-4" id={formId} onSubmit={submitQuestion}>

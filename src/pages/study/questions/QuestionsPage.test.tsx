@@ -121,7 +121,7 @@ describe('QuestionsPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('답글을 작성하고 답글 수를 갱신한다', () => {
+  it('답글을 작성하고 답글 수를 갱신한다', async () => {
     render(<QuestionsPage />);
     fireEvent.click(screen.getByRole('button', { name: /Refresh Token 저장 위치가 궁금합니다/ }));
 
@@ -132,12 +132,12 @@ describe('QuestionsPage', () => {
     fireEvent.change(replyInput, { target: { value: '쿠키 설정을 함께 확인하겠습니다.' } });
     fireEvent.click(submitButton);
 
-    expect(screen.getByText('쿠키 설정을 함께 확인하겠습니다.')).toBeInTheDocument();
-    expect(screen.getByText('답글 4')).toBeInTheDocument();
-    expect(replyInput).toHaveValue('');
+    expect(await screen.findByText('쿠키 설정을 함께 확인하겠습니다.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('답글 4')).toBeInTheDocument());
+    await waitFor(() => expect(replyInput).toHaveValue(''));
   });
 
-  it('본인 답글을 인라인으로 수정한다', () => {
+  it('본인 답글을 인라인으로 수정한다', async () => {
     render(<QuestionsPage />);
     fireEvent.click(screen.getByRole('button', { name: /Refresh Token 저장 위치가 궁금합니다/ }));
     fireEvent.click(screen.getByRole('button', { name: '수정' }));
@@ -146,10 +146,12 @@ describe('QuestionsPage', () => {
     fireEvent.change(editInput, { target: { value: '토큰 재발급 정책까지 정리했습니다.' } });
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
 
-    expect(screen.getByText('토큰 재발급 정책까지 정리했습니다.')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('textbox', { name: '김스토 답글 수정 내용' }),
-    ).not.toBeInTheDocument();
+    expect(await screen.findByText('토큰 재발급 정책까지 정리했습니다.')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('textbox', { name: '김스토 답글 수정 내용' }),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it('본인 질문을 기존 내용으로 열어 수정한다', async () => {
@@ -183,7 +185,7 @@ describe('QuestionsPage', () => {
     expect(screen.getByText('서비스별 만료 시간 설정 기준을 알고 싶습니다.')).toBeInTheDocument();
   });
 
-  it('본인 질문을 확인 후 삭제한다', () => {
+  it('본인 질문을 확인 후 삭제한다', async () => {
     const handleQuestionDelete = vi.fn();
 
     render(<QuestionsPage onQuestionDelete={handleQuestionDelete} />);
@@ -193,11 +195,11 @@ describe('QuestionsPage', () => {
     expect(screen.getByRole('dialog', { name: '질문을 삭제하시겠습니까?' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '삭제' }));
 
-    expect(handleQuestionDelete).toHaveBeenCalledWith('jwt-expiration');
-    expect(screen.queryByText('JWT 만료 시간 기준')).not.toBeInTheDocument();
+    await waitFor(() => expect(handleQuestionDelete).toHaveBeenCalledWith('jwt-expiration'));
+    await waitFor(() => expect(screen.queryByText('JWT 만료 시간 기준')).not.toBeInTheDocument());
   });
 
-  it('본인 답글을 확인 후 삭제하고 답글 수를 갱신한다', () => {
+  it('본인 답글을 확인 후 삭제하고 답글 수를 갱신한다', async () => {
     const handleReplyDelete = vi.fn();
 
     render(<QuestionsPage onReplyDelete={handleReplyDelete} />);
@@ -213,11 +215,15 @@ describe('QuestionsPage', () => {
     expect(screen.getByRole('dialog', { name: '답글을 삭제하시겠습니까?' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '삭제' }));
 
-    expect(handleReplyDelete).toHaveBeenCalledWith('refresh-token-storage', 'refresh-reply-3');
-    expect(
-      screen.queryByText('서버의 토큰 재발급 정책도 같이 정리해볼게요.'),
-    ).not.toBeInTheDocument();
-    expect(questionItem).toHaveTextContent('답글 2');
+    await waitFor(() =>
+      expect(handleReplyDelete).toHaveBeenCalledWith('refresh-token-storage', 'refresh-reply-3'),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByText('서버의 토큰 재발급 정책도 같이 정리해볼게요.'),
+      ).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(questionItem).toHaveTextContent('답글 2'));
   });
 
   it('질문 작성 모달을 닫으면 입력 내용을 폐기한다', () => {

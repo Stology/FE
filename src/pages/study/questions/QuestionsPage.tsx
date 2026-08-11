@@ -9,6 +9,7 @@ import { QuestionDetailPanel } from './QuestionDetailPanel';
 import { QuestionFormModal, type QuestionFormValues } from './QuestionFormModal';
 import { QuestionListItem } from './QuestionListItem';
 import { QuestionPagination } from './QuestionPagination';
+import { stripQuestionImageTokens } from './model/question_mutation_content';
 
 interface QuestionsPageProps {
   canMutate?: boolean;
@@ -16,11 +17,13 @@ interface QuestionsPageProps {
   isLoading?: boolean;
   isReadOnly?: boolean;
   onPageChange?: (page: number) => void;
-  onQuestionCreate?: (values: QuestionFormValues) => void;
-  onQuestionDelete?: (questionId: string) => void;
+  onQuestionCreate?: (values: QuestionFormValues) => Promise<void> | void;
+  onQuestionDelete?: (questionId: string) => Promise<void> | void;
   onQuestionSelect?: (questionId: string) => void;
-  onQuestionUpdate?: (questionId: string, values: QuestionFormValues) => void;
-  onReplyDelete?: (questionId: string, replyId: string) => void;
+  onQuestionUpdate?: (questionId: string, values: QuestionFormValues) => Promise<void> | void;
+  onReplyCreate?: (questionId: string, content: string, images: File[]) => Promise<void> | void;
+  onReplyDelete?: (questionId: string, replyId: string) => Promise<void> | void;
+  onReplyUpdate?: (questionId: string, replyId: string, content: string) => Promise<void> | void;
   onRetry?: () => void;
   page?: number;
   pageSize?: number;
@@ -45,7 +48,9 @@ export const QuestionsPage = ({
   onQuestionDelete,
   onQuestionSelect,
   onQuestionUpdate,
+  onReplyCreate,
   onReplyDelete,
+  onReplyUpdate,
   onRetry,
   page,
   pageSize = DEFAULT_PAGE_SIZE,
@@ -66,6 +71,7 @@ export const QuestionsPage = ({
     | { questionId: string; replyId: string; type: 'reply' }
     | null
   >(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const questions = controlledQuestions ?? internalQuestions;
   const questionDetails = controlledQuestionDetails ?? internalQuestionDetails;
   const totalPages = controlledTotalPages ?? Math.ceil(questions.length / validPageSize);
@@ -104,75 +110,97 @@ export const QuestionsPage = ({
     onQuestionSelect?.(questionId);
   };
 
-  const handleReplyCreate = (questionId: string, content: string) => {
-    setRepliesByQuestion((currentReplies) => ({
-      ...currentReplies,
-      [questionId]: [
-        ...(currentReplies[questionId] ?? questionDetails[questionId]?.replies ?? []),
-        {
-          id: `${questionId}-reply-${crypto.randomUUID()}`,
-          authorName: '김스토',
-          content,
-          createdAt: new Date().toISOString().slice(0, 10),
-          isMine: true,
-        },
-      ],
-    }));
-  };
+  const handleReplyCreate = async (questionId: string, content: string, images: File[]) => {
+    await onReplyCreate?.(questionId, content, images);
 
-  const handleReplyUpdate = (questionId: string, replyId: string, content: string) => {
-    setRepliesByQuestion((currentReplies) => ({
-      ...currentReplies,
-      [questionId]: (currentReplies[questionId] ?? questionDetails[questionId]?.replies ?? []).map(
-        (reply) => (reply.id === replyId ? { ...reply, content } : reply),
-      ),
-    }));
-  };
-
-  const handleDeleteConfirm = () => {
-    if (!deleteTarget) return;
-
-    if (deleteTarget.type === 'reply') {
-      const { questionId, replyId } = deleteTarget;
+    if (controlledQuestionDetails === undefined) {
       setRepliesByQuestion((currentReplies) => ({
         ...currentReplies,
-        [questionId]: (currentReplies[questionId] ?? []).filter((reply) => reply.id !== replyId),
+        [questionId]: [
+          ...(currentReplies[questionId] ?? questionDetails[questionId]?.replies ?? []),
+          {
+            id: `${questionId}-reply-${crypto.randomUUID()}`,
+            authorName: '김스토',
+            content,
+            createdAt: new Date().toISOString().slice(0, 10),
+            isMine: true,
+          },
+        ],
       }));
-      onReplyDelete?.(questionId, replyId);
-      setDeleteTarget(null);
-      return;
     }
-
-    const { questionId } = deleteTarget;
-    if (controlledQuestions === undefined) {
-      setInternalQuestions((currentQuestions) =>
-        currentQuestions.filter((question) => question.id !== questionId),
-      );
-    }
-    if (controlledQuestionDetails === undefined) {
-      setInternalQuestionDetails((currentDetails) => {
-        const nextDetails = { ...currentDetails };
-        delete nextDetails[questionId];
-        return nextDetails;
-      });
-    }
-    setRepliesByQuestion((currentReplies) => {
-      const nextReplies = { ...currentReplies };
-      delete nextReplies[questionId];
-      return nextReplies;
-    });
-    setExpandedQuestionIds((currentIds) => {
-      const nextIds = new Set(currentIds);
-      nextIds.delete(questionId);
-      return nextIds;
-    });
-    onQuestionDelete?.(questionId);
-    setDeleteTarget(null);
   };
 
-  const handleQuestionSubmit = (values: QuestionFormValues) => {
+  const handleReplyUpdate = async (questionId: string, replyId: string, content: string) => {
+    await onReplyUpdate?.(questionId, replyId, content);
+
+    if (controlledQuestionDetails === undefined) {
+      setRepliesByQuestion((currentReplies) => ({
+        ...currentReplies,
+        [questionId]: (
+          currentReplies[questionId] ??
+          questionDetails[questionId]?.replies ??
+          []
+        ).map((reply) => (reply.id === replyId ? { ...reply, content } : reply)),
+      }));
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === 'reply') {
+        const { questionId, replyId } = deleteTarget;
+        await onReplyDelete?.(questionId, replyId);
+        if (controlledQuestionDetails === undefined) {
+          setRepliesByQuestion((currentReplies) => ({
+            ...currentReplies,
+            [questionId]: (currentReplies[questionId] ?? []).filter(
+              (reply) => reply.id !== replyId,
+            ),
+          }));
+        }
+        setDeleteTarget(null);
+        return;
+      }
+
+      const { questionId } = deleteTarget;
+      await onQuestionDelete?.(questionId);
+      if (controlledQuestions === undefined) {
+        setInternalQuestions((currentQuestions) =>
+          currentQuestions.filter((question) => question.id !== questionId),
+        );
+      }
+      if (controlledQuestionDetails === undefined) {
+        setInternalQuestionDetails((currentDetails) => {
+          const nextDetails = { ...currentDetails };
+          delete nextDetails[questionId];
+          return nextDetails;
+        });
+        setRepliesByQuestion((currentReplies) => {
+          const nextReplies = { ...currentReplies };
+          delete nextReplies[questionId];
+          return nextReplies;
+        });
+      }
+      setExpandedQuestionIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(questionId);
+        return nextIds;
+      });
+      setDeleteTarget(null);
+    } catch {
+      // The mutation layer reports the error. Keep the dialog open for retry.
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleQuestionSubmit = async (values: QuestionFormValues) => {
     if (questionForm?.mode === 'edit') {
       const { questionId } = questionForm;
+      await onQuestionUpdate?.(questionId, values);
 
       if (controlledQuestions === undefined) {
         setInternalQuestions((currentQuestions) =>
@@ -198,9 +226,10 @@ export const QuestionsPage = ({
           },
         }));
       }
-      onQuestionUpdate?.(questionId, values);
       return;
     }
+
+    await onQuestionCreate?.(values);
 
     const questionId = `question-${crypto.randomUUID()}`;
     const createdAt = new Date().toISOString().slice(0, 10);
@@ -229,7 +258,6 @@ export const QuestionsPage = ({
     }
     setRepliesByQuestion((currentReplies) => ({ ...currentReplies, [questionId]: [] }));
     if (page === undefined) setInternalPage(1);
-    onQuestionCreate?.(values);
   };
 
   const editingQuestion =
@@ -305,7 +333,9 @@ export const QuestionsPage = ({
                       onQuestionEdit={() =>
                         setQuestionForm({ mode: 'edit', questionId: question.id })
                       }
-                      onReplyCreate={(content) => handleReplyCreate(question.id, content)}
+                      onReplyCreate={(content, images) =>
+                        handleReplyCreate(question.id, content, images)
+                      }
                       onReplyDelete={(replyId) =>
                         setDeleteTarget({
                           questionId: question.id,
@@ -367,7 +397,10 @@ export const QuestionsPage = ({
       <QuestionFormModal
         initialValues={
           editingQuestion
-            ? { content: editingQuestion.content, title: editingQuestion.title }
+            ? {
+                content: stripQuestionImageTokens(editingQuestion.content),
+                title: editingQuestion.title,
+              }
             : undefined
         }
         isOpen={questionForm !== null}
@@ -384,6 +417,7 @@ export const QuestionsPage = ({
             ? '질문과 연결된 답글이 함께 삭제되며 복구할 수 없습니다.'
             : '삭제한 답글은 복구할 수 없습니다.'
         }
+        isLoading={isDeleting}
         isOpen={deleteTarget !== null}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}

@@ -48,6 +48,25 @@ export interface QuestionDetailRes {
   title: string;
 }
 
+export interface QuestionMutationReq {
+  content: string;
+  images: File[];
+  title: string;
+}
+
+export interface AnswerMutationReq {
+  content: string;
+  images: File[];
+}
+
+interface WriteQuestionResult {
+  questionId: number;
+}
+
+interface WriteAnswerResult {
+  answerId: number;
+}
+
 export async function getQuestions(
   studyId: string,
   page: number,
@@ -70,4 +89,87 @@ export async function getQuestionDetail(
   );
 
   return data.result;
+}
+
+export async function createQuestion(
+  studyId: string,
+  request: QuestionMutationReq,
+): Promise<WriteQuestionResult> {
+  const { data } = await httpClient.post<ApiResponse<WriteQuestionResult>>(
+    `/api/study/${studyId}/question`,
+    createQuestionFormData(request),
+  );
+
+  return data.result;
+}
+
+export async function updateQuestion(
+  studyId: string,
+  questionId: string,
+  request: QuestionMutationReq,
+): Promise<WriteQuestionResult> {
+  const { data } = await httpClient.patch<ApiResponse<WriteQuestionResult>>(
+    `/api/study/${studyId}/question/${questionId}`,
+    createQuestionFormData(request),
+  );
+
+  return data.result;
+}
+
+export async function deleteQuestion(studyId: string, questionId: string): Promise<void> {
+  await httpClient.delete<ApiResponse<void>>(`/api/study/${studyId}/question/${questionId}`);
+}
+
+export async function createAnswer(
+  studyId: string,
+  questionId: string,
+  request: AnswerMutationReq,
+): Promise<WriteAnswerResult> {
+  const { data } = await httpClient.post<ApiResponse<WriteAnswerResult>>(
+    `/api/study/${studyId}/question/${questionId}/answer`,
+    createAnswerFormData(request),
+  );
+
+  return data.result;
+}
+
+export async function updateAnswer(
+  studyId: string,
+  questionId: string,
+  answerId: string,
+  request: AnswerMutationReq,
+): Promise<WriteAnswerResult> {
+  const { data } = await httpClient.patch<ApiResponse<WriteAnswerResult>>(
+    `/api/study/${studyId}/question/${questionId}/answer/${answerId}`,
+    createAnswerFormData(request),
+  );
+
+  return data.result;
+}
+
+export async function deleteAnswer(
+  studyId: string,
+  questionId: string,
+  answerId: string,
+): Promise<void> {
+  await httpClient.delete<ApiResponse<void>>(
+    `/api/study/${studyId}/question/${questionId}/answer/${answerId}`,
+  );
+}
+
+function createQuestionFormData(request: QuestionMutationReq): FormData {
+  const formData = createContentFormData(request.content, request.images);
+  formData.append('title', request.title);
+  return formData;
+}
+
+function createAnswerFormData(request: AnswerMutationReq): FormData {
+  return createContentFormData(request.content, request.images);
+}
+
+function createContentFormData(content: string, images: File[]): FormData {
+  const formData = new FormData();
+  formData.append('content', content);
+  images.forEach((image) => formData.append('images', image));
+  return formData;
 }

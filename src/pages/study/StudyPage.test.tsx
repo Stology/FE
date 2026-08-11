@@ -12,12 +12,15 @@ import { httpClient } from '@/shared/api/http_client';
 import { StudyPage } from './StudyPage';
 
 vi.mock('@/shared/api/http_client', () => ({
-  httpClient: { get: vi.fn(), patch: vi.fn() },
+  httpClient: { delete: vi.fn(), get: vi.fn(), patch: vi.fn(), post: vi.fn() },
 }));
 
 afterEach(() => {
   cleanup();
+  vi.mocked(httpClient.delete).mockReset();
   vi.mocked(httpClient.get).mockReset();
+  vi.mocked(httpClient.patch).mockReset();
+  vi.mocked(httpClient.post).mockReset();
 });
 
 const emptyGraphResponse = {
@@ -381,7 +384,7 @@ describe('StudyPage questions route', () => {
     renderStudyRoute('/studies/1/questions');
 
     expect(await screen.findByText('1페이지 질문')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '질문 작성' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '질문 작성' })).toBeInTheDocument();
     expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question', {
       params: { page: 0, size: 10 },
     });
