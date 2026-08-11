@@ -39,10 +39,10 @@ export const SourceMaterialsModal = ({
             className="grid min-h-[43px] shrink-0 grid-cols-1 gap-1 rounded-[5.5px] border border-stology-border-light px-[14px] py-2 sm:h-[43px] sm:grid-cols-[93px_minmax(0,1fr)] sm:items-center sm:gap-[9px] sm:py-0"
             key={material.id}
           >
-<strong
-  className="truncate text-[13px] leading-[19.5px] text-stology-text-dark"
-  id={`source-material-title-${material.id}`}
->
+            <strong
+              className="truncate text-[13px] leading-[19.5px] text-stology-text-dark"
+              id={`source-material-title-${material.id}`}
+            >
               {material.title}
             </strong>
             <div className="flex min-w-0 items-center justify-between gap-2">
