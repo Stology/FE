@@ -110,7 +110,7 @@ export const QuestionsPage = ({
     onQuestionSelect?.(questionId);
   };
 
-  const handleReplyCreate = async (questionId: string, content: string, images: File[]) => {
+  async function handleReplyCreate(questionId: string, content: string, images: File[]) {
     await onReplyCreate?.(questionId, content, images);
 
     if (controlledQuestionDetails === undefined) {
@@ -128,9 +128,9 @@ export const QuestionsPage = ({
         ],
       }));
     }
-  };
+  }
 
-  const handleReplyUpdate = async (questionId: string, replyId: string, content: string) => {
+  async function handleReplyUpdate(questionId: string, replyId: string, content: string) {
     await onReplyUpdate?.(questionId, replyId, content);
 
     if (controlledQuestionDetails === undefined) {
@@ -143,9 +143,9 @@ export const QuestionsPage = ({
         ).map((reply) => (reply.id === replyId ? { ...reply, content } : reply)),
       }));
     }
-  };
+  }
 
-  const handleDeleteConfirm = async () => {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) return;
 
     setIsDeleting(true);
@@ -195,9 +195,9 @@ export const QuestionsPage = ({
     } finally {
       setIsDeleting(false);
     }
-  };
+  }
 
-  const handleQuestionSubmit = async (values: QuestionFormValues) => {
+  async function handleQuestionSubmit(values: QuestionFormValues) {
     if (questionForm?.mode === 'edit') {
       const { questionId } = questionForm;
       await onQuestionUpdate?.(questionId, values);
@@ -258,7 +258,7 @@ export const QuestionsPage = ({
     }
     setRepliesByQuestion((currentReplies) => ({ ...currentReplies, [questionId]: [] }));
     if (page === undefined) setInternalPage(1);
-  };
+  }
 
   const editingQuestion =
     questionForm?.mode === 'edit' ? questionDetails[questionForm.questionId] : undefined;

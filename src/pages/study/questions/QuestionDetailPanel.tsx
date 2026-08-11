@@ -35,7 +35,7 @@ export const QuestionDetailPanel = ({
   const [isReplySubmitting, setIsReplySubmitting] = useState(false);
   const [isReplyUpdating, setIsReplyUpdating] = useState(false);
 
-  const handleReplySubmit = async (event: FormEvent<HTMLFormElement>) => {
+  async function handleReplySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedContent = replyContent.trim();
     if (!trimmedContent) return;
@@ -51,19 +51,19 @@ export const QuestionDetailPanel = ({
     } finally {
       setIsReplySubmitting(false);
     }
-  };
+  }
 
-  const startEditing = (reply: QuestionReply) => {
+  function startEditing(reply: QuestionReply) {
     setEditingReplyId(reply.id);
     setEditingContent(stripQuestionImageTokens(reply.content));
-  };
+  }
 
-  const cancelEditing = () => {
+  function cancelEditing() {
     setEditingReplyId(undefined);
     setEditingContent('');
-  };
+  }
 
-  const saveEditing = async (replyId: string) => {
+  async function saveEditing(replyId: string) {
     const trimmedContent = editingContent.trim();
     if (!trimmedContent) return;
 
@@ -76,7 +76,7 @@ export const QuestionDetailPanel = ({
     } finally {
       setIsReplyUpdating(false);
     }
-  };
+  }
 
   return (
     <div className="px-[18px] pb-[18px]">

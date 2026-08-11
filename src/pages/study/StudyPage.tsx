@@ -298,22 +298,18 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
     );
   };
 
-  const handleQuestionCreate = async (values: {
-    content: string;
-    images: File[];
-    title: string;
-  }) => {
+  async function handleQuestionCreate(values: { content: string; images: File[]; title: string }) {
     await createQuestionMutation.mutateAsync({
       ...values,
       content: buildQuestionMutationContent(values.content, [], values.images),
     });
     setPage(1);
-  };
+  }
 
-  const handleQuestionUpdate = async (
+  async function handleQuestionUpdate(
     questionId: string,
     values: { content: string; images: File[]; title: string },
-  ) => {
+  ) {
     await updateQuestionMutation.mutateAsync({
       ...values,
       content: buildQuestionMutationContent(
@@ -323,22 +319,22 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
       ),
       questionId,
     });
-  };
+  }
 
-  const handleQuestionDelete = async (questionId: string) => {
+  async function handleQuestionDelete(questionId: string) {
     await deleteQuestionMutation.mutateAsync(questionId);
     setRequestedQuestionIds((currentIds) => currentIds.filter((id) => id !== questionId));
-  };
+  }
 
-  const handleReplyCreate = async (questionId: string, content: string, images: File[]) => {
+  async function handleReplyCreate(questionId: string, content: string, images: File[]) {
     await createAnswerMutation.mutateAsync({
       content: buildQuestionMutationContent(content, [], images),
       images,
       questionId,
     });
-  };
+  }
 
-  const handleReplyUpdate = async (questionId: string, replyId: string, content: string) => {
+  async function handleReplyUpdate(questionId: string, replyId: string, content: string) {
     const reply = questionDetails[questionId]?.replies.find(({ id }) => id === replyId);
     await updateAnswerMutation.mutateAsync({
       answerId: replyId,
@@ -346,11 +342,11 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
       images: [],
       questionId,
     });
-  };
+  }
 
-  const handleReplyDelete = async (questionId: string, replyId: string) => {
+  async function handleReplyDelete(questionId: string, replyId: string) {
     await deleteAnswerMutation.mutateAsync({ answerId: replyId, questionId });
-  };
+  }
 
   return (
     <QuestionsPage

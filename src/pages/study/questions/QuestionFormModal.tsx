@@ -1,5 +1,5 @@
 import { ImageIcon, X } from 'lucide-react';
-import { useEffect, useId, useState, type ClipboardEvent } from 'react';
+import { useEffect, useId, useState, type ClipboardEvent, type FormEvent } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -86,7 +86,7 @@ export const QuestionFormModal = ({
     onClose();
   };
 
-  const submitQuestion = handleSubmit(async (values) => {
+  async function submitValues(values: Pick<QuestionFormValues, 'content' | 'title'>) {
     setIsSubmitting(true);
     try {
       await onSubmit({
@@ -100,7 +100,11 @@ export const QuestionFormModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  });
+  }
+
+  async function submitQuestion(event: FormEvent<HTMLFormElement>) {
+    await handleSubmit(submitValues)(event);
+  }
 
   const handleImagePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
     const pastedImages = Array.from(event.clipboardData.items)
