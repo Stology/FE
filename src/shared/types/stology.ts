@@ -180,15 +180,22 @@ export interface QuestionSummary {
   title: string;
 }
 
+export interface QuestionImage {
+  id: string;
+  url: string;
+}
+
 export interface QuestionReply {
   authorName: string;
   content: string;
   createdAt: string;
   id: string;
+  images?: QuestionImage[];
   isMine: boolean;
 }
 
 export interface QuestionDetail extends QuestionSummary {
   content: string;
+  images?: QuestionImage[];
   replies: QuestionReply[];
 }

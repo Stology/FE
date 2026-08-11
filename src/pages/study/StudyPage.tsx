@@ -14,6 +14,7 @@ import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
 
 import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
+import { useQuestionDetails, useQuestions } from './questions/hooks/useQuestions';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { useWeeklyRecords } from './records/hooks/useWeeklyRecords';
@@ -246,6 +247,69 @@ interface QuestionsTabProps {
   study: Study;
 }
 
-const QuestionsTab = ({ study }: QuestionsTabProps) => (
-  <QuestionsPage isReadOnly={study.status === 'ended'} />
-);
+const QUESTIONS_PAGE_SIZE = 10;
+
+const QuestionsTab = ({ study }: QuestionsTabProps) => {
+  const questionsStudyId = /^\d+$/.test(study.id) ? study.id : undefined;
+  const [page, setPage] = useState(1);
+  const [requestedQuestionIds, setRequestedQuestionIds] = useState<string[]>([]);
+  const questionsQuery = useQuestions(questionsStudyId, page - 1, QUESTIONS_PAGE_SIZE);
+  const detailQueries = useQuestionDetails(questionsStudyId, requestedQuestionIds);
+
+  const questionDetails = Object.fromEntries(
+    requestedQuestionIds.flatMap((questionId, index) => {
+      const detail = detailQueries[index]?.data;
+      return detail ? [[questionId, detail]] : [];
+    }),
+  );
+  const questionDetailStates = Object.fromEntries(
+    requestedQuestionIds.map((questionId, index) => {
+      const detailQuery = detailQueries[index];
+
+      return [
+        questionId,
+        {
+          errorMessage: detailQuery?.error ? '잠시 후 다시 시도해 주세요.' : null,
+          isLoading: Boolean(detailQuery?.isLoading || detailQuery?.isFetching),
+          onRetry: detailQuery ? () => detailQuery.refetch() : undefined,
+        },
+      ];
+    }),
+  );
+
+  const handlePageChange = (nextPage: number) => {
+    setRequestedQuestionIds([]);
+    setPage(nextPage);
+  };
+
+  const handleQuestionSelect = (questionId: string) => {
+    setRequestedQuestionIds((currentIds) =>
+      currentIds.includes(questionId) ? currentIds : [...currentIds, questionId],
+    );
+  };
+
+  return (
+    <QuestionsPage
+      canMutate={false}
+      errorMessage={
+        questionsStudyId
+          ? questionsQuery.error
+            ? '잠시 후 다시 시도해 주세요.'
+            : null
+          : '주소의 스터디 ID를 확인해 주세요.'
+      }
+      isLoading={questionsQuery.isLoading || questionsQuery.isFetching}
+      isReadOnly={study.status === 'ended' || questionsQuery.data?.studyEnded === true}
+      key={page}
+      onPageChange={handlePageChange}
+      onQuestionSelect={handleQuestionSelect}
+      onRetry={questionsStudyId ? () => questionsQuery.refetch() : undefined}
+      page={page}
+      pageSize={QUESTIONS_PAGE_SIZE}
+      questionDetails={questionDetails}
+      questionDetailStates={questionDetailStates}
+      questions={questionsQuery.data?.questions ?? []}
+      totalPages={questionsQuery.data?.totalPages ?? 0}
+    />
+  );
+};

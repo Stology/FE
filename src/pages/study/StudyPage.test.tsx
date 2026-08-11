@@ -49,6 +49,64 @@ const createWeeklyReportResponse = (currentWeek: number) => ({
   },
 });
 
+const createQuestionsResponse = (page: number, studyEnded = false) => ({
+  data: {
+    code: 'QUESTION200_1',
+    errorDetail: null,
+    message: '질문 목록을 조회했습니다.',
+    result: {
+      currentPage: page,
+      isFirst: page === 0,
+      isLast: page === 1,
+      listSize: 1,
+      questionList: [
+        {
+          answerCount: 1,
+          authorName: '김스토',
+          createdAt: '2026-03-15T10:30:00.000',
+          hasImage: true,
+          isMine: true,
+          questionId: page + 10,
+          title: `${page + 1}페이지 질문`,
+        },
+      ],
+      studyEnded,
+      totalElements: 2,
+      totalPage: 2,
+    },
+    success: true,
+  },
+});
+
+const questionDetailResponse = {
+  data: {
+    code: 'QUESTION200_2',
+    errorDetail: null,
+    message: '질문 상세를 조회했습니다.',
+    result: {
+      answerList: [
+        {
+          answerId: 31,
+          authorName: '이영희',
+          content: '쿠키 설정도 확인해 보세요.',
+          createdAt: '2026-03-15T11:00:00.000',
+          images: [],
+          isMine: false,
+        },
+      ],
+      authorName: '김스토',
+      content: 'Refresh Token은 어디에 저장하나요? [[img:21]]',
+      createdAt: '2026-03-15T10:30:00.000',
+      images: [{ imageId: 21, imageUrl: 'https://example.com/question.png' }],
+      isMine: true,
+      questionId: 10,
+      studyEnded: false,
+      title: '1페이지 질문',
+    },
+    success: true,
+  },
+};
+
 const createQueryClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 const renderStudyRoute = (path: string) =>
@@ -162,22 +220,6 @@ describe('StudyPage knowledge route', () => {
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(
       '/studies/spring-study/upload?materialId=7',
     );
-  });
-});
-
-describe('StudyPage questions route', () => {
-  it('질문함 경로에서 질문 목록을 표시한다', () => {
-    renderStudyRoute('/studies/spring-study/questions');
-
-    expect(screen.getByRole('region', { name: '질문함' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '질문 작성' })).toBeInTheDocument();
-  });
-
-  it('종료된 스터디의 질문함을 읽기 전용으로 표시한다', () => {
-    renderStudyRoute('/studies/ended-study/questions');
-
-    expect(screen.getByRole('region', { name: '질문함' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '질문 작성' })).not.toBeInTheDocument();
   });
 });
 
@@ -327,23 +369,76 @@ describe('StudyPage weekly records route', () => {
 });
 
 describe('StudyPage questions route', () => {
-  it('질문함 경로에서 질문 목록과 작성 기능을 표시한다', () => {
-    renderStudyRoute('/studies/spring-study/questions');
+  it('질문 목록을 서버 페이지 기준으로 조회하고 페이지를 전환한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string, config) =>
+      Promise.resolve(
+        url.endsWith('/question/10')
+          ? questionDetailResponse
+          : createQuestionsResponse(config?.params?.page ?? 0),
+      ),
+    );
 
-    expect(screen.getByRole('button', { name: '질문 작성' })).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: '질문 목록' })).toBeInTheDocument();
-    expect(screen.getByText('Refresh Token 저장 위치가 궁금합니다')).toBeInTheDocument();
+    renderStudyRoute('/studies/1/questions');
+
+    expect(await screen.findByText('1페이지 질문')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '질문 작성' })).not.toBeInTheDocument();
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question', {
+      params: { page: 0, size: 10 },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /1페이지 질문/ }));
+    expect(await screen.findByText('Refresh Token은 어디에 저장하나요?')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '2페이지' }));
+
+    expect(await screen.findByText('2페이지 질문')).toBeInTheDocument();
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question', {
+      params: { page: 1, size: 10 },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '1페이지' }));
+
+    expect(await screen.findByRole('button', { name: /1페이지 질문/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
-  it('종료된 스터디의 질문함을 읽기 전용으로 표시한다', () => {
-    renderStudyRoute('/studies/ended-study/questions');
+  it('질문을 펼치면 상세와 답글 및 첨부 이미지를 조회한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string) =>
+      Promise.resolve(
+        url.endsWith('/question/10') ? questionDetailResponse : createQuestionsResponse(0),
+      ),
+    );
 
-    expect(screen.getByRole('list', { name: '질문 목록' })).toBeInTheDocument();
+    renderStudyRoute('/studies/1/questions');
+
+    fireEvent.click(await screen.findByRole('button', { name: /1페이지 질문/ }));
+
+    expect(await screen.findByText('Refresh Token은 어디에 저장하나요?')).toBeInTheDocument();
+    expect(screen.getByText('쿠키 설정도 확인해 보세요.')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '김스토 질문 첨부 이미지' })).toHaveAttribute(
+      'src',
+      'https://example.com/question.png',
+    );
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question/10');
+  });
+
+  it('API가 종료 상태를 반환하면 질문함을 읽기 전용으로 표시한다', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue(createQuestionsResponse(0, true));
+
+    renderStudyRoute('/studies/1/questions');
+
+    expect(await screen.findByText('1페이지 질문')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '질문 작성' })).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /Refresh Token 저장 위치가 궁금합니다/ }));
+  it('숫자가 아닌 스터디 ID에서는 질문을 요청하지 않는다', async () => {
+    renderStudyRoute('/studies/spring-study/questions');
 
-    expect(screen.queryByRole('button', { name: '답글 작성' })).not.toBeInTheDocument();
-    expect(screen.getByText('서버의 토큰 재발급 정책도 같이 정리해볼게요.')).toBeInTheDocument();
+    expect(await screen.findByText('주소의 스터디 ID를 확인해 주세요.')).toBeInTheDocument();
+    expect(
+      vi.mocked(httpClient.get).mock.calls.some(([url]) => String(url).includes('/question')),
+    ).toBe(false);
   });
 });
