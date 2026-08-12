@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { httpClient } from '@/shared/api/http_client';
+import type { ApiResponse } from '@/shared/api/types';
 
 export type QuestionTodoStatus = '새 질문' | '새 답글' | '읽음';
 export type QuestionTodoAction = '질문 보기' | '답글 보기';
@@ -15,56 +17,123 @@ export interface QuestionTodoItem {
   to: string; // 이동할 경로
 }
 
-const initialMockData: QuestionTodoItem[] = [
-  {
-    id: 'q1',
-    status: '새 질문',
-    title: 'Spring Bean 생명주기는?',
-    study: '백엔드 마스터',
-    author: '김민준',
-    createdAt: '07.16 14:32',
-    action: '질문 보기',
-    isRead: false,
-    to: '/studies/backend-master/questions/q1',
-  },
-  {
-    id: 'q2',
-    status: '새 답글',
-    title: '전파 정책 차이가 궁금해요',
-    study: '백엔드 마스터',
-    author: '이서연',
-    createdAt: '07.16 13:20',
-    action: '답글 보기',
-    isRead: false,
-    to: '/studies/backend-master/questions/q2',
-  },
-  {
-    id: 'q3',
-    status: '새 답글',
-    title: '전파 정책 차이가 궁금해요',
-    study: '백엔드 마스터',
-    author: '박도윤',
-    createdAt: '07.16 12:56',
-    action: '답글 보기',
-    isRead: false,
-    to: '/studies/backend-master/questions/q2',
-  },
-  {
-    id: 'q4',
-    status: '읽음',
-    title: '격리 수준은 언제 사용하나요?',
-    study: 'CS 스터디',
-    author: '김민준',
-    createdAt: '07.15 18:10',
-    action: '질문 보기',
-    isRead: true,
-    to: '/studies/cs-study/questions/q4',
-  },
-];
+interface QuestionInfo {
+  checked: boolean;
+  studyId: number;
+  questionId: number;
+  questionTitle: string;
+  studyName: string;
+  writerName: string;
+  createdAt: string;
+}
+
+interface AnswerInfo {
+  checked: boolean;
+  studyId: number;
+  questionId: number;
+  answerId: number;
+  questionTitle: string;
+  studyName: string;
+  writerName: string;
+  createdAt: string;
+}
+
+interface QuestionDetailRes {
+  pageInfo: { totalElements: number; hasNext: boolean };
+  questions: QuestionInfo[];
+}
+
+interface AnswerDetailRes {
+  pageInfo: { totalElements: number; hasNext: boolean };
+  answers: AnswerInfo[];
+}
 
 export const useQuestionTodos = () => {
-  const [items, setItems] = useState<QuestionTodoItem[]>(initialMockData);
+  const [items, setItems] = useState<QuestionTodoItem[]>([]);
   const [filter, setFilter] = useState<'전체' | '새 질문' | '새 답글'>('전체');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const loadItems = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      setIsLoading(true);
+      const [questionsRes, answersRes] = await Promise.all([
+        httpClient.get<ApiResponse<QuestionDetailRes>>('/api/home/questions', {
+          signal: controller.signal,
+        }),
+        httpClient.get<ApiResponse<AnswerDetailRes>>('/api/home/answers', {
+          signal: controller.signal,
+        }),
+      ]);
+
+      const qItems = questionsRes.data?.result?.questions ?? [];
+      const aItems = answersRes.data?.result?.answers ?? [];
+
+      const formatDateTime = (dateStr: string) => {
+        const dateObj = new Date(dateStr);
+        if (isNaN(dateObj.getTime())) return '';
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        const hh = String(dateObj.getHours()).padStart(2, '0');
+        const min = String(dateObj.getMinutes()).padStart(2, '0');
+        return `${mm}.${dd} ${hh}:${min}`;
+      };
+
+      const mappedQuestions: QuestionTodoItem[] = qItems.map((q) => ({
+        id: `q-${q.questionId}`,
+        status: q.checked ? '읽음' : '새 질문',
+        title: q.questionTitle,
+        study: q.studyName,
+        author: q.writerName,
+        createdAt: formatDateTime(q.createdAt),
+        action: '질문 보기',
+        isRead: q.checked,
+        to: `/studies/${q.studyId}/questions/${q.questionId}`,
+      }));
+
+      const mappedAnswers: QuestionTodoItem[] = aItems.map((a) => ({
+        id: `a-${a.answerId}`,
+        status: a.checked ? '읽음' : '새 답글',
+        title: a.questionTitle,
+        study: a.studyName,
+        author: a.writerName,
+        createdAt: formatDateTime(a.createdAt),
+        action: '답글 보기',
+        isRead: a.checked,
+        to: `/studies/${a.studyId}/questions/${a.questionId}`,
+      }));
+
+      // 합치고 최신순 정렬 (원한다면 날짜 비교)
+      const combined = [...mappedQuestions, ...mappedAnswers];
+      setItems(combined);
+      setError(null);
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name !== 'CanceledError') {
+        setItems([]);
+        setError(err instanceof Error ? err : new Error('질문/답글 목록을 불러오지 못했습니다.'));
+      }
+    } finally {
+      if (abortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadItems();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [loadItems]);
 
   // 필터에 따른 목록 반환
   const filteredItems = items.filter((item) => {
@@ -77,7 +146,7 @@ export const useQuestionTodos = () => {
   const newQuestionCount = items.filter((i) => i.status === '새 질문').length;
   const newReplyCount = items.filter((i) => i.status === '새 답글').length;
 
-  // 읽음 처리: 같은 'to'(동일 질문)를 가진 알림을 모두 읽음 처리
+  // 읽음 처리 (UI 상의 낙관적 업데이트)
   const markAsRead = useCallback((targetTo: string) => {
     setItems((prev) =>
       prev.map((item) => {
@@ -99,5 +168,8 @@ export const useQuestionTodos = () => {
       newReply: newReplyCount,
     },
     markAsRead,
+    isLoading,
+    error,
+    refetch: loadItems,
   };
 };

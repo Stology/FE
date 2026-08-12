@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { httpClient } from '@/shared/api/http_client';
+import type { ApiResponse } from '@/shared/api/types';
 
 export interface ReportTodoItem {
   id: string;
@@ -11,34 +13,85 @@ export interface ReportTodoItem {
   createdAt: string;
 }
 
-const MOCK_REPORT_TODOS: ReportTodoItem[] = [
-  {
-    id: 'rpt-1',
-    status: '생성 완료',
-    study: { id: 's-1', name: '백엔드 마스터' },
-    reportName: '4주차 커버리지 리포트',
-    createdAt: '07.16',
-  },
-  {
-    id: 'rpt-2',
-    status: '생성 완료',
-    study: { id: 's-2', name: 'CS 스터디' },
-    reportName: '2주차 커버리지 리포트',
-    createdAt: '07.14',
-  },
-  {
-    id: 'rpt-3',
-    status: '생성 전',
-    study: { id: 's-3', name: '알고리즘' },
-    reportName: '-',
-    createdAt: '-',
-  },
-];
+interface ReportInfo {
+  studyId: number;
+  studyName: string;
+  reportId: number;
+  reportWeek: number;
+  createdAt: string;
+  generated: boolean;
+}
+
+interface ReportDetailRes {
+  pageInfo: {
+    totalElements: number;
+    hasNext: boolean;
+  };
+  reports: ReportInfo[];
+}
 
 export const useReportTodos = () => {
-  const [items] = useState<ReportTodoItem[]>(MOCK_REPORT_TODOS);
+  const [items, setItems] = useState<ReportTodoItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // 현재는 '전체 스터디' 하나의 필터만 사용하므로 items 그대로 사용 (정렬 로직 추가 가능)
+  const loadItems = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      setIsLoading(true);
+      const res = await httpClient.get<ApiResponse<ReportDetailRes>>('/api/home/reports', {
+        signal: controller.signal,
+      });
+
+      const apiItems = res.data?.result?.reports ?? [];
+
+      const mapped: ReportTodoItem[] = apiItems.map((r) => {
+        const dateObj = new Date(r.createdAt);
+        const formattedDate = !isNaN(dateObj.getTime())
+          ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
+          : '-';
+
+        return {
+          id: String(r.reportId),
+          status: r.generated ? '생성 완료' : '생성 전',
+          study: {
+            id: String(r.studyId),
+            name: r.studyName,
+          },
+          reportName: r.generated ? `${r.reportWeek}주차 커버리지 리포트` : '-',
+          createdAt: r.generated ? formattedDate : '-',
+        };
+      });
+
+      setItems(mapped);
+      setError(null);
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name !== 'CanceledError') {
+        setItems([]);
+        setError(err instanceof Error ? err : new Error('리포트 목록을 불러오지 못했습니다.'));
+      }
+    } finally {
+      if (abortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadItems();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [loadItems]);
+
   // 생성 완료가 먼저 오고, 생성일 최신순으로 정렬
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
@@ -63,5 +116,8 @@ export const useReportTodos = () => {
       total: totalCount,
       completed: completedCount,
     },
+    isLoading,
+    error,
+    refetch: loadItems,
   };
 };
