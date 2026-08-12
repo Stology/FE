@@ -2,6 +2,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useMemo, useState } from 'react';
 import { isAxiosError } from 'axios';
+import { Settings } from 'lucide-react';
 
 import { useStudyDetail, useToast } from '@/shared/hooks';
 import { getMockStudyTabById, mockStudyTabs } from '@/shared/mocks/studies';
@@ -17,6 +18,7 @@ import {
   PagePlaceholder,
   Tabs,
 } from '@/shared/ui';
+import { StudySettingsModal } from './components/StudySettingsModal';
 
 import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
@@ -47,6 +49,7 @@ export const StudyPage = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const { data: studyData, isLoading, error, refetch } = useStudyDetail(studyId);
 
@@ -134,18 +137,29 @@ export const StudyPage = () => {
           title={study.name}
           actions={
             isLeader && study.status === 'active' ? (
-              <Button
-                variant="outline"
-                size="sm"
-                aria-label="스터디 삭제"
-                className="border-red-200 text-red-700 hover:bg-red-100"
-                disabled={isDeleting}
-                onClick={() => {
-                  void handleDelete();
-                }}
-              >
-                {isDeleting ? '삭제 중...' : '삭제'}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="flex items-center gap-1.5"
+                >
+                  <Settings className="w-4 h-4" />
+                  설정
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label="스터디 삭제"
+                  className="border-red-200 text-red-700 hover:bg-red-100"
+                  disabled={isDeleting}
+                  onClick={() => {
+                    void handleDelete();
+                  }}
+                >
+                  {isDeleting ? '삭제 중...' : '삭제'}
+                </Button>
+              </div>
             ) : undefined
           }
         />
@@ -173,6 +187,18 @@ export const StudyPage = () => {
           code={meta.code}
           className="min-h-[calc(100vh-260px)]"
           title={meta.label}
+        />
+      )}
+
+      {isSettingsOpen && (
+        <StudySettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          studyId={study.id}
+          studyName={study.name}
+          startDate={studyData.startDate}
+          description={studyData.description}
+          reviewerCount={studyData.reviewerCount}
         />
       )}
     </AppLayout>

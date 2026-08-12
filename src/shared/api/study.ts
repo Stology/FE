@@ -7,11 +7,24 @@ export interface GetStudyDetailRes {
   currentWeek: number;
   isActive: boolean;
   isLeader: boolean;
+  startDate?: string;
+  description?: string;
+  reviewerCount?: number;
 }
 
 export interface GetReviewerCountRes {
   reviewerCount: number;
   maxReviewerCount: number;
+}
+
+export interface UpdateStudyReq {
+  name: string;
+  description: string;
+  startDate: string;
+}
+
+export interface UpdateReviewerCountReq {
+  reviewerCount: number;
 }
 
 export const studyApi = {
@@ -28,6 +41,23 @@ export const studyApi = {
     const res = await httpClient.get<ApiResponse<GetReviewerCountRes>>(
       `/api/study/${studyId}/reviewer-count`,
     );
+    return res.data.result;
+  },
+
+  updateStudy: async (studyId: number, data: UpdateStudyReq): Promise<void> => {
+    await httpClient.patch<ApiResponse<void>>(`/api/study/${studyId}`, data);
+  },
+
+  updateReviewerCount: async (studyId: number, data: UpdateReviewerCountReq): Promise<void> => {
+    await httpClient.patch<ApiResponse<void>>(`/api/study/${studyId}/reviewer-count`, data);
+  },
+
+  closeStudy: async (studyId: number): Promise<void> => {
+    await httpClient.patch<ApiResponse<void>>(`/api/study/${studyId}/close`);
+  },
+
+  getInvitationToken: async (studyId: number): Promise<string> => {
+    const res = await httpClient.post<ApiResponse<string>>(`/api/study/${studyId}/invitation`);
     return res.data.result;
   },
 };
