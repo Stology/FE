@@ -12,4 +12,3 @@ export type { OntologySearchModalProps, OntologyTemplate } from './OntologySearc
 export { QuestionDetailModal } from './QuestionDetailModal';
 export type { QuestionDetailModalProps } from './QuestionDetailModal';
 export { MaterialDetailModal } from './MaterialDetailModal';
-export { ReportDetailModal } from './ReportDetailModal';

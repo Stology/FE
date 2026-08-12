@@ -5,6 +5,8 @@ export type MaterialStatus =
 
 export type ReviewAction = 'approved' | 'rejected';
 
+export type ConceptRelationType = 'base' | 'context' | 'extension' | 'contrast';
+
 export type UploadMode = 'file' | 'text';
 
 export interface Material {
@@ -18,57 +20,26 @@ export interface Material {
   week: number;
 }
 
-export type ConceptRelationKind =
-  'based-on' | 'associated-with' | 'advanced-from' | 'contrasted-with';
-
-export type KnowledgeEdgeKind = ConceptRelationKind | 'evidence';
-
-export type KnowledgeClusterAccent =
-  'accent-1' | 'accent-2' | 'accent-3' | 'accent-4' | 'accent-5' | 'accent-6';
-
-export interface KnowledgeCluster {
-  accent: KnowledgeClusterAccent;
-  id: string;
-  label: string;
-}
-
-interface KnowledgeNodeBase {
-  clusterId: string;
-  degree: number;
-  id: string;
-  importance: 1 | 2 | 3 | 4 | 5;
-  isRoot: boolean;
-  label: string;
-  week: number;
-}
-
-export interface KnowledgeConceptNode extends KnowledgeNodeBase {
-  activatedWeek?: number;
-  aliases: string[];
+export interface ConceptNode {
   definition: string;
-  materialCount: number;
-  reinforcedWeeks: number[];
-  state: 'active' | 'inactive';
-  type: 'concept';
+  id: string;
+  isActive: boolean;
+  materials: WeeklyRecordMaterial[];
+  name: string;
+  weekStatus?: WeeklyRecordStatus;
+  x: number;
+  y: number;
 }
 
-export interface KnowledgeMaterialNode extends KnowledgeNodeBase {
-  material: WeeklyRecordMaterial;
-  type: 'material';
+export interface ConceptRelation {
+  fromId: string;
+  toId: string;
+  type: ConceptRelationType;
 }
 
-export type KnowledgeNode = KnowledgeConceptNode | KnowledgeMaterialNode;
-
-export interface KnowledgeEdge {
-  kind: KnowledgeEdgeKind;
-  source: string;
-  target: string;
-}
-
-export interface KnowledgeGraph {
-  clusters: KnowledgeCluster[];
-  edges: KnowledgeEdge[];
-  nodes: KnowledgeNode[];
+export interface ConceptGraph {
+  nodes: ConceptNode[];
+  relations: ConceptRelation[];
 }
 
 export interface NodeCandidate {
@@ -78,13 +49,17 @@ export interface NodeCandidate {
   myAction?: ReviewAction;
   name: string;
   rejecterNames: string[];
+}
+
+export interface MaterialReview {
+  candidates: NodeCandidate[];
+  material: Material;
   reviewerCount: number;
 }
 
 export interface MaterialDraft {
   content?: string;
   description?: string;
-  file?: File;
   fileName?: string;
   mode: UploadMode;
   title: string;

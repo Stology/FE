@@ -1,4 +1,4 @@
-import { PencilLine, RotateCcw } from 'lucide-react';
+import { PencilLine } from 'lucide-react';
 
 import { materialStatusLabel } from '@/shared/mocks/materials';
 import type { Material, MaterialStatus } from '@/shared/types/stology';
@@ -8,7 +8,6 @@ interface PendingMaterialItemProps {
   isReadOnly?: boolean;
   material: Material;
   onEdit?: (material: Material) => void;
-  onReanalyze?: (material: Material) => void;
   onReview?: (material: Material) => void;
 }
 
@@ -26,12 +25,10 @@ export const PendingMaterialItem = ({
   isReadOnly = false,
   material,
   onEdit,
-  onReanalyze,
   onReview,
 }: PendingMaterialItemProps) => {
   const isReviewable = material.status === 'needs_review';
   const isEditable = material.status === 'editable' && material.isOwn;
-  const isReanalyzable = material.status === 'extract_failed' && material.isOwn;
 
   return (
     <li className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-stology-border-light px-1 py-4 last:border-b-0">
@@ -69,7 +66,7 @@ export const PendingMaterialItem = ({
         ) : null}
       </span>
 
-      <span className="flex w-24 shrink-0 justify-end">
+      <span className="w-24 shrink-0 text-right">
         {isEditable && !isReadOnly ? (
           <Button
             leftIcon={<PencilLine aria-hidden size={14} />}
@@ -78,16 +75,6 @@ export const PendingMaterialItem = ({
             variant="outline"
           >
             자료 수정
-          </Button>
-        ) : null}
-        {isReanalyzable && !isReadOnly ? (
-          <Button
-            leftIcon={<RotateCcw aria-hidden size={14} />}
-            onClick={() => onReanalyze?.(material)}
-            size="sm"
-            variant="outline"
-          >
-            재분석
           </Button>
         ) : null}
       </span>

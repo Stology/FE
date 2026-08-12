@@ -1,18 +1,7 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 
-import { httpClient } from '@/shared/api/http_client';
-import type { ApiResponse } from '@/shared/api/types';
-import { Button, Input, Loading, Modal } from '@/shared/ui';
-
-// 스웨거 GET /api/template 응답 형태
-interface TemplateFromApi {
-  templateId: number;
-  title: string;
-  uploader: string;
-  description: string;
-}
+import { Button, Input, Modal } from '@/shared/ui';
 
 export interface OntologyTemplate {
   id: string;
@@ -28,22 +17,38 @@ export interface OntologySearchModalProps {
   initialSelectedId?: string;
 }
 
-function useTemplates() {
-  return useQuery({
-    queryKey: ['templates'],
-    queryFn: async () => {
-      const res =
-        await httpClient.get<ApiResponse<{ templates: TemplateFromApi[] }>>('/api/template');
-      return (res.data.result?.templates ?? []).map((t): OntologyTemplate => ({
-        id: String(t.templateId),
-        name: t.title,
-        description: t.description ?? '',
-        author: t.uploader ?? 'Stology',
-      }));
-    },
-    staleTime: 1000 * 60 * 5, // 5분 캐시
-  });
-}
+const MOCK_ONTOLOGY_TEMPLATES: OntologyTemplate[] = [
+  {
+    id: 'spring-boot-basic',
+    name: 'Spring Boot 기본',
+    description: 'REST API, Entity, Service 구조',
+    author: 'Stology',
+  },
+  {
+    id: 'spring-security',
+    name: 'Spring Security',
+    description: 'JWT, 인증/인가, 필터 체인',
+    author: 'Stology',
+  },
+  {
+    id: 'jpa-advanced',
+    name: 'JPA 심화',
+    description: '연관관계, 영속성 컨텍스트',
+    author: 'Stology',
+  },
+  {
+    id: 'cs-core',
+    name: 'CS 전공지식 핵심',
+    description: '운영체제, 네트워크, 데이터베이스',
+    author: 'Stology',
+  },
+  {
+    id: 'frontend-react',
+    name: 'React & TypeScript 모던',
+    description: '컴포넌트 설계, 전역 상태, Custom Hooks',
+    author: 'Stology',
+  },
+];
 
 export const OntologySearchModal = ({
   isOpen,
@@ -54,16 +59,14 @@ export const OntologySearchModal = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | undefined>(initialSelectedId);
 
-  const { data: templates = [], isLoading, isError } = useTemplates();
-
-  const filteredTemplates = templates.filter(
+  const filteredTemplates = MOCK_ONTOLOGY_TEMPLATES.filter(
     (t) =>
       t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.description.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleConfirm = () => {
-    const chosen = templates.find((t) => t.id === selectedId);
+    const chosen = MOCK_ONTOLOGY_TEMPLATES.find((t) => t.id === selectedId);
     if (chosen) {
       onSelect(chosen);
       onClose();
@@ -102,17 +105,11 @@ export const OntologySearchModal = ({
         {/* 2 & 3. 검색 결과 N개 & 카드 목록 */}
         <div>
           <div className="text-xs font-bold text-stology-text-dark mb-2.5">
-            검색 결과 {isLoading ? '...' : `${filteredTemplates.length}개`}
+            검색 결과 {filteredTemplates.length}개
           </div>
 
           <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-            {isLoading ? (
-              <Loading label="템플릿 목록을 불러오는 중..." className="py-8" />
-            ) : isError ? (
-              <div className="py-8 text-center text-xs text-red-500 border border-dashed rounded-xl">
-                템플릿을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
-              </div>
-            ) : filteredTemplates.length > 0 ? (
+            {filteredTemplates.length > 0 ? (
               filteredTemplates.map((template) => {
                 const isSelected = selectedId === template.id;
                 return (
