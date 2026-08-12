@@ -24,14 +24,6 @@ export interface UpdateReviewerCountReq {
   reviewerCount: number;
 }
 
-export interface GetInvitationTokenRes {
-  studyId: number;
-  name: string;
-  leader: string;
-  memberCount: number;
-  token: string;
-}
-
 export const studyApi = {
   deleteStudy: async (studyId: number): Promise<void> => {
     await httpClient.delete<ApiResponse<void>>(`/api/study/${studyId}`);
@@ -61,10 +53,8 @@ export const studyApi = {
     await httpClient.patch<ApiResponse<void>>(`/api/study/${studyId}/close`);
   },
 
-  getInvitationToken: async (studyId: number): Promise<GetInvitationTokenRes> => {
-    const res = await httpClient.post<ApiResponse<GetInvitationTokenRes>>(
-      `/api/study/${studyId}/invitation`,
-    );
+  getInvitationToken: async (studyId: number): Promise<string> => {
+    const res = await httpClient.post<ApiResponse<string>>(`/api/study/${studyId}/invitation`);
     return res.data.result;
   },
 };

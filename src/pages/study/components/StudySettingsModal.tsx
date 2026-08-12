@@ -130,7 +130,7 @@ export const StudySettingsModal = ({
   const fetchInviteToken = async () => {
     try {
       const res = await getInvitationTokenMutation.mutateAsync();
-      setInviteToken(res.token);
+      setInviteToken(res);
     } catch {
       showToast({ message: '초대 링크를 가져오는 데 실패했습니다.', type: 'error' });
     }
