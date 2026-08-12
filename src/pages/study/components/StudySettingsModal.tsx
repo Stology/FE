@@ -111,7 +111,10 @@ export const StudySettingsModal = ({
 
   const onInfoSubmit = async (data: UpdateStudyFormValues) => {
     try {
-      await updateStudyMutation.mutateAsync(data);
+      await updateStudyMutation.mutateAsync({
+        ...data,
+        description: data.description ?? '',
+      });
       showToast({ message: '스터디 정보가 수정되었습니다.', type: 'success' });
     } catch {
       showToast({ message: '스터디 정보 수정에 실패했습니다.', type: 'error' });
