@@ -10,6 +10,7 @@ interface StudyFromApi {
   name: string;
   startDate: string;
   isNew: boolean;
+  currentWeek?: number;
 }
 
 interface GetStudyRes {
@@ -33,21 +34,39 @@ export const useMyStudies = (): UseMyStudiesResult => {
     const loadStudies = async () => {
       try {
         setIsLoading(true);
-        const res = await httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
-          params: { status: 'active' },
-          signal: controller.signal,
-        });
+        const [activeRes, endedRes] = await Promise.all([
+          httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
+            params: { status: 'active' },
+            signal: controller.signal,
+          }),
+          httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
+            params: { status: 'ended' },
+            signal: controller.signal,
+          }),
+        ]);
 
-        const apiStudies = res.data?.result?.studies ?? [];
-        const mapped: Study[] = apiStudies.map((s) => ({
+        const activeStudies = activeRes.data?.result?.studies ?? [];
+        const endedStudies = endedRes.data?.result?.studies ?? [];
+
+        const mappedActive: Study[] = activeStudies.map((s) => ({
           id: String(s.studyId),
           name: s.name,
-          currentWeek: 0,
+          currentWeek: s.currentWeek ?? 0,
           memberCount: 0,
           startedAt: s.startDate,
           status: 'active' as const,
         }));
-        setStudies(mapped);
+
+        const mappedEnded: Study[] = endedStudies.map((s) => ({
+          id: String(s.studyId),
+          name: s.name,
+          currentWeek: s.currentWeek ?? 0,
+          memberCount: 0,
+          startedAt: s.startDate,
+          status: 'ended' as const,
+        }));
+
+        setStudies([...mappedActive, ...mappedEnded]);
         setError(null);
       } catch (err: unknown) {
         if ((err as { name?: string }).name !== 'CanceledError') {
