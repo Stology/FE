@@ -20,7 +20,6 @@ export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProp
   const FILTERS: { label: MaterialTodoFilter; count: number }[] = [
     { label: '전체', count: counts['전체'] },
     { label: '검토', count: counts['검토'] },
-    { label: '재업로드 필요', count: counts['재업로드 필요'] },
   ];
 
   return (

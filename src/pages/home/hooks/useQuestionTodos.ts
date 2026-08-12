@@ -1,4 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { homeApi } from '@/shared/api/home';
+import { useHomeTodoStore } from '../store/useHomeTodoStore';
 
 export type QuestionTodoStatus = '새 질문' | '새 답글' | '읽음';
 export type QuestionTodoAction = '질문 보기' | '답글 보기';
@@ -10,94 +13,108 @@ export interface QuestionTodoItem {
   study: string;
   author: string;
   createdAt: string;
+  rawDate: number;
   action: QuestionTodoAction;
   isRead: boolean;
-  to: string; // 이동할 경로
+  to: string;
 }
 
-const initialMockData: QuestionTodoItem[] = [
-  {
-    id: 'q1',
-    status: '새 질문',
-    title: 'Spring Bean 생명주기는?',
-    study: '백엔드 마스터',
-    author: '김민준',
-    createdAt: '07.16 14:32',
-    action: '질문 보기',
-    isRead: false,
-    to: '/studies/backend-master/questions/q1',
-  },
-  {
-    id: 'q2',
-    status: '새 답글',
-    title: '전파 정책 차이가 궁금해요',
-    study: '백엔드 마스터',
-    author: '이서연',
-    createdAt: '07.16 13:20',
-    action: '답글 보기',
-    isRead: false,
-    to: '/studies/backend-master/questions/q2',
-  },
-  {
-    id: 'q3',
-    status: '새 답글',
-    title: '전파 정책 차이가 궁금해요',
-    study: '백엔드 마스터',
-    author: '박도윤',
-    createdAt: '07.16 12:56',
-    action: '답글 보기',
-    isRead: false,
-    to: '/studies/backend-master/questions/q2',
-  },
-  {
-    id: 'q4',
-    status: '읽음',
-    title: '격리 수준은 언제 사용하나요?',
-    study: 'CS 스터디',
-    author: '김민준',
-    createdAt: '07.15 18:10',
-    action: '질문 보기',
-    isRead: true,
-    to: '/studies/cs-study/questions/q4',
-  },
-];
+const formatDateTime = (dateStr: string) => {
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return '';
+  const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const dd = String(dateObj.getDate()).padStart(2, '0');
+  const hh = String(dateObj.getHours()).padStart(2, '0');
+  const min = String(dateObj.getMinutes()).padStart(2, '0');
+  return `${mm}.${dd} ${hh}:${min}`;
+};
 
 export const useQuestionTodos = () => {
-  const [items, setItems] = useState<QuestionTodoItem[]>(initialMockData);
   const [filter, setFilter] = useState<'전체' | '새 질문' | '새 답글'>('전체');
+  const { readItemIds, markAsRead } = useHomeTodoStore();
 
-  // 필터에 따른 목록 반환
-  const filteredItems = items.filter((item) => {
-    if (filter === '전체') return true;
-    return item.status === filter;
+  const questionsQuery = useQuery({
+    queryKey: ['home', 'questions'],
+    queryFn: ({ signal }) => homeApi.getQuestions(undefined, signal),
   });
 
-  // 카운트 계산
-  const totalCount = items.length;
-  const newQuestionCount = items.filter((i) => i.status === '새 질문').length;
-  const newReplyCount = items.filter((i) => i.status === '새 답글').length;
+  const answersQuery = useQuery({
+    queryKey: ['home', 'answers'],
+    queryFn: ({ signal }) => homeApi.getAnswers(undefined, signal),
+  });
 
-  // 읽음 처리: 같은 'to'(동일 질문)를 가진 알림을 모두 읽음 처리
-  const markAsRead = useCallback((targetTo: string) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.to === targetTo && !item.isRead) {
-          return { ...item, status: '읽음', isRead: true };
-        }
-        return item;
-      }),
-    );
-  }, []);
+  const isLoading = questionsQuery.isLoading || answersQuery.isLoading;
+  const error = questionsQuery.error ?? answersQuery.error;
+
+  const items = useMemo(() => {
+    const qItems = questionsQuery.data?.questions ?? [];
+    const aItems = answersQuery.data?.answers ?? [];
+
+    const mappedQuestions: QuestionTodoItem[] = qItems.map((q) => {
+      const id = `q-${q.questionId}`;
+      const isRead = q.checked || readItemIds.includes(id);
+      return {
+        id,
+        status: isRead ? '읽음' : '새 질문',
+        title: q.questionTitle,
+        study: q.studyName,
+        author: q.writerName,
+        createdAt: formatDateTime(q.createdAt),
+        rawDate: new Date(q.createdAt).getTime(),
+        action: '질문 보기',
+        isRead,
+        to: `/studies/${q.studyId}/questions/${q.questionId}`,
+      };
+    });
+
+    const mappedAnswers: QuestionTodoItem[] = aItems.map((a) => {
+      const id = `a-${a.answerId}`;
+      const isRead = a.checked || readItemIds.includes(id);
+      return {
+        id,
+        status: isRead ? '읽음' : '새 답글',
+        title: a.questionTitle,
+        study: a.studyName,
+        author: a.writerName,
+        createdAt: formatDateTime(a.createdAt),
+        rawDate: new Date(a.createdAt).getTime(),
+        action: '답글 보기',
+        isRead,
+        to: `/studies/${a.studyId}/questions/${a.questionId}`,
+      };
+    });
+
+    // 원시 타임스탬프 기준 최신순 정렬
+    return [...mappedQuestions, ...mappedAnswers].sort((a, b) => b.rawDate - a.rawDate);
+  }, [questionsQuery.data, answersQuery.data, readItemIds]);
+
+  const filteredItems = useMemo(() => {
+    if (filter === '전체') return items;
+    return items.filter((item) => item.status === filter);
+  }, [items, filter]);
+
+  const counts = useMemo(
+    () => ({
+      total: items.length,
+      newQuestion: items.filter((i) => i.status === '새 질문').length,
+      newReply: items.filter((i) => i.status === '새 답글').length,
+    }),
+    [items],
+  );
+
+  const refetch = () => {
+    void questionsQuery.refetch();
+    void answersQuery.refetch();
+  };
 
   return {
     items: filteredItems,
     filter,
     setFilter,
-    counts: {
-      total: totalCount,
-      newQuestion: newQuestionCount,
-      newReply: newReplyCount,
-    },
+    counts,
     markAsRead,
+    isLoading,
+    error,
+    refetch,
   };
 };

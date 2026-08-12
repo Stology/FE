@@ -15,7 +15,7 @@ export const useMyTodo = (): UseMyTodoResult => {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['myTodos'],
-    queryFn: homeApi.getMyTodos,
+    queryFn: ({ signal }) => homeApi.getMyTodos(signal),
   });
 
   const items = useMemo(() => {

@@ -50,14 +50,29 @@ export interface QuestionDetailRes {
   questions: QuestionInfo[];
 }
 
-export interface MaterialInfo {
+export interface AnswerInfo {
+  checked: boolean;
   studyId: number;
+  questionId: number;
+  answerId: number;
+  questionTitle: string;
   studyName: string;
-  materialId: number;
-  materialTitle: string;
   writerName: string;
   createdAt: string;
-  checked: boolean;
+}
+
+export interface AnswerDetailRes {
+  pageInfo: PageInfoLong;
+  answers: AnswerInfo[];
+}
+
+export interface MaterialInfo {
+  studyMaterialId: number;
+  dataTitle: string;
+  presignedUrl: string;
+  uploaderName: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface MaterialDetailRes {
@@ -80,39 +95,57 @@ export interface ReportDetailRes {
 }
 
 export const homeApi = {
-  getMyTodos: async (): Promise<MyTodoRes> => {
-    const res = await httpClient.get<ApiResponse<MyTodoRes>>('/api/home/todo/me');
+  getMyTodos: async (signal?: AbortSignal): Promise<MyTodoRes> => {
+    const res = await httpClient.get<ApiResponse<MyTodoRes>>('/api/home/todo/me', { signal });
     return res.data.result;
   },
 
-  getTeamTodos: async (studyId: number, cursor?: string): Promise<TeamActivityRes> => {
+  getTeamTodos: async (
+    studyId: number,
+    cursor?: string,
+    signal?: AbortSignal,
+  ): Promise<TeamActivityRes> => {
     const params = cursor ? { cursor } : {};
     const res = await httpClient.get<ApiResponse<TeamActivityRes>>(
       `/api/home/studies/${studyId}/actives`,
-      { params },
+      { params, signal },
     );
     return res.data.result;
   },
 
-  getQuestions: async (cursor?: number): Promise<QuestionDetailRes> => {
+  getQuestions: async (cursor?: number, signal?: AbortSignal): Promise<QuestionDetailRes> => {
     const params = cursor ? { cursor } : {};
     const res = await httpClient.get<ApiResponse<QuestionDetailRes>>('/api/home/questions', {
       params,
+      signal,
     });
     return res.data.result;
   },
 
-  getMaterials: async (cursor?: number): Promise<MaterialDetailRes> => {
+  getAnswers: async (cursor?: number, signal?: AbortSignal): Promise<AnswerDetailRes> => {
+    const params = cursor ? { cursor } : {};
+    const res = await httpClient.get<ApiResponse<AnswerDetailRes>>('/api/home/answers', {
+      params,
+      signal,
+    });
+    return res.data.result;
+  },
+
+  getMaterials: async (cursor?: number, signal?: AbortSignal): Promise<MaterialDetailRes> => {
     const params = cursor ? { cursor } : {};
     const res = await httpClient.get<ApiResponse<MaterialDetailRes>>('/api/home/materials', {
       params,
+      signal,
     });
     return res.data.result;
   },
 
-  getReports: async (cursor?: number): Promise<ReportDetailRes> => {
+  getReports: async (cursor?: number, signal?: AbortSignal): Promise<ReportDetailRes> => {
     const params = cursor ? { cursor } : {};
-    const res = await httpClient.get<ApiResponse<ReportDetailRes>>('/api/home/reports', { params });
+    const res = await httpClient.get<ApiResponse<ReportDetailRes>>('/api/home/reports', {
+      params,
+      signal,
+    });
     return res.data.result;
   },
 };

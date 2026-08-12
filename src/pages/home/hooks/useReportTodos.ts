@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { homeApi } from '@/shared/api/home';
 
 export interface ReportTodoItem {
   id: string;
@@ -9,59 +11,66 @@ export interface ReportTodoItem {
   };
   reportName: string;
   createdAt: string;
+  rawDate: number;
 }
 
-const MOCK_REPORT_TODOS: ReportTodoItem[] = [
-  {
-    id: 'rpt-1',
-    status: '생성 완료',
-    study: { id: 's-1', name: '백엔드 마스터' },
-    reportName: '4주차 커버리지 리포트',
-    createdAt: '07.16',
-  },
-  {
-    id: 'rpt-2',
-    status: '생성 완료',
-    study: { id: 's-2', name: 'CS 스터디' },
-    reportName: '2주차 커버리지 리포트',
-    createdAt: '07.14',
-  },
-  {
-    id: 'rpt-3',
-    status: '생성 전',
-    study: { id: 's-3', name: '알고리즘' },
-    reportName: '-',
-    createdAt: '-',
-  },
-];
-
 export const useReportTodos = () => {
-  const [items] = useState<ReportTodoItem[]>(MOCK_REPORT_TODOS);
+  const reportsQuery = useQuery({
+    queryKey: ['home', 'reports'],
+    queryFn: ({ signal }) => homeApi.getReports(undefined, signal),
+  });
 
-  // 현재는 '전체 스터디' 하나의 필터만 사용하므로 items 그대로 사용 (정렬 로직 추가 가능)
-  // 생성 완료가 먼저 오고, 생성일 최신순으로 정렬
-  const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => {
+  const isLoading = reportsQuery.isLoading;
+  const error = reportsQuery.error;
+
+  const items = useMemo(() => {
+    const apiItems = reportsQuery.data?.reports ?? [];
+
+    const mapped: ReportTodoItem[] = apiItems.map((r) => {
+      const dateObj = new Date(r.createdAt);
+      const isValidDate = !isNaN(dateObj.getTime());
+      const formattedDate = isValidDate
+        ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
+        : '-';
+
+      return {
+        id: String(r.reportId),
+        status: r.generated ? '생성 완료' : '생성 전',
+        study: {
+          id: String(r.studyId),
+          name: r.studyName,
+        },
+        reportName: r.generated ? `${r.reportWeek}주차 커버리지 리포트` : '-',
+        createdAt: r.generated ? formattedDate : '-',
+        rawDate: isValidDate ? dateObj.getTime() : 0,
+      };
+    });
+
+    // 생성 완료 우선, 이후 원시 타임스탬프 기준 최신순 정렬
+    return mapped.sort((a, b) => {
       if (a.status === '생성 완료' && b.status === '생성 전') return -1;
       if (a.status === '생성 전' && b.status === '생성 완료') return 1;
-
-      // 둘 다 생성 완료면 날짜 최신순
-      if (a.status === '생성 완료' && b.status === '생성 완료') {
-        // MM.DD 형식 비교 (단순 문자열 역순 비교)
-        return b.createdAt.localeCompare(a.createdAt);
-      }
-      return 0;
+      return b.rawDate - a.rawDate;
     });
-  }, [items]);
+  }, [reportsQuery.data]);
 
-  const totalCount = items.length;
-  const completedCount = items.filter((item) => item.status === '생성 완료').length;
+  const counts = useMemo(
+    () => ({
+      total: items.length,
+      completed: items.filter((item) => item.status === '생성 완료').length,
+    }),
+    [items],
+  );
+
+  const refetch = () => {
+    void reportsQuery.refetch();
+  };
 
   return {
-    items: sortedItems,
-    counts: {
-      total: totalCount,
-      completed: completedCount,
-    },
+    items,
+    counts,
+    isLoading,
+    error,
+    refetch,
   };
 };
