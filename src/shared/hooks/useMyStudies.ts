@@ -49,6 +49,7 @@ export const useMyStudies = (): UseMyStudiesResult => {
         name: s.name,
         currentWeek: 0,
         memberCount: 0,
+        members: [],
         startedAt: s.startDate,
         status: 'active' as const,
       }));

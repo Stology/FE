@@ -10,6 +10,8 @@ import { studyApi } from '@/shared/api/study';
 import type { Study } from '@/shared/types/stology';
 import {
   AppLayout,
+  Avatar,
+  Badge,
   Button,
   Card,
   EmptyState,
@@ -119,8 +121,9 @@ export const StudyPage = () => {
     name: studyData.name,
     currentWeek: studyData.currentWeek,
     status: studyData.isActive ? 'active' : 'ended',
-    startedAt: '',
-    memberCount: 0,
+    startedAt: studyData.startDate ?? '',
+    memberCount: studyData.members?.length ?? 0,
+    members: studyData.members ?? [],
   };
 
   const meta = getMockStudyTabById(tab);
@@ -162,7 +165,48 @@ export const StudyPage = () => {
               </div>
             ) : undefined
           }
-        />
+        >
+          <div className="flex flex-wrap items-center gap-4 text-[13px] text-stology-text-dark">
+            <Badge variant={study.status === 'active' ? 'primary' : 'neutral'} className="h-[22px]">
+              {study.status === 'active' ? '진행 중' : '종료됨'}
+            </Badge>
+            {study.status === 'active' && (
+              <>
+                <div className="h-3 w-px bg-stology-border-light" />
+                <Badge variant="week" className="h-[22px]">
+                  {study.currentWeek}주차
+                </Badge>
+              </>
+            )}
+            {study.startedAt && (
+              <>
+                <div className="h-3 w-px bg-stology-border-light" />
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span className="text-stology-text-light">시작일</span>
+                  <span>{study.startedAt.replace(/-/g, '.')}</span>
+                </div>
+              </>
+            )}
+            {study.members.length > 0 && (
+              <>
+                <div className="h-3 w-px bg-stology-border-light" />
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-stology-text-light">참여자</span>
+                  <div className="flex -space-x-1.5">
+                    {study.members.slice(0, 5).map((member, i) => (
+                      <Avatar key={i} name={member} size="sm" className="ring-2 ring-white" />
+                    ))}
+                    {study.members.length > 5 && (
+                      <div className="flex size-7 items-center justify-center rounded-full bg-stology-off-white text-[10px] font-semibold text-stology-text-light ring-2 ring-white z-10 relative">
+                        +{study.members.length - 5}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </Header>
         <Tabs
           className="mt-6"
           items={mockStudyTabs.map((studyTab) => ({

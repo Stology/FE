@@ -7,7 +7,8 @@ export interface GetStudyDetailRes {
   currentWeek: number;
   isActive: boolean;
   isLeader: boolean;
-  startDate?: string;
+  startDate: string;
+  members: string[];
   description?: string;
   reviewerCount?: number;
 }

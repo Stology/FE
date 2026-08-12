@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { getMockStudyById } from '@/shared/mocks/studies';
+import { useStudyDetail } from '@/shared/hooks';
 import type { NodeVoteReq } from '@/shared/api/review';
 import type { NodeCandidate, ReviewAction } from '@/shared/types/stology';
 import { AppLayout, EmptyState, ErrorMessage, Loading, ProgressBar } from '@/shared/ui';
@@ -35,11 +35,8 @@ export const ReviewPage = ({
   onSubmit,
 }: ReviewPageProps) => {
   const { studyId } = useParams<ReviewRouteParams>();
-  // 스터디 목록/상태 조회 API가 아직 연동 전이라 mock 목록으로만 종료 여부를 판단할 수 있다.
-  // mock에 없는 studyId(실 서버 전용 등)는 종료되지 않은 것으로 간주한다 — 존재하지 않는
-  // studyId는 아래 API 호출이 실패해 에러 상태로 자연스럽게 드러난다(홈으로 리다이렉트하지 않음).
-  const study = studyId ? getMockStudyById(studyId) : undefined;
-  const effectiveIsReadOnly = isReadOnly || study?.status === 'ended';
+  const { data: studyData, isLoading: isStudyLoading, error: studyError } = useStudyDetail(studyId);
+  const effectiveIsReadOnly = isReadOnly || (!!studyId && studyData?.isActive !== true);
 
   const isControlled = candidatesProp !== undefined;
   const fetchResult = useReviewCandidates(studyId, { enabled: !isControlled });
@@ -61,8 +58,18 @@ export const ReviewPage = ({
 
   const reviewedCount = candidates.filter((candidate) => candidate.myAction).length;
   const isSubmittable = candidates.length > 0 && reviewedCount === candidates.length;
-  const isLoading = isControlled ? isLoadingProp : fetchResult.isLoading;
-  const errorMessage = isControlled ? errorMessageProp : (fetchResult.error?.message ?? null);
+  const isLoading = isControlled
+    ? isLoadingProp || isStudyLoading
+    : fetchResult.isLoading || isStudyLoading;
+
+  let errorMessage: string | null = null;
+  if (isControlled) {
+    errorMessage = errorMessageProp || (studyError ? '스터디 정보를 불러오지 못했습니다.' : null);
+  } else {
+    errorMessage = studyError
+      ? '스터디 정보를 불러오지 못했습니다.'
+      : (fetchResult.error?.message ?? null);
+  }
 
   const applyAction = (candidateIds: string[], action: ReviewAction) => {
     setCandidates((current) =>
