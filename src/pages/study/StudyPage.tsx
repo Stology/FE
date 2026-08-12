@@ -1,12 +1,22 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useMemo, useState } from 'react';
+import { isAxiosError } from 'axios';
 
 import { useStudyDetail, useToast } from '@/shared/hooks';
 import { getMockStudyTabById, mockStudyTabs } from '@/shared/mocks/studies';
 import { studyApi } from '@/shared/api/study';
 import type { Study } from '@/shared/types/stology';
-import { AppLayout, Button, Card, Header, Loading, PagePlaceholder, Tabs } from '@/shared/ui';
+import {
+  AppLayout,
+  Button,
+  Card,
+  EmptyState,
+  Header,
+  Loading,
+  PagePlaceholder,
+  Tabs,
+} from '@/shared/ui';
 
 import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
@@ -33,7 +43,7 @@ export const StudyPage = () => {
   const { showToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: studyData, isLoading, error } = useStudyDetail(studyId);
+  const { data: studyData, isLoading, error, refetch } = useStudyDetail(studyId);
 
   const handleDelete = async () => {
     if (!studyData) return;
@@ -67,7 +77,32 @@ export const StudyPage = () => {
     );
   }
 
-  if (error || !studyData) {
+  if (error) {
+    const isUnauthorizedOrNotFound =
+      isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 404);
+
+    if (isUnauthorizedOrNotFound) {
+      return <Navigate to="/" replace />;
+    }
+
+    return (
+      <AppLayout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <EmptyState
+            title="스터디 정보를 불러오지 못했습니다"
+            description="일시적인 네트워크 문제이거나 서버 오류일 수 있습니다. 잠시 후 다시 시도해 주세요."
+            action={
+              <Button onClick={() => void refetch()} variant="outline">
+                다시 시도
+              </Button>
+            }
+          />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!studyData) {
     return <Navigate to="/" replace />;
   }
 

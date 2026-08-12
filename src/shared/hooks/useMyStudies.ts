@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { httpClient } from '@/shared/api/http_client';
 import type { ApiResponse } from '@/shared/api/types';
@@ -27,12 +27,20 @@ export const useMyStudies = (): UseMyStudiesResult => {
   const [studies, setStudies] = useState<Study[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const loadStudies = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       setIsLoading(true);
       const res = await httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
         params: { status: 'active' },
+        signal: controller.signal,
       });
 
       const apiStudies = res.data?.result?.studies ?? [];
@@ -52,12 +60,19 @@ export const useMyStudies = (): UseMyStudiesResult => {
         setError(err instanceof Error ? err : new Error('스터디 목록을 불러오지 못했습니다.'));
       }
     } finally {
-      setIsLoading(false);
+      if (abortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     void loadStudies();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [loadStudies]);
 
   return { error, isLoading, studies, refetch: loadStudies };
