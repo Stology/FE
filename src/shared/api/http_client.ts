@@ -9,9 +9,10 @@ interface AuthRequestConfig extends AxiosRequestConfig {
 
 interface ReissueResult {
   accessToken: string;
+  userId: number;
 }
 
-let reissuePromise: Promise<string> | null = null;
+let reissuePromise: Promise<ReissueResult> | null = null;
 
 export const httpClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -43,12 +44,22 @@ httpClient.interceptors.response.use(
     request._retry = true;
 
     try {
-      const accessToken = await getReissuedAccessToken();
-      useAuthStore.setState({ accessToken, isAuthenticated: true, isInitialized: true });
+      const { accessToken, userId } = await getReissuedAccessToken();
+      useAuthStore.setState({
+        accessToken,
+        isAuthenticated: true,
+        isInitialized: true,
+        memberId: userId,
+      });
       request.headers.Authorization = `Bearer ${accessToken}`;
       return httpClient(request);
     } catch (reissueError) {
-      useAuthStore.setState({ accessToken: null, isAuthenticated: false, isInitialized: true });
+      useAuthStore.setState({
+        accessToken: null,
+        isAuthenticated: false,
+        isInitialized: true,
+        memberId: null,
+      });
       return Promise.reject(reissueError);
     }
   },
@@ -75,5 +86,5 @@ async function requestNewAccessToken() {
     undefined,
     config,
   );
-  return response.data.result.accessToken;
+  return response.data.result;
 }

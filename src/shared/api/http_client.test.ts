@@ -33,7 +33,7 @@ describe('httpClient authentication recovery', () => {
           code: 'AUTH200_2',
           errorDetail: null,
           message: '토큰이 재발급되었습니다.',
-          result: { accessToken: 'reissued-token' },
+          result: { accessToken: 'reissued-token', userId: 42 },
           success: true,
         });
       }
@@ -53,6 +53,7 @@ describe('httpClient authentication recovery', () => {
     expect(useAuthStore.getState()).toMatchObject({
       accessToken: 'reissued-token',
       isAuthenticated: true,
+      memberId: 42,
     });
   });
 
@@ -67,7 +68,7 @@ describe('httpClient authentication recovery', () => {
           code: 'AUTH200_2',
           errorDetail: null,
           message: '토큰이 재발급되었습니다.',
-          result: { accessToken: 'shared-token' },
+          result: { accessToken: 'shared-token', userId: 42 },
           success: true,
         });
       }
@@ -98,6 +99,7 @@ describe('httpClient authentication recovery', () => {
       accessToken: null,
       isAuthenticated: false,
       isInitialized: true,
+      memberId: null,
     });
   });
 });

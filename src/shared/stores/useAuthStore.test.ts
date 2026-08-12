@@ -55,6 +55,21 @@ describe('useAuthStore', () => {
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: false,
       isInitialized: true,
+      memberId: null,
+    });
+  });
+
+  it('재발급이 성공하면 accessToken과 memberId를 저장한다', async () => {
+    vi.stubEnv('VITE_ENABLE_MOCK_AUTH', 'false');
+    vi.mocked(authApi.reissue).mockResolvedValue({ accessToken: 'real-token', userId: 7 });
+
+    await useAuthStore.getState().initialize();
+
+    expect(useAuthStore.getState()).toMatchObject({
+      accessToken: 'real-token',
+      isAuthenticated: true,
+      isInitialized: true,
+      memberId: 7,
     });
   });
 

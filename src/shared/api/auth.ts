@@ -3,6 +3,7 @@ import type { ApiResponse } from './types';
 
 export interface ReissueRes {
   accessToken: string;
+  userId: number;
 }
 
 export const authApi = {
