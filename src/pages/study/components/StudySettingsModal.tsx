@@ -12,6 +12,9 @@ export interface StudySettingsModalProps {
   onClose: () => void;
   studyId: string;
   studyName: string;
+  startDate?: string;
+  description?: string;
+  reviewerCount?: number;
 }
 
 const updateStudySchema = z.object({
@@ -48,6 +51,9 @@ export const StudySettingsModal = ({
   onClose,
   studyId,
   studyName,
+  startDate,
+  description,
+  reviewerCount,
 }: StudySettingsModalProps) => {
   const { showToast } = useToast();
   const {
@@ -67,7 +73,11 @@ export const StudySettingsModal = ({
     reset: resetInfo,
     formState: { errors: infoErrors, isSubmitting: isInfoSubmitting },
   } = useForm<UpdateStudyFormValues>({
-    defaultValues: { name: studyName, startDate: getLocalDateString(), description: '' },
+    defaultValues: {
+      name: studyName,
+      startDate: startDate ?? getLocalDateString(),
+      description: description ?? '',
+    },
     resolver: (values) => {
       const result = updateStudySchema.safeParse(values);
       if (result.success) return { values: result.data, errors: {} };
@@ -87,7 +97,7 @@ export const StudySettingsModal = ({
     reset: resetReviewer,
     formState: { errors: reviewerErrors, isSubmitting: isReviewerSubmitting },
   } = useForm<UpdateReviewerFormValues>({
-    defaultValues: { reviewerCount: 2 },
+    defaultValues: { reviewerCount: reviewerCount ?? 2 },
     resolver: (values) => {
       const result = updateReviewerSchema.safeParse(values);
       if (result.success) return { values: result.data, errors: {} };
@@ -104,10 +114,14 @@ export const StudySettingsModal = ({
     if (isOpen) {
       setActiveTab('info');
       setInviteToken(null);
-      resetInfo({ name: studyName, startDate: getLocalDateString(), description: '' });
-      resetReviewer({ reviewerCount: 2 });
+      resetInfo({
+        name: studyName,
+        startDate: startDate ?? getLocalDateString(),
+        description: description ?? '',
+      });
+      resetReviewer({ reviewerCount: reviewerCount ?? 2 });
     }
-  }, [isOpen, studyName, resetInfo, resetReviewer]);
+  }, [isOpen, studyName, startDate, description, reviewerCount, resetInfo, resetReviewer]);
 
   const onInfoSubmit = async (data: UpdateStudyFormValues) => {
     try {
@@ -139,12 +153,15 @@ export const StudySettingsModal = ({
     }
   };
 
-  const copyInviteLink = () => {
+  const copyInviteLink = async () => {
     if (!inviteToken) return;
     const link = `${window.location.origin}/invite/${inviteToken}`;
-    navigator.clipboard.writeText(link).then(() => {
+    try {
+      await navigator.clipboard.writeText(link);
       showToast({ message: '초대 링크가 클립보드에 복사되었습니다.', type: 'success' });
-    });
+    } catch {
+      showToast({ message: '초대 링크 복사에 실패했습니다.', type: 'error' });
+    }
   };
 
   const handleCloseStudy = async () => {

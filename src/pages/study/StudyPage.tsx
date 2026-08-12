@@ -196,6 +196,9 @@ export const StudyPage = () => {
           onClose={() => setIsSettingsOpen(false)}
           studyId={study.id}
           studyName={study.name}
+          startDate={studyData.startDate}
+          description={studyData.description}
+          reviewerCount={studyData.reviewerCount}
         />
       )}
     </AppLayout>

@@ -23,10 +23,11 @@ export const useStudySettings = (studyId: string | undefined) => {
 
   const closeStudyMutation = useMutation({
     mutationFn: () => studyApi.closeStudy(parsedStudyId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['study', studyId] });
-      void queryClient.invalidateQueries({ queryKey: ['studies'] });
-    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['study', studyId] }),
+        queryClient.invalidateQueries({ queryKey: ['studies'] }),
+      ]),
   });
 
   const getInvitationTokenMutation = useMutation({

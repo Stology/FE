@@ -7,6 +7,9 @@ export interface GetStudyDetailRes {
   currentWeek: number;
   isActive: boolean;
   isLeader: boolean;
+  startDate?: string;
+  description?: string;
+  reviewerCount?: number;
 }
 
 export interface GetReviewerCountRes {
