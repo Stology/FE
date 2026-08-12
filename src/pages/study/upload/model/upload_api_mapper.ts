@@ -11,15 +11,18 @@ const STATUS_BY_DATA_STATE: Record<DataState, MaterialStatus> = {
 /**
  * 백엔드 RecentFileRes를 화면의 Material로 변환한다.
  *
- * 백엔드에 없는 값은 다음과 같이 근사한다(1-2/1-6 답변 대기 — 데이터 생기면 교체):
- * - isOwn: "내 memberId"를 로그인 시 받기로 확정됐지만(1-6) 로그인 자체가 아직 mock이라
- *   프론트가 아직 들고 있지 않음 → 당분간 항상 false로 둠. NEEDREVIEW는 항상 "검토 필요"로만
- *   표시되고, 본인 자료의 "검토 대기"/자료 수정 액션은 로그인 연동 후에나 나타남.
+ * - isOwn: 로그인 시 받은 내 memberId(`useAuthStore`의 `memberId`, `POST /api/auth/reissue`의
+ *   `userId`)와 `uploaderMemberId`를 비교해 계산한다. mock 인증 상태에서는 memberId를 알 수
+ *   없어(항상 null) isOwn이 항상 false로 나온다 — 실 로그인 후에만 정확해진다.
  * - week, description: 목록 API에 없어 week는 현재 스터디 주차로 대체, description은 공란.
  */
-export const mapRecentFileToMaterial = (dto: RecentFileRes, currentWeek: number): Material => ({
+export const mapRecentFileToMaterial = (
+  dto: RecentFileRes,
+  currentWeek: number,
+  memberId: number | null,
+): Material => ({
   id: String(dto.materialId),
-  isOwn: false,
+  isOwn: memberId !== null && dto.uploaderMemberId === memberId,
   status: STATUS_BY_DATA_STATE[dto.dataState],
   title: dto.dataTitle,
   uploadedAt: dto.createdAt.slice(0, 10),

@@ -5,6 +5,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isInitialized: boolean;
   accessToken: string | null;
+  memberId: number | null;
   initialize: () => Promise<void>;
   login: () => void;
   logout: () => void;
@@ -18,6 +19,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isInitialized: false,
   accessToken: null,
+  memberId: null,
   initialize: async () => {
     if (isInitializing) return;
     isInitializing = true;
@@ -25,20 +27,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
       const hasMockSession = readMockAuthSession();
       set({
+        accessToken: hasMockSession ? 'mock-token' : null,
         isAuthenticated: hasMockSession,
         isInitialized: true,
-        accessToken: hasMockSession ? 'mock-token' : null,
+        memberId: null,
       });
       isInitializing = false;
       return;
     }
 
     try {
-      const { accessToken } = await authApi.reissue();
-      set({ isAuthenticated: true, isInitialized: true, accessToken });
+      const { accessToken, userId } = await authApi.reissue();
+      set({ accessToken, isAuthenticated: true, isInitialized: true, memberId: userId });
     } catch (error) {
       console.error('Reissue failed:', error);
-      set({ isAuthenticated: false, isInitialized: true, accessToken: null });
+      set({ accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null });
     } finally {
       isInitializing = false;
     }
@@ -48,7 +51,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       persistMockAuthSession();
     }
 
-    set({ isAuthenticated: true, isInitialized: true, accessToken: 'mock-token' });
+    set({ accessToken: 'mock-token', isAuthenticated: true, isInitialized: true, memberId: null });
   },
   logout: async () => {
     try {
@@ -59,7 +62,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.error('Logout failed:', e);
     } finally {
       clearMockAuthSession();
-      set({ isAuthenticated: false, isInitialized: true, accessToken: null });
+      set({ accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null });
     }
   },
 }));
