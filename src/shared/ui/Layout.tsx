@@ -4,6 +4,7 @@ import { cn } from '@/shared/lib/cn';
 import { useMyStudies } from '@/shared/hooks';
 
 import { Sidebar, type SidebarSection } from './Sidebar';
+import { ProfileMenu } from './ProfileMenu';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -43,7 +44,12 @@ export const AppLayout = ({ children, className, sidebarSections }: AppLayoutPro
     <div className="min-h-screen bg-stology-off-white text-stology-text-dark">
       <div className="flex min-h-screen">
         <Sidebar sections={sidebarSections ?? defaultSections} />
-        <main className={cn('min-w-0 flex-1 px-8 py-7', className)}>{children}</main>
+        <main className={cn('min-w-0 flex-1 px-8 py-7 flex flex-col', className)}>
+          <div className="mb-4 flex justify-end">
+            <ProfileMenu />
+          </div>
+          <div className="flex-1">{children}</div>
+        </main>
       </div>
     </div>
   );
