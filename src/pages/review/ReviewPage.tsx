@@ -35,8 +35,8 @@ export const ReviewPage = ({
   onSubmit,
 }: ReviewPageProps) => {
   const { studyId } = useParams<ReviewRouteParams>();
-  const { data: studyData } = useStudyDetail(studyId);
-  const effectiveIsReadOnly = isReadOnly || (studyData && !studyData.isActive);
+  const { data: studyData, isLoading: isStudyLoading, error: studyError } = useStudyDetail(studyId);
+  const effectiveIsReadOnly = isReadOnly || (!!studyId && studyData?.isActive !== true);
 
   const isControlled = candidatesProp !== undefined;
   const fetchResult = useReviewCandidates(studyId, { enabled: !isControlled });
@@ -58,8 +58,18 @@ export const ReviewPage = ({
 
   const reviewedCount = candidates.filter((candidate) => candidate.myAction).length;
   const isSubmittable = candidates.length > 0 && reviewedCount === candidates.length;
-  const isLoading = isControlled ? isLoadingProp : fetchResult.isLoading;
-  const errorMessage = isControlled ? errorMessageProp : (fetchResult.error?.message ?? null);
+  const isLoading = isControlled
+    ? isLoadingProp || isStudyLoading
+    : fetchResult.isLoading || isStudyLoading;
+
+  let errorMessage: string | null = null;
+  if (isControlled) {
+    errorMessage = errorMessageProp || (studyError ? '스터디 정보를 불러오지 못했습니다.' : null);
+  } else {
+    errorMessage = studyError
+      ? '스터디 정보를 불러오지 못했습니다.'
+      : (fetchResult.error?.message ?? null);
+  }
 
   const applyAction = (candidateIds: string[], action: ReviewAction) => {
     setCandidates((current) =>
