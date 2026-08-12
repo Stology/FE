@@ -3,8 +3,6 @@ import { useForm } from 'react-hook-form';
 import { Search } from 'lucide-react';
 import { z } from 'zod';
 
-import { httpClient } from '@/shared/api/http_client';
-import type { ApiResponse } from '@/shared/api/types';
 import { Button, Input, Modal, Textarea } from '@/shared/ui';
 
 import { OntologySearchModal, type OntologyTemplate } from './OntologySearchModal';
@@ -117,28 +115,22 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
 
   const onSubmit = async (data: CreateStudyFormValues) => {
     try {
-      // 1단계: 스터디 생성 (POST /api/study)
-      const createRes = await httpClient.post<ApiResponse<number>>('/api/study', {
+      // Simulate API call for study creation (HOME-CRT-01)
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      const mockInviteToken = `inv_${Math.random().toString(36).substring(2, 9)}`;
+      const createdStudy = {
+        id: `study-${Date.now()}`,
         name: data.name.trim(),
-        templateId: Number(data.templateId),
-        startDate: data.startedAt,
-        description: data.description?.trim() || undefined,
-      });
-
-      const studyId = createRes.data.result;
-
-      // 2단계: 초대 토큰 발급 (POST /api/study/{studyId}/invitation)
-      const inviteRes = await httpClient.post<ApiResponse<string>>(
-        `/api/study/${studyId}/invitation`,
-      );
-      const inviteToken = inviteRes.data.result;
+        inviteToken: mockInviteToken,
+      };
 
       reset();
       setSelectedTemplate(null);
       onClose();
 
       if (onSuccess) {
-        onSuccess({ id: String(studyId), name: data.name.trim(), inviteToken });
+        onSuccess(createdStudy);
       }
     } catch {
       alert('스터디 생성 중 오류가 발생했습니다.');

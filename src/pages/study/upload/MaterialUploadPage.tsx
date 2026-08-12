@@ -5,51 +5,39 @@ import { mockMaterials } from '@/shared/mocks/materials';
 import type { Material, MaterialDraft } from '@/shared/types/stology';
 import { Button, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
-import { MaterialEditModal, type MaterialEditPayload } from './MaterialEditModal';
 import { MaterialUploadForm } from './MaterialUploadForm';
 import { PendingMaterialItem } from './PendingMaterialItem';
 
 interface MaterialUploadPageProps {
   currentWeek?: number;
   errorMessage?: string | null;
-  isEditSubmitting?: boolean;
   isLoading?: boolean;
   isReadOnly?: boolean;
   isSubmitting?: boolean;
   materials?: Material[];
-  onMaterialEdit?: (material: Material, payload: MaterialEditPayload) => void | Promise<void>;
-  onMaterialReanalyze?: (material: Material) => void;
+  onMaterialEdit?: (material: Material) => void;
   onMaterialReview?: (material: Material) => void;
   onRetry?: () => void;
-  onSubmit?: (draft: MaterialDraft) => void | Promise<void>;
+  onSubmit?: (draft: MaterialDraft) => void;
 }
 
 export const MaterialUploadPage = ({
   currentWeek,
   errorMessage,
-  isEditSubmitting = false,
   isLoading = false,
   isReadOnly = false,
   isSubmitting = false,
   materials = mockMaterials,
   onMaterialEdit,
-  onMaterialReanalyze,
   onMaterialReview,
   onRetry,
   onSubmit,
 }: MaterialUploadPageProps) => {
   const [submittedTitle, setSubmittedTitle] = useState<string | null>(null);
-  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
 
-  const handleSubmit = async (draft: MaterialDraft) => {
-    await onSubmit?.(draft);
+  const handleSubmit = (draft: MaterialDraft) => {
     setSubmittedTitle(draft.title);
-  };
-
-  const handleEditSubmit = async (payload: MaterialEditPayload) => {
-    if (!editingMaterial) return;
-    await onMaterialEdit?.(editingMaterial, payload);
-    setEditingMaterial(null);
+    onSubmit?.(draft);
   };
 
   const renderPendingContent = () => {
@@ -97,8 +85,7 @@ export const MaterialUploadPage = ({
             isReadOnly={isReadOnly}
             key={material.id}
             material={material}
-            onEdit={setEditingMaterial}
-            onReanalyze={onMaterialReanalyze}
+            onEdit={onMaterialEdit}
             onReview={onMaterialReview}
           />
         ))}
@@ -146,14 +133,6 @@ export const MaterialUploadPage = ({
           {renderPendingContent()}
         </div>
       </div>
-
-      <MaterialEditModal
-        isOpen={editingMaterial !== null}
-        isSubmitting={isEditSubmitting}
-        material={editingMaterial}
-        onClose={() => setEditingMaterial(null)}
-        onSubmit={handleEditSubmit}
-      />
     </section>
   );
 };

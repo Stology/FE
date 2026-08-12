@@ -5,8 +5,6 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Material } from '@/shared/types/stology';
-
 import { MaterialUploadPage } from './MaterialUploadPage';
 
 afterEach(cleanup);
@@ -113,51 +111,17 @@ describe('MaterialUploadPage', () => {
   });
 
   it('본인의 검토 대기 자료에만 자료 수정 액션을 노출한다', () => {
-    render(<MaterialUploadPage />);
-    const editButtons = screen.getAllByRole('button', { name: '자료 수정' });
-
-    expect(editButtons).toHaveLength(1);
-  });
-
-  it('자료 수정 모달에서 제출하면 수정 내용을 전달한다', async () => {
     const handleMaterialEdit = vi.fn();
 
     render(<MaterialUploadPage onMaterialEdit={handleMaterialEdit} />);
-    fireEvent.click(screen.getByRole('button', { name: '자료 수정' }));
+    const editButtons = screen.getAllByRole('button', { name: '자료 수정' });
 
-    fireEvent.change(screen.getByRole('textbox', { name: '자료 제목 수정 *' }), {
-      target: { value: '토큰 재발급 정리' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+    expect(editButtons).toHaveLength(1);
 
-    await waitFor(() => expect(handleMaterialEdit).toHaveBeenCalledOnce());
+    fireEvent.click(editButtons[0]);
+
     expect(handleMaterialEdit).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'token-reissue' }),
-      expect.objectContaining({ title: '토큰 재발급 정리' }),
-    );
-  });
-
-  it('본인의 추출 실패 자료에는 재분석 액션을 노출하고, 누르면 요청을 전달한다', () => {
-    const handleMaterialReanalyze = vi.fn();
-    const materials: Material[] = [
-      {
-        id: 'failed-own',
-        isOwn: true,
-        status: 'extract_failed',
-        title: '실패한 자료',
-        uploadedAt: '2026-03-16',
-        uploaderName: '김철수',
-        week: 3,
-      },
-    ];
-
-    render(
-      <MaterialUploadPage materials={materials} onMaterialReanalyze={handleMaterialReanalyze} />,
-    );
-    fireEvent.click(screen.getByRole('button', { name: '재분석' }));
-
-    expect(handleMaterialReanalyze).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'failed-own' }),
     );
   });
 

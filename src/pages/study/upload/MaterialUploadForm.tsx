@@ -8,7 +8,7 @@ interface MaterialUploadFormProps {
   currentWeek?: number;
   isDisabled?: boolean;
   isSubmitting?: boolean;
-  onSubmit?: (draft: MaterialDraft) => void | Promise<void>;
+  onSubmit?: (draft: MaterialDraft) => void;
 }
 
 interface MaterialFormValues {
@@ -55,28 +55,23 @@ export const MaterialUploadForm = ({
     if (nextFiles.length > 0) setFileError(null);
   };
 
-  const submitDraft = async (values: MaterialFormValues) => {
+  const submitDraft = (values: MaterialFormValues) => {
     if (mode === 'file' && files.length === 0) {
       setFileError('마크다운 파일을 선택해 주세요.');
       return;
     }
 
-    try {
-      await onSubmit?.({
-        content: mode === 'text' ? values.content : undefined,
-        description: values.description.trim() || undefined,
-        file: mode === 'file' ? files[0] : undefined,
-        fileName: mode === 'file' ? files[0]?.name : undefined,
-        mode,
-        title: values.title.trim(),
-      });
+    onSubmit?.({
+      content: mode === 'text' ? values.content : undefined,
+      description: values.description.trim() || undefined,
+      fileName: mode === 'file' ? files[0]?.name : undefined,
+      mode,
+      title: values.title.trim(),
+    });
 
-      reset();
-      setFiles([]);
-      setFileError(null);
-    } catch {
-      // 업로드 실패 시 입력값을 유지해 재시도할 수 있게 한다. 실패 안내는 mutation 쪽 토스트로 표시.
-    }
+    reset();
+    setFiles([]);
+    setFileError(null);
   };
 
   return (

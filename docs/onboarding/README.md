@@ -13,11 +13,7 @@
 ## 설정과 환경 변수
 
 - Vite 설정은 `vite.config.ts`, TypeScript 설정은 `tsconfig*.json`, Tailwind 설정은 `tailwind.config.ts`에서 확인합니다.
-- `.env.example`을 `.env.local`로 복사한 뒤 로컬 환경에 필요한 값을 설정합니다. `.env.local`은 커밋하지 않습니다.
-- `VITE_API_BASE_URL`은 공용 개발 API 주소를 지정합니다.
-- `VITE_KAKAO_AUTH_URL`은 카카오 OAuth 시작 주소를 지정합니다.
-- `VITE_ENABLE_MOCK_AUTH`는 로컬 목 인증 사용 여부를 지정합니다.
-- 환경 변수를 변경한 뒤에는 `pnpm dev`를 다시 실행해야 합니다.
+- 현재 `.env.example`에는 `VITE_API_BASE_URL`만 선언되어 있습니다. 실제 값은 커밋하지 않습니다.
 - `@` 경로 별칭은 실제 Vite 및 TypeScript 설정을 함께 확인한 뒤 사용합니다.
 
 ## 다음 읽기
