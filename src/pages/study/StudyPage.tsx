@@ -1,16 +1,22 @@
-﻿import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useMemo, useState } from 'react';
 import { isAxiosError } from 'axios';
 
-import {
-  getMockStudyById,
-  getMockStudyTabById,
-  mockStudyContainer,
-  mockStudyTabs,
-} from '@/shared/mocks/studies';
+import { useStudyDetail, useToast } from '@/shared/hooks';
+import { getMockStudyTabById, mockStudyTabs } from '@/shared/mocks/studies';
+import { studyApi } from '@/shared/api/study';
 import type { Study } from '@/shared/types/stology';
-import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
+import {
+  AppLayout,
+  Button,
+  Card,
+  EmptyState,
+  Header,
+  Loading,
+  PagePlaceholder,
+  Tabs,
+} from '@/shared/ui';
 
 import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
@@ -36,25 +42,82 @@ interface StudyRouteParams extends Record<string, string | undefined> {
   tab?: string;
 }
 
-// 스터디 상세 조회 API가 아직 없어(스터디 CRUD는 김이슬님 담당) mock 목록으로만 이름/주차/
-// 종료 여부를 알 수 있다. mock에 없는 studyId(실 서버 전용 등)는 최소한의 기본값으로 렌더링을
-// 계속하고, 각 탭의 실제 데이터는 자신의 API 호출로 별도 로딩/에러 처리한다(홈으로 보내지 않음).
-const FALLBACK_STUDY_CURRENT_WEEK = 1;
-
 export const StudyPage = () => {
   const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { data: studyData, isLoading, error, refetch } = useStudyDetail(studyId);
+
+  const handleDelete = async () => {
+    if (!studyData) return;
+    if (!window.confirm(`정말 '${studyData.name}' 스터디를 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await studyApi.deleteStudy(Number(studyId));
+      showToast({ message: '스터디가 삭제되었습니다.', type: 'success' });
+      navigate('/');
+    } catch {
+      showToast({ message: '스터디 삭제에 실패했습니다.', type: 'error' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (!studyId) {
     return <Navigate to="/" replace />;
   }
 
-  const study: Study = getMockStudyById(studyId) ?? {
-    currentWeek: FALLBACK_STUDY_CURRENT_WEEK,
-    id: studyId,
-    memberCount: 0,
-    name: studyId,
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loading label="스터디 정보를 불러오는 중입니다" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    const isUnauthorizedOrNotFound =
+      isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 404);
+
+    if (isUnauthorizedOrNotFound) {
+      return <Navigate to="/" replace />;
+    }
+
+    return (
+      <AppLayout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <EmptyState
+            title="스터디 정보를 불러오지 못했습니다"
+            description="일시적인 네트워크 문제이거나 서버 오류일 수 있습니다. 잠시 후 다시 시도해 주세요."
+            action={
+              <Button onClick={() => void refetch()} variant="outline">
+                다시 시도
+              </Button>
+            }
+          />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!studyData) {
+    return <Navigate to="/" replace />;
+  }
+
+  const study: Study = {
+    id: String(studyData.studyId),
+    name: studyData.name,
+    currentWeek: studyData.currentWeek,
+    status: studyData.isActive ? 'active' : 'ended',
     startedAt: '',
-    status: 'active',
+    memberCount: 0,
   };
 
   const meta = getMockStudyTabById(tab);
@@ -62,10 +125,30 @@ export const StudyPage = () => {
     return <Navigate to={`/studies/${studyId}/knowledge`} replace />;
   }
 
+  const isLeader = studyData.isLeader;
+
   return (
     <AppLayout>
       <Card className="p-6">
-        <Header code={mockStudyContainer.code} title={study.name} />
+        <Header
+          title={study.name}
+          actions={
+            isLeader && study.status === 'active' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label="스터디 삭제"
+                className="border-red-200 text-red-700 hover:bg-red-100"
+                disabled={isDeleting}
+                onClick={() => {
+                  void handleDelete();
+                }}
+              >
+                {isDeleting ? '삭제 중...' : '삭제'}
+              </Button>
+            ) : undefined
+          }
+        />
         <Tabs
           className="mt-6"
           items={mockStudyTabs.map((studyTab) => ({

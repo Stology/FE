@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { httpClient } from '@/shared/api/http_client';
 import type { ApiResponse } from '@/shared/api/types';
@@ -21,69 +21,78 @@ interface UseMyStudiesResult {
   studies: Study[];
   isLoading: boolean;
   error: Error | null;
+  refetch: () => void;
 }
 
 export const useMyStudies = (): UseMyStudiesResult => {
   const [studies, setStudies] = useState<Study[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
+  const loadStudies = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-    const loadStudies = async () => {
-      try {
-        setIsLoading(true);
-        const [activeRes, endedRes] = await Promise.all([
-          httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
-            params: { status: 'active' },
-            signal: controller.signal,
-          }),
-          httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
-            params: { status: 'ended' },
-            signal: controller.signal,
-          }),
-        ]);
+    try {
+      setIsLoading(true);
+      const [activeRes, endedRes] = await Promise.all([
+        httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
+          params: { status: 'active' },
+          signal: controller.signal,
+        }),
+        httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
+          params: { status: 'ended' },
+          signal: controller.signal,
+        }),
+      ]);
 
-        const activeStudies = activeRes.data?.result?.studies ?? [];
-        const endedStudies = endedRes.data?.result?.studies ?? [];
+      const activeStudies = activeRes.data?.result?.studies ?? [];
+      const endedStudies = endedRes.data?.result?.studies ?? [];
 
-        const mappedActive: Study[] = activeStudies.map((s) => ({
-          id: String(s.studyId),
-          name: s.name,
-          currentWeek: s.currentWeek ?? 0,
-          memberCount: 0,
-          startedAt: s.startDate,
-          status: 'active' as const,
-        }));
+      const mappedActive: Study[] = activeStudies.map((s) => ({
+        id: String(s.studyId),
+        name: s.name,
+        currentWeek: s.currentWeek ?? 0,
+        memberCount: 0,
+        startedAt: s.startDate,
+        status: 'active' as const,
+      }));
 
-        const mappedEnded: Study[] = endedStudies.map((s) => ({
-          id: String(s.studyId),
-          name: s.name,
-          currentWeek: s.currentWeek ?? 0,
-          memberCount: 0,
-          startedAt: s.startDate,
-          status: 'ended' as const,
-        }));
+      const mappedEnded: Study[] = endedStudies.map((s) => ({
+        id: String(s.studyId),
+        name: s.name,
+        currentWeek: s.currentWeek ?? 0,
+        memberCount: 0,
+        startedAt: s.startDate,
+        status: 'ended' as const,
+      }));
 
-        setStudies([...mappedActive, ...mappedEnded]);
-        setError(null);
-      } catch (err: unknown) {
-        if ((err as { name?: string }).name !== 'CanceledError') {
-          setStudies([]);
-          setError(err instanceof Error ? err : new Error('스터디 목록을 불러오지 못했습니다.'));
-        }
-      } finally {
+      setStudies([...mappedActive, ...mappedEnded]);
+      setError(null);
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name !== 'CanceledError') {
+        setStudies([]);
+        setError(err instanceof Error ? err : new Error('스터디 목록을 불러오지 못했습니다.'));
+      }
+    } finally {
+      if (abortControllerRef.current === controller) {
         setIsLoading(false);
       }
-    };
-
-    void loadStudies();
-
-    return () => {
-      controller.abort();
-    };
+    }
   }, []);
 
-  return { error, isLoading, studies };
+  useEffect(() => {
+    void loadStudies();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [loadStudies]);
+
+  return { error, isLoading, studies, refetch: loadStudies };
 };
