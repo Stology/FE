@@ -42,6 +42,7 @@ export const useInvite = (token?: string) => {
           name: data.name,
           currentWeek: 0,
           memberCount: data.memberCount,
+          members: [],
           startedAt: '',
           status: 'active',
         });

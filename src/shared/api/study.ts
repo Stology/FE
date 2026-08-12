@@ -7,6 +7,8 @@ export interface GetStudyDetailRes {
   currentWeek: number;
   isActive: boolean;
   isLeader: boolean;
+  startDate: string;
+  members: string[];
 }
 
 export interface GetReviewerCountRes {

@@ -1,4 +1,4 @@
-﻿export type StudyStatus = 'active' | 'ended';
+export type StudyStatus = 'active' | 'ended';
 
 export type MaterialStatus =
   'extracting' | 'extract_failed' | 'needs_review' | 'editable' | 'confirmed';
@@ -95,6 +95,7 @@ export interface Study {
   name: string;
   currentWeek: number;
   memberCount: number;
+  members: string[];
   startedAt: string;
   status: StudyStatus;
 }
