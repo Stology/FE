@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { httpClient } from '@/shared/api/http_client';
 import type { ApiResponse } from '@/shared/api/types';
@@ -20,6 +20,7 @@ interface UseMyStudiesResult {
   studies: Study[];
   isLoading: boolean;
   error: Error | null;
+  refetch: () => void;
 }
 
 export const useMyStudies = (): UseMyStudiesResult => {
@@ -27,44 +28,37 @@ export const useMyStudies = (): UseMyStudiesResult => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const loadStudies = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
+        params: { status: 'active' },
+      });
 
-    const loadStudies = async () => {
-      try {
-        setIsLoading(true);
-        const res = await httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
-          params: { status: 'active' },
-          signal: controller.signal,
-        });
-
-        const apiStudies = res.data?.result?.studies ?? [];
-        const mapped: Study[] = apiStudies.map((s) => ({
-          id: String(s.studyId),
-          name: s.name,
-          currentWeek: 0,
-          memberCount: 0,
-          startedAt: s.startDate,
-          status: 'active' as const,
-        }));
-        setStudies(mapped);
-        setError(null);
-      } catch (err: unknown) {
-        if ((err as { name?: string }).name !== 'CanceledError') {
-          setStudies([]);
-          setError(err instanceof Error ? err : new Error('스터디 목록을 불러오지 못했습니다.'));
-        }
-      } finally {
-        setIsLoading(false);
+      const apiStudies = res.data?.result?.studies ?? [];
+      const mapped: Study[] = apiStudies.map((s) => ({
+        id: String(s.studyId),
+        name: s.name,
+        currentWeek: 0,
+        memberCount: 0,
+        startedAt: s.startDate,
+        status: 'active' as const,
+      }));
+      setStudies(mapped);
+      setError(null);
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name !== 'CanceledError') {
+        setStudies([]);
+        setError(err instanceof Error ? err : new Error('스터디 목록을 불러오지 못했습니다.'));
       }
-    };
-
-    void loadStudies();
-
-    return () => {
-      controller.abort();
-    };
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  return { error, isLoading, studies };
+  useEffect(() => {
+    void loadStudies();
+  }, [loadStudies]);
+
+  return { error, isLoading, studies, refetch: loadStudies };
 };
