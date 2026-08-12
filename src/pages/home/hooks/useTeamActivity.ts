@@ -15,16 +15,15 @@ interface UseTeamActivityResult {
 
 export const useTeamActivity = (studyId?: string): UseTeamActivityResult => {
   const queryClient = useQueryClient();
-  const parsedStudyId = studyId && studyId !== 'all' ? Number(studyId) : NaN;
-  const numericStudyId = Number.isInteger(parsedStudyId) ? parsedStudyId : null;
+  const numericStudyId = studyId && studyId !== 'all' ? Number(studyId) : -1;
 
   const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useInfiniteQuery({
       queryKey: ['teamActivity', numericStudyId],
-      queryFn: ({ pageParam }) => homeApi.getTeamTodos(numericStudyId!, pageParam),
+      queryFn: ({ pageParam }) => homeApi.getTeamTodos(numericStudyId, pageParam),
       getNextPageParam: (lastPage) =>
         lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
-      enabled: numericStudyId !== null,
+      enabled: !Number.isNaN(numericStudyId),
       initialPageParam: undefined as string | undefined,
     });
 
