@@ -13,6 +13,7 @@ export { Input } from './Input';
 export { Loading } from './Loading';
 export { Modal } from './Modal';
 export { PagePlaceholder } from './PagePlaceholder';
+export { ProfileMenu } from './ProfileMenu';
 export { ProgressBar } from './ProgressBar';
 export { SearchInput } from './SearchInput';
 export { Select } from './Select';
