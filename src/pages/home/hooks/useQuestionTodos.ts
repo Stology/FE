@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { httpClient } from '@/shared/api/http_client';
-import type { ApiResponse } from '@/shared/api/types';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { homeApi } from '@/shared/api/home';
+import { useHomeTodoStore } from '../store/useHomeTodoStore';
 
 export type QuestionTodoStatus = '새 질문' | '새 답글' | '읽음';
 export type QuestionTodoAction = '질문 보기' | '답글 보기';
@@ -12,164 +13,108 @@ export interface QuestionTodoItem {
   study: string;
   author: string;
   createdAt: string;
+  rawDate: number;
   action: QuestionTodoAction;
   isRead: boolean;
-  to: string; // 이동할 경로
+  to: string;
 }
 
-interface QuestionInfo {
-  checked: boolean;
-  studyId: number;
-  questionId: number;
-  questionTitle: string;
-  studyName: string;
-  writerName: string;
-  createdAt: string;
-}
-
-interface AnswerInfo {
-  checked: boolean;
-  studyId: number;
-  questionId: number;
-  answerId: number;
-  questionTitle: string;
-  studyName: string;
-  writerName: string;
-  createdAt: string;
-}
-
-interface QuestionDetailRes {
-  pageInfo: { totalElements: number; hasNext: boolean };
-  questions: QuestionInfo[];
-}
-
-interface AnswerDetailRes {
-  pageInfo: { totalElements: number; hasNext: boolean };
-  answers: AnswerInfo[];
-}
+const formatDateTime = (dateStr: string) => {
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return '';
+  const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const dd = String(dateObj.getDate()).padStart(2, '0');
+  const hh = String(dateObj.getHours()).padStart(2, '0');
+  const min = String(dateObj.getMinutes()).padStart(2, '0');
+  return `${mm}.${dd} ${hh}:${min}`;
+};
 
 export const useQuestionTodos = () => {
-  const [items, setItems] = useState<QuestionTodoItem[]>([]);
   const [filter, setFilter] = useState<'전체' | '새 질문' | '새 답글'>('전체');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const { readItemIds, markAsRead } = useHomeTodoStore();
 
-  const loadItems = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+  const questionsQuery = useQuery({
+    queryKey: ['home', 'questions'],
+    queryFn: ({ signal }) => homeApi.getQuestions(undefined, signal),
+  });
 
-    try {
-      setIsLoading(true);
-      const [questionsRes, answersRes] = await Promise.all([
-        httpClient.get<ApiResponse<QuestionDetailRes>>('/api/home/questions', {
-          signal: controller.signal,
-        }),
-        httpClient.get<ApiResponse<AnswerDetailRes>>('/api/home/answers', {
-          signal: controller.signal,
-        }),
-      ]);
+  const answersQuery = useQuery({
+    queryKey: ['home', 'answers'],
+    queryFn: ({ signal }) => homeApi.getAnswers(undefined, signal),
+  });
 
-      const qItems = questionsRes.data?.result?.questions ?? [];
-      const aItems = answersRes.data?.result?.answers ?? [];
+  const isLoading = questionsQuery.isLoading || answersQuery.isLoading;
+  const error = questionsQuery.error ?? answersQuery.error;
 
-      const formatDateTime = (dateStr: string) => {
-        const dateObj = new Date(dateStr);
-        if (isNaN(dateObj.getTime())) return '';
-        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const dd = String(dateObj.getDate()).padStart(2, '0');
-        const hh = String(dateObj.getHours()).padStart(2, '0');
-        const min = String(dateObj.getMinutes()).padStart(2, '0');
-        return `${mm}.${dd} ${hh}:${min}`;
-      };
+  const items = useMemo(() => {
+    const qItems = questionsQuery.data?.questions ?? [];
+    const aItems = answersQuery.data?.answers ?? [];
 
-      const mappedQuestions: QuestionTodoItem[] = qItems.map((q) => ({
-        id: `q-${q.questionId}`,
-        status: q.checked ? '읽음' : '새 질문',
+    const mappedQuestions: QuestionTodoItem[] = qItems.map((q) => {
+      const id = `q-${q.questionId}`;
+      const isRead = q.checked || readItemIds.includes(id);
+      return {
+        id,
+        status: isRead ? '읽음' : '새 질문',
         title: q.questionTitle,
         study: q.studyName,
         author: q.writerName,
         createdAt: formatDateTime(q.createdAt),
+        rawDate: new Date(q.createdAt).getTime(),
         action: '질문 보기',
-        isRead: q.checked,
+        isRead,
         to: `/studies/${q.studyId}/questions/${q.questionId}`,
-      }));
+      };
+    });
 
-      const mappedAnswers: QuestionTodoItem[] = aItems.map((a) => ({
-        id: `a-${a.answerId}`,
-        status: a.checked ? '읽음' : '새 답글',
+    const mappedAnswers: QuestionTodoItem[] = aItems.map((a) => {
+      const id = `a-${a.answerId}`;
+      const isRead = a.checked || readItemIds.includes(id);
+      return {
+        id,
+        status: isRead ? '읽음' : '새 답글',
         title: a.questionTitle,
         study: a.studyName,
         author: a.writerName,
         createdAt: formatDateTime(a.createdAt),
+        rawDate: new Date(a.createdAt).getTime(),
         action: '답글 보기',
-        isRead: a.checked,
+        isRead,
         to: `/studies/${a.studyId}/questions/${a.questionId}`,
-      }));
+      };
+    });
 
-      // 합치고 최신순 정렬 (원한다면 날짜 비교)
-      const combined = [...mappedQuestions, ...mappedAnswers];
-      setItems(combined);
-      setError(null);
-    } catch (err: unknown) {
-      if ((err as { name?: string }).name !== 'CanceledError') {
-        setItems([]);
-        setError(err instanceof Error ? err : new Error('질문/답글 목록을 불러오지 못했습니다.'));
-      }
-    } finally {
-      if (abortControllerRef.current === controller) {
-        setIsLoading(false);
-      }
-    }
-  }, []);
+    // 원시 타임스탬프 기준 최신순 정렬
+    return [...mappedQuestions, ...mappedAnswers].sort((a, b) => b.rawDate - a.rawDate);
+  }, [questionsQuery.data, answersQuery.data, readItemIds]);
 
-  useEffect(() => {
-    void loadItems();
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [loadItems]);
+  const filteredItems = useMemo(() => {
+    if (filter === '전체') return items;
+    return items.filter((item) => item.status === filter);
+  }, [items, filter]);
 
-  // 필터에 따른 목록 반환
-  const filteredItems = items.filter((item) => {
-    if (filter === '전체') return true;
-    return item.status === filter;
-  });
+  const counts = useMemo(
+    () => ({
+      total: items.length,
+      newQuestion: items.filter((i) => i.status === '새 질문').length,
+      newReply: items.filter((i) => i.status === '새 답글').length,
+    }),
+    [items],
+  );
 
-  // 카운트 계산
-  const totalCount = items.length;
-  const newQuestionCount = items.filter((i) => i.status === '새 질문').length;
-  const newReplyCount = items.filter((i) => i.status === '새 답글').length;
-
-  // 읽음 처리 (UI 상의 낙관적 업데이트)
-  const markAsRead = useCallback((targetTo: string) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.to === targetTo && !item.isRead) {
-          return { ...item, status: '읽음', isRead: true };
-        }
-        return item;
-      }),
-    );
-  }, []);
+  const refetch = () => {
+    void questionsQuery.refetch();
+    void answersQuery.refetch();
+  };
 
   return {
     items: filteredItems,
     filter,
     setFilter,
-    counts: {
-      total: totalCount,
-      newQuestion: newQuestionCount,
-      newReply: newReplyCount,
-    },
+    counts,
     markAsRead,
     isLoading,
     error,
-    refetch: loadItems,
+    refetch,
   };
 };

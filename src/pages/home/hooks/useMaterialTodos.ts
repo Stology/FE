@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { httpClient } from '@/shared/api/http_client';
-import type { ApiResponse } from '@/shared/api/types';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { homeApi } from '@/shared/api/home';
 
-export type MaterialTodoStatus = '검토 필요' | '추출 실패';
+export type MaterialTodoStatus = '검토 필요';
+// '재업로드 필요' 상태는 API 미지원으로 제거
+export type MaterialTodoFilter = '전체' | '검토';
 
 export interface MaterialDetailModel {
   content: string;
@@ -27,110 +29,64 @@ export interface MaterialTodoItem {
   week: string;
   uploader: string;
   date: string;
+  rawDate: number;
   detail?: MaterialDetailModel;
   state?: MaterialDetailState;
 }
 
-export type MaterialTodoFilter = '전체' | '검토' | '재업로드 필요';
-
-interface MaterialInfo {
-  studyMaterialId: number;
-  dataTitle: string;
-  presignedUrl: string;
-  uploaderName: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface MaterialDetailRes {
-  pageInfo: {
-    totalElements: number;
-    hasNext: boolean;
-  };
-  materials: MaterialInfo[];
-}
-
 export const useMaterialTodos = () => {
   const [filter, setFilter] = useState<MaterialTodoFilter>('전체');
-  const [items, setItems] = useState<MaterialTodoItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const loadItems = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+  const materialsQuery = useQuery({
+    queryKey: ['home', 'materials'],
+    queryFn: ({ signal }) => homeApi.getMaterials(undefined, signal),
+  });
 
-    try {
-      setIsLoading(true);
-      const res = await httpClient.get<ApiResponse<MaterialDetailRes>>('/api/home/materials', {
-        signal: controller.signal,
-      });
+  const isLoading = materialsQuery.isLoading;
+  const error = materialsQuery.error;
 
-      const apiItems = res.data?.result?.materials ?? [];
-      const mapped: MaterialTodoItem[] = apiItems.map((s) => {
-        // 날짜 포맷 (예: 07.16)
-        const dateObj = new Date(s.createdAt);
-        const formattedDate = !isNaN(dateObj.getTime())
-          ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
-          : '';
+  const items = useMemo(() => {
+    const apiItems = materialsQuery.data?.materials ?? [];
 
-        return {
-          id: String(s.studyMaterialId),
-          status: '검토 필요', // API에 상태 필드가 없어 기본값 부여
-          title: s.dataTitle,
-          study: { id: '', name: '-' }, // API에 스터디 정보가 없음
-          week: '-',
-          uploader: s.uploaderName,
-          date: formattedDate,
-        };
-      });
+    const mapped: MaterialTodoItem[] = apiItems.map((s) => {
+      const dateObj = new Date(s.createdAt);
+      const isValidDate = !isNaN(dateObj.getTime());
+      const formattedDate = isValidDate
+        ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
+        : '';
 
-      setItems(mapped);
-      setError(null);
-    } catch (err: unknown) {
-      if ((err as { name?: string }).name !== 'CanceledError') {
-        setItems([]);
-        setError(err instanceof Error ? err : new Error('자료 목록을 불러오지 못했습니다.'));
-      }
-    } finally {
-      if (abortControllerRef.current === controller) {
-        setIsLoading(false);
-      }
-    }
-  }, []);
+      return {
+        id: String(s.studyMaterialId),
+        status: '검토 필요',
+        title: s.dataTitle,
+        study: { id: '', name: '-' }, // API 미지원 필드
+        week: '-', // API 미지원 필드
+        uploader: s.uploaderName,
+        date: formattedDate,
+        rawDate: isValidDate ? dateObj.getTime() : 0,
+      };
+    });
 
-  useEffect(() => {
-    void loadItems();
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [loadItems]);
+    // 원시 타임스탬프 기준 최신순 정렬
+    return mapped.sort((a, b) => b.rawDate - a.rawDate);
+  }, [materialsQuery.data]);
 
   const filteredItems = useMemo(() => {
-    if (filter === '검토') {
-      return items.filter((item) => item.status === '검토 필요');
-    }
-    if (filter === '재업로드 필요') {
-      return items.filter((item) => item.status === '추출 실패');
-    }
-    return items;
-  }, [filter, items]);
+    if (filter === '전체') return items;
+    return items.filter((item) => item.status === '검토 필요');
+  }, [items, filter]);
 
-  const counts = useMemo(() => {
-    const reviewCount = items.filter((item) => item.status === '검토 필요').length;
-    const reuploadCount = items.filter((item) => item.status === '추출 실패').length;
-    return {
+  const counts = useMemo(
+    () => ({
       전체: items.length,
-      검토: reviewCount,
-      '재업로드 필요': reuploadCount,
-    };
-  }, [items]);
+      검토: items.filter((item) => item.status === '검토 필요').length,
+    }),
+    [items],
+  );
+
+  const refetch = () => {
+    void materialsQuery.refetch();
+  };
 
   return {
     filter,
@@ -139,6 +95,6 @@ export const useMaterialTodos = () => {
     counts,
     isLoading,
     error,
-    refetch: loadItems,
+    refetch,
   };
 };
