@@ -116,6 +116,15 @@ export function computeLayout(graph: KnowledgeGraph, seed: number = LAYOUT_SEED)
 
   const clusterAnchors = new Map<string, Vec3>();
   graph.clusters.forEach((cluster, index) => {
+    // 클러스터가 하나뿐이면(현재 항상 이 경우 — 백엔드에 클러스터 개념이 없어 단일
+    // 클러스터로 고정함, knowledge_api_mapper.ts 참고) 원점에서 떨어뜨려 배치할 이유가
+    // 없다. 카메라는 항상 원점을 바라보므로, 유일한 클러스터를 원점 밖에 앵커링하면
+    // 전체 그래프가 화면 중심을 벗어나 보인다.
+    if (graph.clusters.length === 1) {
+      clusterAnchors.set(cluster.id, { x: 0, y: 0, z: 0 });
+      return;
+    }
+
     const [dx, dy, dz] = fibonacciDirection(index, Math.max(2, graph.clusters.length));
     const size = clusterCounts.get(cluster.id) ?? 1;
     const radius = CLUSTER_ANCHOR_RADIUS + Math.min(14, size * 0.28);

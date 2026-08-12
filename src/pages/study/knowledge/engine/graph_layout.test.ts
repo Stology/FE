@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { mockKnowledgeGraph } from '@/shared/mocks/knowledgeGraph';
+import type { KnowledgeGraph } from '@/shared/types/stology';
 
 import { computeLayout } from './graph_layout';
 
@@ -62,5 +63,45 @@ describe('computeLayout', () => {
         expect(distance).toBeGreaterThan(5);
       }
     }
+  });
+
+  it('클러스터가 하나뿐이면 노드 중심(centroid)을 원점 근처에 배치한다', () => {
+    // 실 API는 항상 단일 클러스터('default')만 준다(knowledge_api_mapper.ts 참고).
+    // 카메라는 항상 원점을 바라보므로, 유일한 클러스터를 원점에서 먼 앵커에 배치하면
+    // 그래프 전체가 화면 중심을 벗어나 보인다(실사용 중 발견된 버그).
+    const singleClusterGraph: KnowledgeGraph = {
+      clusters: [{ accent: 'accent-1', id: 'default', label: '전체' }],
+      edges: [],
+      nodes: Array.from({ length: 8 }, (_, index) => ({
+        aliases: [],
+        clusterId: 'default',
+        definition: '',
+        degree: 0,
+        id: `node-${index}`,
+        importance: ((index % 5) + 1) as 1 | 2 | 3 | 4 | 5,
+        isRoot: false,
+        label: `Node ${index}`,
+        materialCount: 0,
+        reinforcedWeeks: [],
+        state: 'active',
+        type: 'concept',
+        week: 1,
+      })),
+    };
+
+    const { positions } = computeLayout(singleClusterGraph);
+
+    let cx = 0;
+    let cy = 0;
+    let cz = 0;
+    for (let i = 0; i < singleClusterGraph.nodes.length; i += 1) {
+      cx += positions[i * 3];
+      cy += positions[i * 3 + 1];
+      cz += positions[i * 3 + 2];
+    }
+    const count = singleClusterGraph.nodes.length;
+    const centroidDistance = Math.hypot(cx / count, cy / count, cz / count);
+
+    expect(centroidDistance).toBeLessThan(5);
   });
 });
