@@ -2,23 +2,41 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { httpClient } from '@/shared/api/http_client';
 
 import { StudyPage } from './StudyPage';
 
-afterEach(cleanup);
+vi.mock('@/shared/api/http_client', () => ({
+  httpClient: { get: vi.fn(), patch: vi.fn() },
+}));
+
+afterEach(() => {
+  cleanup();
+  vi.mocked(httpClient.get).mockReset();
+});
+
+const emptyGraphResponse = {
+  data: { code: 'OK', message: '', result: { edges: [], nodes: [] }, success: true },
+};
+
+const createQueryClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 const renderStudyRoute = (path: string) =>
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route element={<p>홈 화면</p>} path="/" />
-        <Route element={<StudyPage />} path="/studies/:studyId/:tab" />
-      </Routes>
-      <LocationProbe />
-    </MemoryRouter>,
+    <QueryClientProvider client={createQueryClient()}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route element={<p>홈 화면</p>} path="/" />
+          <Route element={<StudyPage />} path="/studies/:studyId/:tab" />
+        </Routes>
+        <LocationProbe />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 const LocationProbe = () => {
@@ -28,14 +46,16 @@ const LocationProbe = () => {
 };
 
 describe('StudyPage route validation', () => {
-  it('존재하지 않는 스터디는 홈으로 이동한다', () => {
-    renderStudyRoute('/studies/missing-study/knowledge');
+  it('mock 목록에 없는 studyId는 홈으로 보내지 않고 API 오류로 표시한다', async () => {
+    renderStudyRoute('/studies/unknown-study/knowledge');
 
-    expect(screen.getByText('홈 화면')).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent('/');
+    expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();
+    expect(await screen.findByText('지식 구조를 불러오지 못했습니다')).toBeInTheDocument();
   });
 
   it('지원하지 않는 탭은 지식 구조로 이동한다', () => {
+    vi.mocked(httpClient.get).mockResolvedValue(emptyGraphResponse);
+
     renderStudyRoute('/studies/spring-study/missing-tab');
 
     expect(screen.getByRole('region', { name: '지식 구조' })).toBeInTheDocument();
@@ -46,15 +66,76 @@ describe('StudyPage route validation', () => {
 });
 
 describe('StudyPage knowledge route', () => {
-  it('연결 자료를 선택하면 자료 업로드 탭으로 이동한다', () => {
+  it('mock 목록에 없어도 실 API 응답이 있으면 정상적으로 그래프를 표시한다', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue(emptyGraphResponse);
+
+    renderStudyRoute('/studies/4/knowledge');
+
+    expect(await screen.findByRole('region', { name: '지식 구조' })).toBeInTheDocument();
+    expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();
+  });
+
+  it('연결 자료를 선택하면 자료 업로드 탭으로 이동한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string) => {
+      if (url.includes('/knowledge-graph/nodes/')) {
+        return Promise.resolve({
+          data: {
+            code: 'OK',
+            message: '',
+            result: {
+              activeLevel: 1,
+              definition: '서버가 발급하는 자가 검증 가능한 인증 토큰',
+              isActive: true,
+              materialCount: 1,
+              nodeId: 1,
+              recentMaterials: [
+                { createdAt: '2026-03-27', id: 7, memberName: '김철수', title: 'JWT 정리 노트' },
+              ],
+              relations: {},
+              title: 'JWT',
+            },
+            success: true,
+          },
+        });
+      }
+      if (url.includes('/upload')) {
+        return Promise.resolve({
+          data: { code: 'OK', message: '', result: { files: [] }, success: true },
+        });
+      }
+      return Promise.resolve({
+        data: {
+          code: 'OK',
+          message: '',
+          result: {
+            edges: [],
+            nodes: [
+              {
+                activationWeek: 3,
+                activeLevel: 1,
+                description: '서버가 발급하는 자가 검증 가능한 인증 토큰',
+                id: 1,
+                recommendWeek: 0,
+                title: 'JWT',
+              },
+            ],
+          },
+          success: true,
+        },
+      });
+    });
+
     renderStudyRoute('/studies/spring-study/knowledge');
 
+    await waitFor(() => screen.getByRole('button', { name: 'JWT 노드' }));
     fireEvent.click(screen.getByRole('button', { name: 'JWT 노드' }));
+
+    await waitFor(() => screen.getByRole('button', { name: /JWT 정리 노트/ }));
     fireEvent.click(screen.getByRole('button', { name: /JWT 정리 노트/ }));
 
     expect(screen.getByRole('region', { name: '자료 업로드' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(
-      '/studies/spring-study/upload?materialId=jwt-note',
+      '/studies/spring-study/upload?materialId=7',
     );
   });
 });

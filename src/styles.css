@@ -20,3 +20,66 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* 지식 구조 3D 그래프: 캔버스와 라벨 오버레이. engine이 직접 DOM을 만들어 갱신하므로
+   일반 Tailwind 클래스가 아닌 전역 셀렉터로 스타일을 둔다. */
+.stology-graph-canvas {
+  display: block;
+  height: 100%;
+  touch-action: pan-y;
+  width: 100%;
+}
+
+.stology-graph-label-layer .graph-label {
+  --label-bg: rgba(255, 255, 255, 0.92);
+  --label-color: #1c1e2e;
+
+  background: var(--label-bg);
+  border-radius: 8px;
+  color: var(--label-color);
+  font-size: 11px;
+  font-weight: 600;
+  left: 0;
+  letter-spacing: -0.01em;
+  max-width: 168px;
+  overflow: hidden;
+  padding: 3px 8px;
+  position: absolute;
+  text-overflow: ellipsis;
+  top: 0;
+  /* transform은 트랜지션을 걸지 않는다 — 엔진이 매 프레임 직접 위치를 갱신하므로,
+     transform까지 트랜지션을 걸면 라벨 슬롯이 재사용될 때(-9999px에 치워뒀던 슬롯이
+     새 노드 위치로 재배정될 때) 화면을 가로질러 날아오는 것처럼 보인다. */
+  transition: opacity 120ms ease;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+.stology-graph-label-layer .graph-label[data-tone='selected'] {
+  background: #4f46e5;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.stology-graph-label-layer .graph-label[data-tone='hover'] {
+  box-shadow: 0 0 0 1px rgba(31, 34, 61, 0.12);
+}
+
+.stology-graph-label-layer .graph-label[data-tone='relation'] {
+  align-items: center;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: visible;
+  padding: 0;
+}
+
+.stology-graph-label-layer .graph-label-eyebrow {
+  border-radius: 8px;
+  background: rgba(79, 70, 229, 0.11);
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+}

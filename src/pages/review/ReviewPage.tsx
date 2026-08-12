@@ -1,50 +1,68 @@
-import { useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
-import { getMockMaterialReview, mockMaterialReview } from '@/shared/mocks/materialReviews';
 import { getMockStudyById } from '@/shared/mocks/studies';
-import type { MaterialReview, NodeCandidate, ReviewAction } from '@/shared/types/stology';
+import type { NodeVoteReq } from '@/shared/api/review';
+import type { NodeCandidate, ReviewAction } from '@/shared/types/stology';
 import { AppLayout, EmptyState, ErrorMessage, Loading, ProgressBar } from '@/shared/ui';
 
+import { useReviewCandidates, useSubmitVotes } from './hooks';
 import { NodeCandidateCard } from './NodeCandidateCard';
 import { ReviewActionBar } from './ReviewActionBar';
 
 interface ReviewPageProps {
+  candidates?: NodeCandidate[];
   errorMessage?: string | null;
   isLoading?: boolean;
   isReadOnly?: boolean;
   onSubmit?: (candidates: NodeCandidate[]) => void;
-  review?: MaterialReview;
 }
 
 interface ReviewRouteParams extends Record<string, string | undefined> {
-  materialId?: string;
   studyId?: string;
 }
 
+/**
+ * candidates prop이 주어지면(테스트 등) 그 값을 그대로 쓰고, 없으면 studyId 기준으로
+ * 스터디 전체의 대기 중인 노드 후보를 실 API에서 불러온다(2-2: 자료별이 아니라 스터디
+ * 전체 단위 검토가 맞는 것으로 확인됨).
+ */
 export const ReviewPage = ({
-  errorMessage,
-  isLoading = false,
+  candidates: candidatesProp,
+  errorMessage: errorMessageProp,
+  isLoading: isLoadingProp = false,
   isReadOnly = false,
   onSubmit,
-  review,
 }: ReviewPageProps) => {
-  const { materialId, studyId } = useParams<ReviewRouteParams>();
+  const { studyId } = useParams<ReviewRouteParams>();
+  // 스터디 목록/상태 조회 API가 아직 연동 전이라 mock 목록으로만 종료 여부를 판단할 수 있다.
+  // mock에 없는 studyId(실 서버 전용 등)는 종료되지 않은 것으로 간주한다 — 존재하지 않는
+  // studyId는 아래 API 호출이 실패해 에러 상태로 자연스럽게 드러난다(홈으로 리다이렉트하지 않음).
   const study = studyId ? getMockStudyById(studyId) : undefined;
   const effectiveIsReadOnly = isReadOnly || study?.status === 'ended';
-  const initialReview =
-    review ?? (materialId ? getMockMaterialReview(materialId) : mockMaterialReview);
 
-  const [candidates, setCandidates] = useState<NodeCandidate[]>(initialReview?.candidates ?? []);
+  const isControlled = candidatesProp !== undefined;
+  const fetchResult = useReviewCandidates(studyId, { enabled: !isControlled });
+  const submitVotes = useSubmitVotes(studyId);
+
+  const [candidates, setCandidates] = useState<NodeCandidate[]>(candidatesProp ?? []);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const hasHydratedRef = useRef(false);
+
+  // 백그라운드 refetch가 검토 중인 로컬 승인/반려 선택을 덮어쓰지 않도록, 최초 1회만 반영한다.
+  useEffect(() => {
+    if (isControlled || hasHydratedRef.current || !fetchResult.isReady) return;
+
+    setCandidates(fetchResult.candidates);
+    hasHydratedRef.current = true;
+  }, [isControlled, fetchResult.candidates, fetchResult.isReady]);
 
   const reviewedCount = candidates.filter((candidate) => candidate.myAction).length;
   const isSubmittable = candidates.length > 0 && reviewedCount === candidates.length;
-
-  if (studyId && !study) {
-    return <Navigate to="/" replace />;
-  }
+  const isLoading = isControlled ? isLoadingProp : fetchResult.isLoading;
+  const errorMessage = isControlled ? errorMessageProp : (fetchResult.error?.message ?? null);
 
   const applyAction = (candidateIds: string[], action: ReviewAction) => {
     setCandidates((current) =>
@@ -53,6 +71,7 @@ export const ReviewPage = ({
       ),
     );
     setIsSubmitted(false);
+    setSubmitError(null);
   };
 
   const handleSelectChange = (candidateId: string, isSelected: boolean) => {
@@ -75,8 +94,47 @@ export const ReviewPage = ({
   };
 
   const handleSubmit = () => {
-    setIsSubmitted(true);
-    onSubmit?.(candidates);
+    if (isControlled) {
+      setIsSubmitted(true);
+      onSubmit?.(candidates);
+      return;
+    }
+
+    if (!studyId) return;
+
+    setSubmitError(null);
+
+    const votes: NodeVoteReq[] = [];
+    let hasUnmatchedCandidate = false;
+
+    candidates
+      .filter((candidate) => candidate.myAction)
+      .forEach((candidate) => {
+        const studyNodeId = fetchResult.studyNodeIdByCandidateId.get(candidate.id);
+        if (studyNodeId === undefined) {
+          hasUnmatchedCandidate = true;
+          return;
+        }
+
+        votes.push({
+          nodeCandidateId: Number(candidate.id),
+          studyNodeId,
+          voteType: candidate.myAction === 'approved' ? 'ACCEPT' : 'DENY',
+        });
+      });
+
+    if (hasUnmatchedCandidate) {
+      setSubmitError('일부 후보 정보를 확인하지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+      return;
+    }
+
+    submitVotes.mutate(votes, {
+      onError: () => setSubmitError('검토 제출에 실패했습니다. 다시 시도해 주세요.'),
+      onSuccess: () => {
+        setIsSubmitted(true);
+        onSubmit?.(candidates);
+      },
+    });
   };
 
   const renderContent = () => {
@@ -98,16 +156,6 @@ export const ReviewPage = ({
       );
     }
 
-    if (!initialReview) {
-      return (
-        <EmptyState
-          className="min-h-40"
-          description="자료 업로드 탭에서 검토 필요 자료를 선택해 주세요."
-          title="검토할 자료를 찾을 수 없습니다"
-        />
-      );
-    }
-
     if (candidates.length === 0) {
       return (
         <EmptyState
@@ -120,6 +168,22 @@ export const ReviewPage = ({
 
     return (
       <>
+        <header className="rounded-lg border border-stology-border-light bg-white px-6 py-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-heading-1 text-stology-text-dark">AI 후보 검토</h2>
+            <p className="text-[15px] font-bold leading-6 text-stology-text-dark">
+              {reviewedCount}/{candidates.length} 검토 완료
+            </p>
+          </div>
+          <ProgressBar
+            className="mt-4 max-w-none"
+            label="검토 진행률"
+            max={candidates.length || 1}
+            value={reviewedCount}
+            variant="success"
+          />
+        </header>
+
         <ul aria-label="노드 후보 목록" className="space-y-4">
           {candidates.map((candidate, index) => (
             <NodeCandidateCard
@@ -130,7 +194,7 @@ export const ReviewPage = ({
               key={candidate.id}
               onAction={(candidateId, action) => applyAction([candidateId], action)}
               onSelectChange={handleSelectChange}
-              reviewerCount={initialReview.reviewerCount}
+              reviewerCount={candidate.reviewerCount}
             />
           ))}
         </ul>
@@ -143,6 +207,12 @@ export const ReviewPage = ({
           >
             검토를 제출했습니다.
           </p>
+        ) : null}
+
+        {submitError ? (
+          <div role="alert">
+            <ErrorMessage message={submitError} title="검토 제출에 실패했습니다" />
+          </div>
         ) : null}
 
         <ReviewActionBar
@@ -164,27 +234,6 @@ export const ReviewPage = ({
         aria-label="AI 후보 검토"
         className="w-full max-w-[1120px] space-y-6 py-6"
       >
-        {initialReview ? (
-          <header className="rounded-lg border border-stology-border-light bg-white px-6 py-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-heading-1 text-stology-text-dark">
-                {initialReview.material.title} / 업로더 {initialReview.material.uploaderName} /
-                업로드일 {initialReview.material.uploadedAt} / {initialReview.material.week}주차
-              </h2>
-              <p className="text-[15px] font-bold leading-6 text-stology-text-dark">
-                {reviewedCount}/{candidates.length} 검토 완료
-              </p>
-            </div>
-            <ProgressBar
-              className="mt-4 max-w-none"
-              label="검토 진행률"
-              max={candidates.length || 1}
-              value={reviewedCount}
-              variant="success"
-            />
-          </header>
-        ) : null}
-
         {renderContent()}
       </section>
     </AppLayout>

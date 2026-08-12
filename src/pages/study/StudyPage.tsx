@@ -1,20 +1,25 @@
-﻿import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  getMockStudyById,
-  getMockStudyTabById,
-  mockStudyContainer,
-  mockStudyTabs,
-} from '@/shared/mocks/studies';
+import { useStudyDetail, useToast } from '@/shared/hooks';
+import { getMockStudyTabById, mockStudyTabs } from '@/shared/mocks/studies';
+import { studyApi } from '@/shared/api/study';
 import type { Study } from '@/shared/types/stology';
-import { AppLayout, Card, Header, PagePlaceholder, Tabs } from '@/shared/ui';
+import { AppLayout, Button, Card, Header, Loading, PagePlaceholder, Tabs } from '@/shared/ui';
 
+import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
 import { QuestionsPage } from './questions/QuestionsPage';
 import { WeeklyRecordsPage } from './records/WeeklyRecordsPage';
 import { WeeklyReportPage } from './reports/WeeklyReportPage';
+import {
+  useAnalyzeMaterial,
+  useSubmitMaterial,
+  useUpdateMaterial,
+  useUploadedMaterials,
+  useUploadSSE,
+} from './upload/hooks';
 import { MaterialUploadPage } from './upload/MaterialUploadPage';
 
 interface StudyRouteParams extends Record<string, string | undefined> {
@@ -24,25 +29,86 @@ interface StudyRouteParams extends Record<string, string | undefined> {
 
 export const StudyPage = () => {
   const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { data: studyData, isLoading, error } = useStudyDetail(studyId);
+
+  const handleDelete = async () => {
+    if (!studyData) return;
+    if (!window.confirm(`정말 '${studyData.name}' 스터디를 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await studyApi.deleteStudy(Number(studyId));
+      showToast({ message: '스터디가 삭제되었습니다.', type: 'success' });
+      navigate('/');
+    } catch {
+      showToast({ message: '스터디 삭제에 실패했습니다.', type: 'error' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (!studyId) {
     return <Navigate to="/" replace />;
   }
 
-  const study = getMockStudyById(studyId);
-  if (!study) {
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loading label="스터디 정보를 불러오는 중입니다" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !studyData) {
     return <Navigate to="/" replace />;
   }
+
+  const study: Study = {
+    id: String(studyData.studyId),
+    name: studyData.name,
+    currentWeek: studyData.currentWeek,
+    status: studyData.isActive ? 'active' : 'ended',
+    startedAt: '',
+    memberCount: 0,
+  };
 
   const meta = getMockStudyTabById(tab);
   if (!meta) {
     return <Navigate to={`/studies/${studyId}/knowledge`} replace />;
   }
 
+  const isLeader = studyData.isLeader;
+
   return (
     <AppLayout>
       <Card className="p-6">
-        <Header code={mockStudyContainer.code} title={study.name} />
+        <Header
+          title={study.name}
+          actions={
+            isLeader && study.status === 'active' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label="스터디 삭제"
+                className="border-red-200 text-red-700 hover:bg-red-100"
+                disabled={isDeleting}
+                onClick={() => {
+                  void handleDelete();
+                }}
+              >
+                {isDeleting ? '삭제 중...' : '삭제'}
+              </Button>
+            ) : undefined
+          }
+        />
         <Tabs
           className="mt-6"
           items={mockStudyTabs.map((studyTab) => ({
@@ -52,18 +118,16 @@ export const StudyPage = () => {
           }))}
         />
       </Card>
-      {tab === 'knowledge' && study ? (
+      {tab === 'knowledge' ? (
         <KnowledgeGraphTab key={study.id} study={study} />
-      ) : tab === 'upload' && study ? (
+      ) : tab === 'upload' ? (
         <MaterialUploadTab key={study.id} study={study} />
-      ) : tab === 'questions' && study ? (
-        <QuestionsPage isReadOnly={study.status === 'ended'} />
-      ) : tab === 'records' && study ? (
-        <WeeklyRecordsTab key={study.id} study={study} />
-      ) : tab === 'reports' && study ? (
-        <WeeklyReportTab key={study.id} study={study} />
-      ) : tab === 'questions' && study ? (
+      ) : tab === 'questions' ? (
         <QuestionsTab key={study.id} study={study} />
+      ) : tab === 'records' ? (
+        <WeeklyRecordsTab key={study.id} study={study} />
+      ) : tab === 'reports' ? (
+        <WeeklyReportTab key={study.id} study={study} />
       ) : (
         <PagePlaceholder
           code={meta.code}
@@ -81,6 +145,7 @@ interface KnowledgeGraphTabProps {
 
 const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => {
   const navigate = useNavigate();
+  const graphQuery = useKnowledgeGraph(study.id);
 
   return (
     <KnowledgeGraphPage
@@ -88,10 +153,15 @@ const KnowledgeGraphTab = ({ study }: KnowledgeGraphTabProps) => {
         { length: Math.max(0, study.currentWeek) },
         (_, index) => index + 1,
       )}
+      errorMessage={graphQuery.error ? '지식 구조를 불러오지 못했습니다.' : null}
+      graph={graphQuery.data}
+      isLoading={graphQuery.isLoading}
       isReadOnly={study.status === 'ended'}
       onMaterialOpen={(material) =>
         navigate(`/studies/${study.id}/upload?materialId=${encodeURIComponent(material.id)}`)
       }
+      onRetry={() => graphQuery.refetch()}
+      studyId={study.id}
     />
   );
 };
@@ -102,12 +172,32 @@ interface MaterialUploadTabProps {
 
 const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
   const navigate = useNavigate();
+  const materialsQuery = useUploadedMaterials(study.id, study.currentWeek);
+  const submitMaterial = useSubmitMaterial(study.id);
+  const updateMaterial = useUpdateMaterial(study.id);
+  const analyzeMaterial = useAnalyzeMaterial(study.id);
+  useUploadSSE(study.status === 'ended' ? undefined : study.id);
 
   return (
     <MaterialUploadPage
       currentWeek={study.currentWeek}
+      errorMessage={materialsQuery.error ? '대기 중인 자료를 불러오지 못했습니다.' : null}
+      isEditSubmitting={updateMaterial.isPending}
+      isLoading={materialsQuery.isLoading}
       isReadOnly={study.status === 'ended'}
-      onMaterialReview={(material) => navigate(`/studies/${study.id}/review/${material.id}`)}
+      isSubmitting={submitMaterial.isPending}
+      materials={materialsQuery.data}
+      onMaterialEdit={(material, payload) =>
+        updateMaterial.mutateAsync({
+          content: payload.content,
+          dataTitle: payload.title,
+          materialId: Number(material.id),
+        })
+      }
+      onMaterialReanalyze={(material) => analyzeMaterial.mutate(Number(material.id))}
+      onMaterialReview={() => navigate(`/studies/${study.id}/review`)}
+      onRetry={() => materialsQuery.refetch()}
+      onSubmit={(draft) => submitMaterial.mutateAsync(draft)}
     />
   );
 };
