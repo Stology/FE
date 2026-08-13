@@ -33,9 +33,6 @@ export const HomePage = () => {
     removeItem: removeActivityItem,
     isLoading: isActivityLoading,
     error: activityError,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
   } = useTeamActivity(selectedStudy);
 
   const activeStudies = useMemo(
@@ -100,9 +97,6 @@ export const HomePage = () => {
           selectedStudy={selectedStudy}
           onStudyChange={setSelectedStudy}
           onRemove={removeActivityItem}
-          hasNextPage={hasNextPage}
-          fetchNextPage={fetchNextPage}
-          isFetchingNextPage={isFetchingNextPage}
           isLoading={isActivityLoading}
           error={activityError}
         />
