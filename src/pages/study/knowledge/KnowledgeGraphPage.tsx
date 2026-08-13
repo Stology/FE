@@ -109,19 +109,14 @@ export const KnowledgeGraphPage = ({
     }
 
     return (
-      <>
-        <KnowledgeGraphCanvas
-          activityFilter={activityFilter}
-          connectedIds={connectedIds}
-          graph={graph}
-          onNodeSelect={handleNodeSelect}
-          selectedNodeId={selectedNodeId}
-          weekFilter={weekFilter}
-        />
-        <p className="mt-3 text-caption text-stology-text-light">
-          선택 노드/연결 노드 강조 · 신규 활성/보강 구분 · 자료 수가 많을수록 진한 색
-        </p>
-      </>
+      <KnowledgeGraphCanvas
+        activityFilter={activityFilter}
+        connectedIds={connectedIds}
+        graph={graph}
+        onNodeSelect={handleNodeSelect}
+        selectedNodeId={selectedNodeId}
+        weekFilter={weekFilter}
+      />
     );
   };
 

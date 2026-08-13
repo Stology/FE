@@ -53,6 +53,11 @@ describe('HomePage routing', () => {
     fireEvent.click(screen.getByRole('button', { name: /스터디 생성/ }));
 
     expect(screen.getByRole('dialog', { name: '스터디 생성' })).toBeInTheDocument();
+    expect(screen.getByText('새로운 스터디 정보를 입력해주세요.')).toBeInTheDocument();
+    expect(screen.getByLabelText('스터디 이름')).toBeInTheDocument();
+    expect(screen.getByLabelText('시작일')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('스터디에 대한 설명을 입력해주세요')).toBeInTheDocument();
+    expect(screen.queryByText(/HOM001-0100|기본 리포트/)).not.toBeInTheDocument();
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent('/');
   });
 
