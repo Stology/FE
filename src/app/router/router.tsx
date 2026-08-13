@@ -7,39 +7,45 @@ import { ReviewPage } from '@/pages/review/ReviewPage';
 import { StudyPage } from '@/pages/study/StudyPage';
 
 import { AuthGuard } from './AuthGuard';
+import { AuthRedirectHandler } from './AuthRedirectHandler';
 
 export const router = createBrowserRouter([
   {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    element: <AuthGuard />,
+    element: <AuthRedirectHandler />,
     children: [
       {
-        path: '/',
-        element: <HomePage />,
+        path: '/login',
+        element: <LoginPage />,
       },
       {
-        path: '/invite/:token',
-        element: <InvitePage />,
+        element: <AuthGuard />,
+        children: [
+          {
+            path: '/',
+            element: <HomePage />,
+          },
+          {
+            path: '/invite/:token',
+            element: <InvitePage />,
+          },
+          {
+            path: '/studies/:studyId',
+            element: <Navigate to="knowledge" replace />,
+          },
+          {
+            path: '/studies/:studyId/:tab',
+            element: <StudyPage />,
+          },
+          {
+            path: '/studies/:studyId/review',
+            element: <ReviewPage />,
+          },
+        ],
       },
       {
-        path: '/studies/:studyId',
-        element: <Navigate to="knowledge" replace />,
-      },
-      {
-        path: '/studies/:studyId/:tab',
-        element: <StudyPage />,
-      },
-      {
-        path: '/studies/:studyId/review',
-        element: <ReviewPage />,
+        path: '*',
+        element: <Navigate to="/" replace />,
       },
     ],
-  },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
   },
 ]);

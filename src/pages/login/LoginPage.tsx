@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import stologyIcon from '@/shared/assets/stology-icon.png';
+import { getSafeRedirectPath, savePendingAuthRedirect } from '@/shared/lib/auth_redirect';
 import { useAuthStore } from '@/shared/stores/useAuthStore';
 
 import { KakaoSymbolIcon } from './components/KakaoSymbolIcon';
@@ -18,6 +19,7 @@ export const LoginPage = () => {
     const kakaoAuthUrl = import.meta.env.VITE_KAKAO_AUTH_URL || '#';
 
     if (kakaoAuthUrl !== '#') {
+      savePendingAuthRedirect(redirectUrl);
       window.location.href = kakaoAuthUrl;
       return;
     }
@@ -75,8 +77,3 @@ export const LoginPage = () => {
     </main>
   );
 };
-
-function getSafeRedirectPath(redirectUrl: string | null) {
-  if (!redirectUrl?.startsWith('/') || redirectUrl.startsWith('//')) return '/';
-  return redirectUrl;
-}
