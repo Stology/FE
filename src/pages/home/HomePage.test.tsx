@@ -79,6 +79,9 @@ describe('HomePage routing', () => {
   it('팀 활동 패널에 설계 설명 문구를 표시하지 않는다', () => {
     renderHome();
 
+    expect(screen.getByText('아직 팀 활동이 없습니다.')).toBeInTheDocument();
+    expect(screen.queryByText(/빈 상태:/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: '스터디 필터' })).not.toBeInTheDocument();
     expect(
       screen.queryByText(/전체 스터디 필터 · 최신순 단일 세로 스크롤/),
     ).not.toBeInTheDocument();

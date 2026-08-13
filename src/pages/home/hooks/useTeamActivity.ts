@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { homeApi } from '@/shared/api/home';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { homeApi, type TeamActivityInfo } from '@/shared/api/home';
 import { type TeamActivityItem } from '../mocks';
 
 function formatRelativeTime(occurredAt: string, now = new Date()) {
@@ -26,31 +26,47 @@ interface UseTeamActivityResult {
   items: TeamActivityItem[];
   isLoading: boolean;
   error: Error | null;
-  hasNextPage: boolean;
-  fetchNextPage: () => void;
-  isFetchingNextPage: boolean;
   removeItem: (id: string) => void;
 }
 
-export const useTeamActivity = (studyId?: string): UseTeamActivityResult => {
+async function getAllTeamActivities(studyId: number, signal: AbortSignal) {
+  const activities: TeamActivityInfo[] = [];
+  const visitedCursors = new Set<string>();
+  let cursor: string | undefined;
+
+  while (true) {
+    const response = await homeApi.getTeamTodos(studyId, cursor, signal);
+    activities.push(...response.activities);
+
+    const nextCursor = response.pageInfo.nextCursor;
+    if (!response.pageInfo.hasNext || !nextCursor || visitedCursors.has(nextCursor)) break;
+
+    visitedCursors.add(nextCursor);
+    cursor = nextCursor;
+  }
+
+  return activities;
+}
+
+export function useTeamActivity(studyId?: string): UseTeamActivityResult {
   const queryClient = useQueryClient();
   const numericStudyId = studyId && studyId !== 'all' ? Number(studyId) : -1;
 
-  const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      queryKey: ['teamActivity', numericStudyId],
-      queryFn: ({ pageParam }) => homeApi.getTeamTodos(numericStudyId, pageParam),
-      getNextPageParam: (lastPage) =>
-        lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
-      enabled: !Number.isNaN(numericStudyId),
-      initialPageParam: undefined as string | undefined,
-    });
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['teamActivity', numericStudyId],
+    queryFn: ({ signal }) => getAllTeamActivities(numericStudyId, signal),
+    enabled: !Number.isNaN(numericStudyId),
+  });
 
   const items = useMemo(() => {
     if (!data) return [];
 
-    return data.pages.flatMap((page) =>
-      page.activities.map(
+    return [...data]
+      .filter((activity) => activity.activityType === 'NODE' || activity.activityType === 'ANSWER')
+      .sort(
+        (left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime(),
+      )
+      .map(
         (act) =>
           ({
             id: `${act.studyId}-${act.targetId}-${act.activityType}-${act.occurredAt}`,
@@ -67,45 +83,23 @@ export const useTeamActivity = (studyId?: string): UseTeamActivityResult => {
                 ? `/studies/${act.studyId}/knowledge`
                 : `/studies/${act.studyId}/questions?questionId=${act.targetId}`,
           }) as TeamActivityItem,
-      ),
-    );
+      );
   }, [data]);
 
-  const removeItem = (id: string) => {
-    // In a real scenario, this might call a backend API to hide the activity.
-    // For now, we will just invalidate the query or optimistically update the cache.
-    // Since the API doesn't provide a delete endpoint for activity, we just do nothing or update cache.
-    queryClient.setQueryData(['teamActivity', numericStudyId], (oldData: unknown) => {
-      if (!oldData) return oldData;
-      const data = oldData as {
-        pages: {
-          activities: {
-            studyId: number;
-            targetId: number;
-            activityType: string;
-            occurredAt: string;
-          }[];
-        }[];
-      };
-      return {
-        ...data,
-        pages: data.pages.map((page) => ({
-          ...page,
-          activities: page.activities.filter(
-            (act) => `${act.studyId}-${act.targetId}-${act.activityType}-${act.occurredAt}` !== id,
-          ),
-        })),
-      };
+  function removeItem(id: string) {
+    queryClient.setQueryData<TeamActivityInfo[]>(['teamActivity', numericStudyId], (oldData) => {
+      return oldData?.filter(
+        (activity) =>
+          `${activity.studyId}-${activity.targetId}-${activity.activityType}-${activity.occurredAt}` !==
+          id,
+      );
     });
-  };
+  }
 
   return {
     items,
     isLoading,
     error: error as Error | null,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
     removeItem,
   };
-};
+}
