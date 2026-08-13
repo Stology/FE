@@ -31,7 +31,7 @@ const LocationProbe = () => {
   return <output aria-label="현재 경로">{location.pathname}</output>;
 };
 
-const renderHome = () => {
+function renderHome() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -44,7 +44,7 @@ const renderHome = () => {
       </MemoryRouter>
     </QueryClientProvider>,
   );
-};
+}
 
 describe('HomePage routing', () => {
   it('스터디 생성 카드를 선택하면 생성 모달을 연다', () => {

@@ -319,7 +319,18 @@ describe('ReviewPage', () => {
     expect(screen.queryByText('검토를 제출했습니다.')).not.toBeInTheDocument();
   });
 
-  it('mock 목록에 없는 studyId는 홈으로 보내지 않고 API 오류로 표시한다', async () => {
+  it('존재하지 않는 숫자형 studyId가 404를 반환하면 API 오류로 표시한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string) => {
+      if (url === '/api/study/999') {
+        return Promise.reject({
+          isAxiosError: true,
+          response: { status: 404 },
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
     renderReviewRoute('/studies/999/review');
 
     expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();

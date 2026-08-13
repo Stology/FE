@@ -153,6 +153,10 @@ const renderStudyRoute = (path: string) => {
   getMock.mockImplementation((url: string, config) => {
     if (detailRequestPattern.test(url)) {
       const requestedStudyId = Number(url.split('/').at(-1));
+      if (requestedStudyId === 999) {
+        return Promise.reject(createHttpStatusError(404));
+      }
+
       const detailPath = Number.isInteger(requestedStudyId)
         ? `/studies/${requestedStudyId}/knowledge`
         : path;
@@ -186,11 +190,11 @@ const LocationProbe = () => {
 };
 
 describe('StudyPage route validation', () => {
-  it('mock 목록에 없는 studyId는 홈으로 보내지 않고 API 오류로 표시한다', async () => {
+  it('존재하지 않는 숫자형 studyId가 404를 반환하면 홈으로 이동한다', async () => {
     renderStudyRoute('/studies/999/knowledge');
 
-    expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();
-    expect(await screen.findByText('지식 구조를 불러오지 못했습니다')).toBeInTheDocument();
+    expect(await screen.findByText('홈 화면')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent('/');
   });
 
   it('지원하지 않는 탭은 지식 구조로 이동한다', async () => {
