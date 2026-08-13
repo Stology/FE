@@ -9,7 +9,7 @@ Stology는 스터디에서 생성되는 학습자료를 서비스 제공 온톨�
 | 이상혁 | 환경 세팅 / 기록·리포트·질문함                 | COMMON-SETUP / REC / RPT / QNA  |
 | 고원준 | 인증 / 홈 / 스터디 관리·종료                   | AUTH / HOME / STD-MGT / STD-END |
 | 유제아 | 지식 구조 / 자료 업로드 / AI 검토              | STD-KNW / STD-UP / REV          |
-| 정민지 | 공통 컴포넌트 / 공통 레이아웃 / 원본 자료 조회 | COMMON-UI / STD-COM / SRC       |
+| 정민지 | 공통 컴포넌트 / 공통 레이아웃 / 원본 자료 조회 / 배포 | COMMON-UI / STD-COM / SRC / Deploy      |
 
 ## 기술 스택
 
@@ -26,6 +26,12 @@ Stology는 스터디에서 생성되는 학습자료를 서비스 제공 온톨�
 - Prettier
 - Husky
 - lint-staged
+- Axios
+- Three.js
+- Lucide React
+- Vitest
+- Testing Library
+- jsdom
 
 ## 폴더 구조
 
@@ -40,11 +46,20 @@ src/
     login/
     review/
     study/
+      components/
+      hooks/
+      knowledge/
+      questions/
+      records/
+      reports/
+      upload/
   shared/
     api/
-    config/
+    assets/
+    hooks/
     lib/
     mocks/
+    stores/
     types/
     ui/
 ```
@@ -56,7 +71,7 @@ src/
 ```txt
 main
 └─ dev
-   └─ feature/*
+   └─ feat/*
 ```
 
 - `main`: 배포/최종 안정 브랜치
@@ -127,6 +142,10 @@ PR에는 관련 이슈, PR 타입, 작업 내용, 테스트 결과/스크린샷(
 
 ## 실행 방법
 
+### 실행 환경
+- Node.js 24
+- pnpm 9.15.9
+
 ### 설치
 
 ```bash
@@ -158,6 +177,7 @@ pnpm dev
 pnpm build
 pnpm preview
 pnpm lint
+pnpm test
 pnpm format
 pnpm format:check
 ```
@@ -167,6 +187,7 @@ PR 생성 전에는 아래 명령어를 확인합니다.
 ```bash
 pnpm.cmd format:check
 pnpm.cmd lint
+pnpm.cmd test
 pnpm.cmd build
 ```
 
