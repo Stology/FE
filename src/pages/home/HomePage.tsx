@@ -38,7 +38,8 @@ export const HomePage = () => {
     isFetchingNextPage,
   } = useTeamActivity(selectedStudy);
 
-  const isStudiesEmpty = !isStudiesLoading && !studiesError && studies.length === 0;
+  const activeStudies = studies.filter((study) => study.status === 'active');
+  const isStudiesEmpty = !isStudiesLoading && !studiesError && activeStudies.length === 0;
 
   return (
     <AppLayout>
@@ -64,8 +65,8 @@ export const HomePage = () => {
                   title="참여 중인 스터디가 없습니다."
                 />
               )}
-              {studies.map((study) => (
-                <StudyCard key={study.id} study={study} />
+              {activeStudies.map((study) => (
+                <StudyCard key={study.id} study={study} hasNew={study.isNew} />
               ))}
               {/* + 스터디 생성 카드 */}
               <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
@@ -91,7 +92,7 @@ export const HomePage = () => {
         />
         <TeamActivityPanel
           items={activityItems}
-          studies={studies}
+          studies={activeStudies}
           selectedStudy={selectedStudy}
           onStudyChange={setSelectedStudy}
           onRemove={removeActivityItem}

@@ -120,6 +120,7 @@ export const StudyPage = () => {
     id: String(studyData.studyId),
     name: studyData.name,
     currentWeek: studyData.currentWeek,
+    isNew: false,
     status: studyData.isActive ? 'active' : 'ended',
     startedAt: studyData.startDate ?? '',
     memberCount: studyData.members?.length ?? 0,

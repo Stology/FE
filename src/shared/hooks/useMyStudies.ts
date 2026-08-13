@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 import { httpClient } from '@/shared/api/http_client';
 import type { ApiResponse } from '@/shared/api/types';
@@ -12,7 +12,7 @@ interface StudyFromApi {
   isNew: boolean;
 }
 
-interface GetStudyRes {
+interface GetStudiesResponse {
   studies: StudyFromApi[];
 }
 
@@ -23,58 +23,61 @@ interface UseMyStudiesResult {
   refetch: () => void;
 }
 
-export const useMyStudies = (): UseMyStudiesResult => {
-  const [studies, setStudies] = useState<Study[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+const MILLISECONDS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
-  const loadStudies = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+function calculateCurrentWeek(startDate: string, now = new Date()): number {
+  const startedAt = new Date(startDate);
 
-    try {
-      setIsLoading(true);
-      const res = await httpClient.get<ApiResponse<GetStudyRes>>('/api/user/me/study', {
-        params: { status: 'active' },
-        signal: controller.signal,
-      });
+  if (Number.isNaN(startedAt.getTime()) || startedAt.getTime() > now.getTime()) {
+    return 0;
+  }
 
-      const apiStudies = res.data?.result?.studies ?? [];
-      const mapped: Study[] = apiStudies.map((s) => ({
-        id: String(s.studyId),
-        name: s.name,
-        currentWeek: 0,
-        memberCount: 0,
-        members: [],
-        startedAt: s.startDate,
-        status: 'active' as const,
-      }));
-      setStudies(mapped);
-      setError(null);
-    } catch (err: unknown) {
-      if ((err as { name?: string }).name !== 'CanceledError') {
-        setStudies([]);
-        setError(err instanceof Error ? err : new Error('스터디 목록을 불러오지 못했습니다.'));
-      }
-    } finally {
-      if (abortControllerRef.current === controller) {
-        setIsLoading(false);
-      }
-    }
-  }, []);
+  return Math.floor((now.getTime() - startedAt.getTime()) / MILLISECONDS_PER_WEEK) + 1;
+}
 
-  useEffect(() => {
-    void loadStudies();
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [loadStudies]);
+function mapStudy(study: StudyFromApi, status: Study['status']): Study {
+  return {
+    id: String(study.studyId),
+    name: study.name,
+    currentWeek: calculateCurrentWeek(study.startDate),
+    isNew: study.isNew,
+    memberCount: 0,
+    members: [],
+    startedAt: study.startDate,
+    status,
+  };
+}
 
-  return { error, isLoading, studies, refetch: loadStudies };
-};
+async function getMyStudies(signal: AbortSignal): Promise<Study[]> {
+  const [activeResponse, closedResponse] = await Promise.all([
+    httpClient.get<ApiResponse<GetStudiesResponse>>('/api/user/me/study', {
+      params: { status: 'active' },
+      signal,
+    }),
+    httpClient.get<ApiResponse<GetStudiesResponse>>('/api/user/me/study', {
+      params: { status: 'closed' },
+      signal,
+    }),
+  ]);
+
+  const activeStudies = activeResponse.data?.result?.studies ?? [];
+  const closedStudies = closedResponse.data?.result?.studies ?? [];
+
+  return [
+    ...activeStudies.map((study) => mapStudy(study, 'active')),
+    ...closedStudies.map((study) => mapStudy(study, 'ended')),
+  ];
+}
+
+export function useMyStudies(): UseMyStudiesResult {
+  const { data, error, isLoading, refetch } = useQuery({
+    queryKey: ['myStudies'],
+    queryFn: ({ signal }) => getMyStudies(signal),
+  });
+
+  function refetchStudies() {
+    void refetch();
+  }
+
+  return { error, isLoading, studies: data ?? [], refetch: refetchStudies };
+}
