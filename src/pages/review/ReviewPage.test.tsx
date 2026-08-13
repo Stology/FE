@@ -183,6 +183,24 @@ describe('ReviewPage', () => {
 
   it('종료된 스터디의 직접 검토 URL에서 실 API로 후보를 불러와 읽기 전용으로 표시한다', async () => {
     vi.mocked(httpClient.get).mockImplementation((url: string) => {
+      if (url === '/api/study/2') {
+        return Promise.resolve({
+          data: {
+            code: 'STUDY200_1',
+            message: '스터디 정보를 조회했습니다.',
+            result: {
+              currentWeek: 3,
+              isActive: false,
+              isLeader: true,
+              members: ['김스토'],
+              name: '종료된 스터디',
+              startDate: '2026-03-01',
+              studyId: 2,
+            },
+            success: true,
+          },
+        });
+      }
       if (url.includes('/node/get-examination-info')) {
         return Promise.resolve({
           data: {
@@ -222,7 +240,7 @@ describe('ReviewPage', () => {
       });
     });
 
-    renderReviewRoute('/studies/ended-study/review');
+    renderReviewRoute('/studies/2/review');
 
     await waitFor(() => expect(screen.getByText('노드 후보 1: JWT')).toBeInTheDocument());
 
@@ -232,6 +250,24 @@ describe('ReviewPage', () => {
 
   it('투표 제출이 실패하면 성공 메시지 대신 오류를 표시한다', async () => {
     vi.mocked(httpClient.get).mockImplementation((url: string) => {
+      if (url === '/api/study/1') {
+        return Promise.resolve({
+          data: {
+            code: 'STUDY200_1',
+            message: '스터디 정보를 조회했습니다.',
+            result: {
+              currentWeek: 3,
+              isActive: true,
+              isLeader: true,
+              members: ['김스토'],
+              name: '백엔드 마스터',
+              startDate: '2026-03-01',
+              studyId: 1,
+            },
+            success: true,
+          },
+        });
+      }
       if (url.includes('/node/get-examination-info')) {
         return Promise.resolve({
           data: {
@@ -272,7 +308,7 @@ describe('ReviewPage', () => {
     });
     vi.mocked(httpClient.patch).mockRejectedValue(new Error('network error'));
 
-    renderReviewRoute('/studies/spring-study/review');
+    renderReviewRoute('/studies/1/review');
 
     await waitFor(() => expect(screen.getByText('노드 후보 1: JWT')).toBeInTheDocument());
 
@@ -284,7 +320,7 @@ describe('ReviewPage', () => {
   });
 
   it('mock 목록에 없는 studyId는 홈으로 보내지 않고 API 오류로 표시한다', async () => {
-    renderReviewRoute('/studies/unknown-study/review');
+    renderReviewRoute('/studies/999/review');
 
     expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();
     expect(await screen.findByText('AI 후보를 불러오지 못했습니다')).toBeInTheDocument();

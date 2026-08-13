@@ -2,6 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -30,13 +31,20 @@ const LocationProbe = () => {
   return <output aria-label="현재 경로">{location.pathname}</output>;
 };
 
-const renderHome = () =>
-  render(
-    <MemoryRouter>
-      <HomePage />
-      <LocationProbe />
-    </MemoryRouter>,
+const renderHome = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <HomePage />
+        <LocationProbe />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+};
 
 describe('HomePage routing', () => {
   it('스터디 생성 카드를 선택하면 생성 모달을 연다', () => {
@@ -49,14 +57,15 @@ describe('HomePage routing', () => {
   });
 
   it.each([
-    [0, '/studies/spring-study/upload'],
-    [1, '/studies/spring-study/questions'],
-    [2, '/studies/spring-study/reports'],
-  ])('내 할 일 링크를 구현된 스터디 탭으로 이동시킨다', (index, expectedPath) => {
+    [0, '자료 상세'],
+    [1, '질문함 상세'],
+    [2, '리포트 상세'],
+  ])('내 할 일 상세보기로 %s 모달을 연다', (index, dialogName) => {
     renderHome();
 
     fireEvent.click(screen.getAllByRole('button', { name: '상세보기' })[index]);
 
-    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(expectedPath);
+    expect(screen.getByRole('dialog', { name: dialogName })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent('/');
   });
 });
