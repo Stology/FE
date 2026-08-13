@@ -5,6 +5,9 @@ import { useAuthStore } from '@/shared/stores/useAuthStore';
 
 import { KakaoSymbolIcon } from './components/KakaoSymbolIcon';
 
+const TEST_TOKEN =
+  'eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI0OTc2OTIyODY0Iiwicm9sZSI6IiIsInNvY2lhbF90eXBlIjoiS0FLQU8iLCJpYXQiOjE3ODY2MjEwMDIsImV4cCI6MTgxODE1NzAwMn0.cHbtGFGa_oumeu8cKtZtnvBwdAUpmOZEQJC0Gs7WBExHTxgkjmIkRsgj7Mbxgkjl';
+
 export const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -30,6 +33,11 @@ export const LoginPage = () => {
     );
   };
 
+  const handleTestLogin = () => {
+    login(TEST_TOKEN);
+    navigate(getSafeRedirectPath(redirectUrl), { replace: true });
+  };
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-stology-off-white p-6">
       <div className="flex flex-col items-center text-center">
@@ -53,6 +61,15 @@ export const LoginPage = () => {
         >
           <KakaoSymbolIcon className="size-4 text-[#191919]" />
           <span>카카오로 시작하기</span>
+        </button>
+
+        {/* 테스트 로그인 */}
+        <button
+          type="button"
+          onClick={handleTestLogin}
+          className="mt-4 text-xs font-medium text-stology-text-light underline transition-colors hover:text-stology-text-dark"
+        >
+          테스트 계정으로 시작하기
         </button>
       </div>
     </main>
