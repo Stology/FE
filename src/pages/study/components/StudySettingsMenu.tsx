@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Copy, Link, Minus, Plus, Settings } from 'lucide-react';
 
 import { useToast } from '@/shared/hooks';
+import { createInvitationLink } from '@/shared/lib/invitation_link';
 import { Button, Loading, Modal } from '@/shared/ui';
 
 import { useStudySettings } from '../hooks/useStudySettings';
@@ -60,10 +61,10 @@ export const StudySettingsMenu = ({ onStudyClosed, studyId }: StudySettingsMenuP
   }
 
   async function copyInvitationLink() {
-    if (!inviteToken) return;
+    if (!invitationLink) return;
 
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/invite/${inviteToken}`);
+      await navigator.clipboard.writeText(invitationLink);
       showToast({ message: '링크가 복사되었습니다.', type: 'success' });
     } catch {
       showToast({ message: '초대 링크를 직접 선택해 복사해 주세요.', type: 'error' });
@@ -93,7 +94,7 @@ export const StudySettingsMenu = ({ onStudyClosed, studyId }: StudySettingsMenuP
     }
   }
 
-  const invitationLink = inviteToken ? `${window.location.origin}/invite/${inviteToken}` : '';
+  const invitationLink = inviteToken ? createInvitationLink(inviteToken) : '';
   const reviewerSettings = reviewerCountQuery.data;
 
   return (
