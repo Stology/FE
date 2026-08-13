@@ -1,5 +1,5 @@
 import { httpClient } from './http_client';
-import type { ApiResponse } from './response';
+import type { ApiResponse } from './types';
 
 export type DataState = 'READY' | 'NEEDREVIEW' | 'EXTRACTIONFAILED' | 'EXTRACTING';
 
