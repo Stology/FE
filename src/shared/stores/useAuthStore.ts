@@ -7,7 +7,7 @@ interface AuthState {
   accessToken: string | null;
   memberId: number | null;
   initialize: () => Promise<void>;
-  login: () => void;
+  login: (token?: string) => void;
   logout: () => void;
 }
 
@@ -46,7 +46,24 @@ export const useAuthStore = create<AuthState>((set) => ({
       isInitializing = false;
     }
   },
-  login: () => {
+  login: (token?: string) => {
+    if (token) {
+      let parsedUserId = null;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        parsedUserId = payload.sub ? parseInt(payload.sub, 10) : null;
+      } catch (e) {
+        console.error('Failed to parse test token', e);
+      }
+      set({
+        accessToken: token,
+        isAuthenticated: true,
+        isInitialized: true,
+        memberId: parsedUserId,
+      });
+      return;
+    }
+
     if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
       persistMockAuthSession();
     }
