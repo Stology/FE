@@ -1,6 +1,7 @@
 import { Check, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { createInvitationLink } from '@/shared/lib/invitation_link';
 import { Button, Input, Modal } from '@/shared/ui';
 
 export interface InviteLinkModalProps {
@@ -28,7 +29,7 @@ export const InviteLinkModal = ({
     };
   }, []);
 
-  const inviteUrl = `${window.location.origin}/invite/${inviteToken}`;
+  const inviteUrl = createInvitationLink(inviteToken);
 
   const handleCopy = async () => {
     try {
