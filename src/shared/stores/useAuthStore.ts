@@ -8,7 +8,7 @@ interface AuthState {
   memberId: number | null;
   initialize: () => Promise<void>;
   login: (token?: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const MOCK_AUTH_STORAGE_KEY = 'stology.mock-authenticated';
