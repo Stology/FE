@@ -33,7 +33,7 @@ export interface MaterialTodoItem {
   state?: MaterialDetailState;
 }
 
-export const useMaterialTodos = () => {
+export function useMaterialTodos(activeStudyIds: readonly string[]) {
   const [filter, setFilter] = useState<MaterialTodoFilter>('전체');
 
   const materialsQuery = useQuery({
@@ -45,7 +45,10 @@ export const useMaterialTodos = () => {
   const error = materialsQuery.error;
 
   const items = useMemo(() => {
-    const apiItems = materialsQuery.data?.materials ?? [];
+    const activeStudyIdSet = new Set(activeStudyIds);
+    const apiItems = (materialsQuery.data?.materials ?? []).filter((material) =>
+      activeStudyIdSet.has(String(material.studyId)),
+    );
 
     const mapped: MaterialTodoItem[] = apiItems.map((s) => {
       const dateObj = new Date(s.uploadedDate);
@@ -68,11 +71,12 @@ export const useMaterialTodos = () => {
 
     // 원시 타임스탬프 기준 최신순 정렬
     return mapped.sort((a, b) => b.rawDate - a.rawDate);
-  }, [materialsQuery.data]);
+  }, [activeStudyIds, materialsQuery.data]);
 
   const filteredItems = useMemo(() => {
     if (filter === '전체') return items;
-    return items.filter((item) => item.status === '검토 필요');
+    const status = filter === '검토' ? '검토 필요' : '재업로드 필요';
+    return items.filter((item) => item.status === status);
   }, [items, filter]);
 
   const counts = useMemo(
@@ -97,4 +101,4 @@ export const useMaterialTodos = () => {
     error,
     refetch,
   };
-};
+}

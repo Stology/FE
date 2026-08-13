@@ -24,11 +24,13 @@ export interface UploadMaterialReq {
   description?: string;
   file: File;
   title: string;
+  week: number;
 }
 
 export const uploadMaterial = async (studyId: string, req: UploadMaterialReq): Promise<void> => {
   const formData = new FormData();
   formData.append('title', req.title);
+  formData.append('week', String(req.week));
   if (req.description) formData.append('description', req.description);
   formData.append('file', req.file);
 

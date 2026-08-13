@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { MaterialDraft, UploadMode } from '@/shared/types/stology';
-import { Button, FileUploader, Input, Textarea } from '@/shared/ui';
+import { Button, FileUploader, Input, Select, Textarea } from '@/shared/ui';
 
 interface MaterialUploadFormProps {
   currentWeek?: number;
@@ -15,6 +15,7 @@ interface MaterialFormValues {
   content: string;
   description: string;
   title: string;
+  week: number;
 }
 
 const uploadModes: { id: UploadMode; label: string }[] = [
@@ -22,10 +23,11 @@ const uploadModes: { id: UploadMode; label: string }[] = [
   { id: 'text', label: '텍스트 직접 입력' },
 ];
 
-const modeButtonClass = (isSelected: boolean) =>
-  isSelected
-    ? 'h-9 rounded-full border border-stology-deep-navy bg-stology-deep-navy px-5 text-[13px] font-semibold leading-none text-white'
-    : 'h-9 rounded-full border border-stology-border-light bg-white px-5 text-[13px] font-semibold leading-none text-stology-text-dark';
+function modeButtonClass(isSelected: boolean) {
+  return isSelected
+    ? 'h-10 rounded border border-stology-deep-navy bg-stology-deep-navy px-5 text-[13px] font-semibold leading-none text-white'
+    : 'h-10 rounded border border-stology-border-light bg-white px-5 text-[13px] font-semibold leading-none text-stology-text-dark';
+}
 
 export const MaterialUploadForm = ({
   currentWeek,
@@ -33,6 +35,8 @@ export const MaterialUploadForm = ({
   isSubmitting = false,
   onSubmit,
 }: MaterialUploadFormProps) => {
+  const latestWeek = Math.max(1, currentWeek ?? 1);
+  const availableWeeks = Array.from({ length: latestWeek }, (_, index) => index + 1);
   const [mode, setMode] = useState<UploadMode>('file');
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -41,21 +45,26 @@ export const MaterialUploadForm = ({
     handleSubmit,
     register,
     reset,
+    setValue,
   } = useForm<MaterialFormValues>({
-    defaultValues: { content: '', description: '', title: '' },
+    defaultValues: { content: '', description: '', title: '', week: latestWeek },
   });
 
-  const handleModeChange = (nextMode: UploadMode) => {
+  useEffect(() => {
+    setValue('week', latestWeek);
+  }, [latestWeek, setValue]);
+
+  function handleModeChange(nextMode: UploadMode) {
     setMode(nextMode);
     setFileError(null);
-  };
+  }
 
-  const handleFileChange = (nextFiles: File[]) => {
+  function handleFileChange(nextFiles: File[]) {
     setFiles(nextFiles);
     if (nextFiles.length > 0) setFileError(null);
-  };
+  }
 
-  const submitDraft = async (values: MaterialFormValues) => {
+  async function submitDraft(values: MaterialFormValues) {
     if (mode === 'file' && files.length === 0) {
       setFileError('마크다운 파일을 선택해 주세요.');
       return;
@@ -69,33 +78,25 @@ export const MaterialUploadForm = ({
         fileName: mode === 'file' ? files[0]?.name : undefined,
         mode,
         title: values.title.trim(),
+        week: values.week,
       });
 
-      reset();
+      reset({ content: '', description: '', title: '', week: latestWeek });
       setFiles([]);
       setFileError(null);
     } catch {
       // 업로드 실패 시 입력값을 유지해 재시도할 수 있게 한다. 실패 안내는 mutation 쪽 토스트로 표시.
     }
-  };
+  }
 
   return (
     <form
       aria-label="자료 업로드"
-      className="rounded-lg border border-stology-border-light bg-white p-6"
+      className="rounded-lg border border-stology-border-light bg-white p-5 sm:p-6"
       noValidate
       onSubmit={handleSubmit(submitDraft)}
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-heading-2 text-stology-text-dark">자료 업로드</h3>
-        {currentWeek === undefined ? null : (
-          <p className="text-caption text-stology-text-light">
-            {currentWeek}주차에 자동 귀속됩니다
-          </p>
-        )}
-      </div>
-
-      <div aria-label="업로드 방식 선택" className="mb-5 flex flex-wrap gap-2.5" role="group">
+      <div aria-label="업로드 방식 선택" className="mb-4 flex flex-wrap" role="group">
         {uploadModes.map((uploadMode) => (
           <button
             aria-pressed={mode === uploadMode.id}
@@ -110,12 +111,13 @@ export const MaterialUploadForm = ({
         ))}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
         <div>
           {mode === 'file' ? (
             <>
               <FileUploader
                 accept=".md,.markdown"
+                className="[&>label]:min-h-[230px]"
                 disabled={isDisabled}
                 files={files}
                 helperText="마크다운 파일만 가능"
@@ -131,10 +133,10 @@ export const MaterialUploadForm = ({
             </>
           ) : (
             <Textarea
-              className="min-h-40"
+              aria-label="자료 본문 *"
+              className="min-h-[230px]"
               disabled={isDisabled}
               error={errors.content?.message}
-              label="자료 본문 *"
               placeholder="마크다운 형식으로 자료를 입력하세요"
               {...register('content', {
                 required: mode === 'text' ? '자료 본문을 입력해 주세요.' : false,
@@ -144,6 +146,17 @@ export const MaterialUploadForm = ({
         </div>
 
         <div className="flex flex-col gap-4">
+          <Select
+            disabled={isDisabled}
+            label="주차 선택"
+            {...register('week', { required: true, valueAsNumber: true })}
+          >
+            {availableWeeks.map((week) => (
+              <option key={week} value={week}>
+                {week}주차
+              </option>
+            ))}
+          </Select>
           <Input
             disabled={isDisabled}
             error={errors.title?.message}
@@ -161,9 +174,9 @@ export const MaterialUploadForm = ({
             placeholder="자료에 대한 설명을 입력하세요"
             {...register('description')}
           />
-          <div className="flex justify-end">
+          <div className="flex justify-start">
             <Button
-              className="bg-stology-deep-navy hover:bg-stology-royal-blue"
+              className="bg-stology-electric-blue hover:bg-stology-royal-blue"
               disabled={isDisabled}
               isLoading={isSubmitting}
               type="submit"

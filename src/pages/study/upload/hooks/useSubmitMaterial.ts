@@ -24,6 +24,7 @@ export const useSubmitMaterial = (studyId: string | undefined) => {
         description: draft.description,
         file: toUploadFile(draft),
         title: draft.title,
+        week: draft.week,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['study-upload-files', studyId] });

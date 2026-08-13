@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Search } from 'lucide-react';
 import { z } from 'zod';
@@ -39,6 +40,7 @@ const getLocalDateString = (): string => {
 };
 
 export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModalProps) => {
+  const queryClient = useQueryClient();
   const [selectedTemplate, setSelectedTemplate] = useState<OntologyTemplate | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
@@ -93,6 +95,8 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
       });
 
       const studyId = createRes.data.result;
+
+      await queryClient.invalidateQueries({ queryKey: ['myStudies'] });
 
       // 2단계: 초대 토큰 발급 (POST /api/study/{studyId}/invitation)
       const inviteRes = await httpClient.post<ApiResponse<string>>(

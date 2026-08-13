@@ -1,6 +1,7 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 
 import { useStudyDetail, useToast } from '@/shared/hooks';
@@ -17,6 +18,7 @@ import {
   EmptyState,
   Header,
   Loading,
+  Modal,
   PagePlaceholder,
   Tabs,
 } from '@/shared/ui';
@@ -50,8 +52,10 @@ interface StudyRouteParams extends Record<string, string | undefined> {
 export const StudyPage = () => {
   const { studyId, tab = 'knowledge' } = useParams<StudyRouteParams>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [endedStudy, setEndedStudy] = useState<{
     studyId: string;
     summary: CloseStudyRes;
@@ -61,14 +65,13 @@ export const StudyPage = () => {
 
   const handleDelete = async () => {
     if (!studyData) return;
-    if (!window.confirm(`정말 '${studyData.name}' 스터디를 삭제하시겠습니까?`)) {
-      return;
-    }
 
     try {
       setIsDeleting(true);
       await studyApi.deleteStudy(Number(studyId));
-      showToast({ message: '스터디가 삭제되었습니다.', type: 'success' });
+      queryClient.removeQueries({ queryKey: ['study', studyId] });
+      await queryClient.invalidateQueries({ queryKey: ['myStudies'] });
+      setIsDeleteDialogOpen(false);
       navigate('/');
     } catch {
       showToast({ message: '스터디 삭제에 실패했습니다.', type: 'error' });
@@ -160,9 +163,7 @@ export const StudyPage = () => {
                   aria-label="스터디 삭제"
                   className="border-red-200 text-red-700 hover:bg-red-100"
                   disabled={isDeleting}
-                  onClick={() => {
-                    void handleDelete();
-                  }}
+                  onClick={() => setIsDeleteDialogOpen(true)}
                 >
                   {isDeleting ? '삭제 중...' : '삭제'}
                 </Button>
@@ -237,6 +238,36 @@ export const StudyPage = () => {
           title={meta.label}
         />
       )}
+      <Modal
+        className="max-w-[440px]"
+        footer={
+          <>
+            <Button
+              className="text-stology-text-dark"
+              disabled={isDeleting}
+              onClick={() => setIsDeleteDialogOpen(false)}
+              variant="outline"
+            >
+              아니오
+            </Button>
+            <Button
+              className="bg-[#171717] hover:bg-stology-deep-navy"
+              isLoading={isDeleting}
+              onClick={() => void handleDelete()}
+            >
+              예
+            </Button>
+          </>
+        }
+        isOpen={isDeleteDialogOpen}
+        onClose={isDeleting ? () => undefined : () => setIsDeleteDialogOpen(false)}
+        title="스터디 삭제"
+      >
+        <div className="space-y-5 text-[13px] leading-6 text-stology-text-dark">
+          <p>스터디를 삭제 하시겠습니까?</p>
+          <p>스터디를 삭제하면 모든 자료와 활동 기록을 다시 확인할 수 없습니다.</p>
+        </div>
+      </Modal>
     </AppLayout>
   );
 };

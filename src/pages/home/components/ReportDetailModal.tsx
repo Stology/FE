@@ -7,6 +7,7 @@ import { useReportTodos, type ReportTodoItem } from '../hooks/useReportTodos';
 export interface ReportDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
+  activeStudyIds: readonly string[];
 }
 
 const ReportDetailRow = ({
@@ -51,9 +52,9 @@ const ReportDetailRow = ({
   );
 };
 
-export const ReportDetailModal = ({ isOpen, onClose }: ReportDetailModalProps) => {
+export const ReportDetailModal = ({ activeStudyIds, isOpen, onClose }: ReportDetailModalProps) => {
   const navigate = useNavigate();
-  const { items, counts } = useReportTodos();
+  const { items, counts } = useReportTodos(activeStudyIds);
 
   function handleActionClick(item: ReportTodoItem) {
     onClose();
@@ -68,14 +69,14 @@ export const ReportDetailModal = ({ isOpen, onClose }: ReportDetailModalProps) =
       title="리포트 상세"
       description="참여 중인 스터디의 최신 리포트를 선택하세요."
       showCloseButton
-      className="max-w-[1010px]"
+      className="max-w-[1010px] p-7"
     >
-      <div className="mt-7 flex flex-col gap-6">
+      <div className="flex flex-col gap-[27px]">
         {/* 필터 부분: 리포트 모달은 '전체 스터디' 하나만 존재 */}
         <div className="flex gap-4">
           <button
             type="button"
-            className="flex h-[38px] w-[150px] items-center justify-center rounded-[19px] border border-stology-text-dark bg-stology-text-dark text-[12px] font-bold text-white transition-colors"
+            className="flex h-[38px] w-[150px] items-center justify-center rounded-[13px] border border-stology-text-dark bg-stology-text-dark text-[12px] font-bold text-white transition-colors"
           >
             전체 스터디 &nbsp;{counts.completed}
           </button>
@@ -94,21 +95,10 @@ export const ReportDetailModal = ({ isOpen, onClose }: ReportDetailModalProps) =
 
           {/* List Body */}
           <div className="flex max-h-[350px] flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
-            {items.length === 0 ? (
-              <div className="flex h-[42px] items-center rounded-[3px] border border-stology-border-light bg-stology-off-white pl-[15px] text-[11px] text-stology-text-light">
-                빈 상태: 내용 없음
-              </div>
-            ) : (
-              items.map((item) => (
-                <ReportDetailRow key={item.id} item={item} onClickAction={handleActionClick} />
-              ))
-            )}
+            {items.map((item) => (
+              <ReportDetailRow key={item.id} item={item} onClickAction={handleActionClick} />
+            ))}
           </div>
-        </div>
-
-        {/* 하단 안내 텍스트 */}
-        <div className="mt-4 text-[11px] font-medium text-stology-text-light">
-          대상 삭제·상태 변경·권한 상실: 이동 차단 → 토스트 → 목록 새로고침/행 제거/숫자 재계산
         </div>
       </div>
     </Modal>

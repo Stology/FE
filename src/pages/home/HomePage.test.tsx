@@ -71,6 +71,16 @@ describe('HomePage routing', () => {
     fireEvent.click(screen.getAllByRole('button', { name: '상세보기' })[index]);
 
     expect(screen.getByRole('dialog', { name: dialogName })).toBeInTheDocument();
+    expect(screen.queryByText('빈 상태: 내용 없음')).not.toBeInTheDocument();
+    expect(screen.queryByText(/대상 삭제·상태 변경·권한 상실/)).not.toBeInTheDocument();
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent('/');
+  });
+
+  it('팀 활동 패널에 설계 설명 문구를 표시하지 않는다', () => {
+    renderHome();
+
+    expect(
+      screen.queryByText(/전체 스터디 필터 · 최신순 단일 세로 스크롤/),
+    ).not.toBeInTheDocument();
   });
 });
