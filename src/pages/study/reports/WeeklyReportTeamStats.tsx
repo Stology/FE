@@ -13,17 +13,12 @@ export const WeeklyReportTeamStats = ({ activities }: WeeklyReportTeamStatsProps
 
   return (
     <section aria-labelledby="weekly-report-team-title" className="pb-0 pt-7">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2
-          className="text-[17px] font-bold leading-[22px] text-stology-text-dark"
-          id="weekly-report-team-title"
-        >
-          3. 팀 통계
-        </h2>
-        <span className="rounded-full bg-stology-off-white px-3 py-1 text-[10px] font-bold text-stology-text-light">
-          단순 카운트 MVP
-        </span>
-      </div>
+      <h2
+        className="text-[17px] font-bold leading-[22px] text-stology-text-dark"
+        id="weekly-report-team-title"
+      >
+        3. 팀 통계
+      </h2>
       <p className="mt-1 text-[11px] leading-4 text-stology-text-light">
         자료 업로드와 질문 작성 수를 누적 막대로 표시합니다.
       </p>

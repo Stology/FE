@@ -1,11 +1,9 @@
-﻿export type StudyStatus = 'active' | 'ended';
+export type StudyStatus = 'active' | 'ended';
 
 export type MaterialStatus =
   'extracting' | 'extract_failed' | 'needs_review' | 'editable' | 'confirmed';
 
 export type ReviewAction = 'approved' | 'rejected';
-
-export type ConceptRelationType = 'base' | 'context' | 'extension' | 'contrast';
 
 export type UploadMode = 'file' | 'text';
 
@@ -20,26 +18,57 @@ export interface Material {
   week: number;
 }
 
-export interface ConceptNode {
-  definition: string;
+export type ConceptRelationKind =
+  'based-on' | 'associated-with' | 'advanced-from' | 'contrasted-with';
+
+export type KnowledgeEdgeKind = ConceptRelationKind | 'evidence';
+
+export type KnowledgeClusterAccent =
+  'accent-1' | 'accent-2' | 'accent-3' | 'accent-4' | 'accent-5' | 'accent-6';
+
+export interface KnowledgeCluster {
+  accent: KnowledgeClusterAccent;
   id: string;
-  isActive: boolean;
-  materials: WeeklyRecordMaterial[];
-  name: string;
-  weekStatus?: WeeklyRecordStatus;
-  x: number;
-  y: number;
+  label: string;
 }
 
-export interface ConceptRelation {
-  fromId: string;
-  toId: string;
-  type: ConceptRelationType;
+interface KnowledgeNodeBase {
+  clusterId: string;
+  degree: number;
+  id: string;
+  importance: 1 | 2 | 3 | 4 | 5;
+  isRoot: boolean;
+  label: string;
+  week: number;
 }
 
-export interface ConceptGraph {
-  nodes: ConceptNode[];
-  relations: ConceptRelation[];
+export interface KnowledgeConceptNode extends KnowledgeNodeBase {
+  activatedWeek?: number;
+  aliases: string[];
+  definition: string;
+  materialCount: number;
+  reinforcedWeeks: number[];
+  state: 'active' | 'inactive';
+  type: 'concept';
+}
+
+export interface KnowledgeMaterialNode extends KnowledgeNodeBase {
+  material: WeeklyRecordMaterial;
+  type: 'material';
+}
+
+export type KnowledgeNode = KnowledgeConceptNode | KnowledgeMaterialNode;
+
+export interface KnowledgeEdge {
+  kind: KnowledgeEdgeKind;
+  source: string;
+  target: string;
+}
+
+export interface KnowledgeGraph {
+  clusters: KnowledgeCluster[];
+  edges: KnowledgeEdge[];
+  nodes: KnowledgeNode[];
 }
 
 export interface NodeCandidate {
@@ -49,17 +78,13 @@ export interface NodeCandidate {
   myAction?: ReviewAction;
   name: string;
   rejecterNames: string[];
-}
-
-export interface MaterialReview {
-  candidates: NodeCandidate[];
-  material: Material;
   reviewerCount: number;
 }
 
 export interface MaterialDraft {
   content?: string;
   description?: string;
+  file?: File;
   fileName?: string;
   mode: UploadMode;
   title: string;
@@ -69,7 +94,9 @@ export interface Study {
   id: string;
   name: string;
   currentWeek: number;
+  isNew: boolean;
   memberCount: number;
+  members: string[];
   startedAt: string;
   status: StudyStatus;
 }
@@ -155,15 +182,22 @@ export interface QuestionSummary {
   title: string;
 }
 
+export interface QuestionImage {
+  id: string;
+  url: string;
+}
+
 export interface QuestionReply {
   authorName: string;
   content: string;
   createdAt: string;
   id: string;
+  images?: QuestionImage[];
   isMine: boolean;
 }
 
 export interface QuestionDetail extends QuestionSummary {
   content: string;
+  images?: QuestionImage[];
   replies: QuestionReply[];
 }

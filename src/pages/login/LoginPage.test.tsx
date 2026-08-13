@@ -24,6 +24,13 @@ afterEach(() => {
 });
 
 describe('LoginPage', () => {
+  it('Figma 로고를 표시하고 기획 설명 문구는 노출하지 않는다', () => {
+    renderLoginPage('/login');
+
+    expect(screen.getByRole('heading', { name: 'Stology' })).toBeInTheDocument();
+    expect(screen.queryByText('초대 링크 진입 안내')).not.toBeInTheDocument();
+  });
+
   it('Mock 로그인 후 기존 내부 목적지로 이동한다', () => {
     renderLoginPage('/login?redirect=%2Fstudies%2Fstudy-2%2Fquestions');
 

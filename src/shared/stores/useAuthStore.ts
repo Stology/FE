@@ -1,38 +1,86 @@
 import { create } from 'zustand';
+import { authApi } from '@/shared/api/auth';
 
 interface AuthState {
   isAuthenticated: boolean;
   isInitialized: boolean;
-  initialize: () => void;
-  login: () => void;
-  logout: () => void;
+  accessToken: string | null;
+  memberId: number | null;
+  initialize: () => Promise<void>;
+  login: (token?: string) => void;
+  logout: () => Promise<void>;
 }
 
 const MOCK_AUTH_STORAGE_KEY = 'stology.mock-authenticated';
 
+let isInitializing = false;
+
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isInitialized: false,
-  initialize: () => {
-    const isMockAuthEnabled = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
-    const hasMockSession = readMockAuthSession();
+  accessToken: null,
+  memberId: null,
+  initialize: async () => {
+    if (isInitializing) return;
+    isInitializing = true;
 
-    set({
-      isAuthenticated: isMockAuthEnabled && hasMockSession,
-      isInitialized: true,
-    });
+    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+      const hasMockSession = readMockAuthSession();
+      set({
+        accessToken: hasMockSession ? 'mock-token' : null,
+        isAuthenticated: hasMockSession,
+        isInitialized: true,
+        memberId: null,
+      });
+      isInitializing = false;
+      return;
+    }
+
+    try {
+      const { accessToken, userId } = await authApi.reissue();
+      set({ accessToken, isAuthenticated: true, isInitialized: true, memberId: userId });
+    } catch (error) {
+      console.error('Reissue failed:', error);
+      set({ accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null });
+    } finally {
+      isInitializing = false;
+    }
   },
-  login: () => {
+  login: (token?: string) => {
+    if (token) {
+      let parsedUserId = null;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        parsedUserId = payload.sub ? parseInt(payload.sub, 10) : null;
+      } catch (e) {
+        console.error('Failed to parse test token', e);
+      }
+      set({
+        accessToken: token,
+        isAuthenticated: true,
+        isInitialized: true,
+        memberId: parsedUserId,
+      });
+      return;
+    }
+
     if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
       persistMockAuthSession();
     }
 
-    set({ isAuthenticated: true, isInitialized: true });
+    set({ accessToken: 'mock-token', isAuthenticated: true, isInitialized: true, memberId: null });
   },
-  logout: () => {
-    clearMockAuthSession();
-
-    set({ isAuthenticated: false, isInitialized: true });
+  logout: async () => {
+    try {
+      if (import.meta.env.VITE_ENABLE_MOCK_AUTH !== 'true') {
+        await authApi.logout();
+      }
+    } catch (e) {
+      console.error('Logout failed:', e);
+    } finally {
+      clearMockAuthSession();
+      set({ accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null });
+    }
   },
 }));
 

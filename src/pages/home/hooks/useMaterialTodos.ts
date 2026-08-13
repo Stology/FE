@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { homeApi } from '@/shared/api/home';
 
-export type MaterialTodoStatus = '검토 필요' | '추출 실패';
+export type MaterialTodoStatus = '검토 필요' | '재업로드 필요';
+export type MaterialTodoFilter = '전체' | '검토' | '재업로드 필요';
 
 export interface MaterialDetailModel {
   content: string;
@@ -25,116 +28,77 @@ export interface MaterialTodoItem {
   week: string;
   uploader: string;
   date: string;
+  rawDate: number;
   detail?: MaterialDetailModel;
   state?: MaterialDetailState;
 }
 
-export type MaterialTodoFilter = '전체' | '검토' | '재업로드 필요';
-
-const MOCK_MATERIALS: MaterialTodoItem[] = [
-  {
-    id: 'mat-1',
-    status: '검토 필요',
-    title: 'Spring Security 인증',
-    study: { id: 'backend-master', name: '백엔드 마스터' },
-    week: '3주차',
-    uploader: '김민준',
-    date: '07.16',
-    detail: {
-      content: 'Spring Security 인증 흐름에 대한 자료입니다.',
-      attachments: [
-        { name: 'security-flow.pdf', fileType: 'application/pdf', downloadUrl: '/downloads/1' },
-      ],
-      permission: 'read',
-      isReadOnly: false,
-    },
-    state: { isLoading: false, isError: false },
-  },
-  {
-    id: 'mat-2',
-    status: '검토 필요',
-    title: 'JPA 연관관계 정리',
-    study: { id: 'cs-study', name: 'CS 스터디' },
-    week: '2주차',
-    uploader: '이서연',
-    date: '07.16',
-    detail: {
-      content: 'JPA 양방향 연관관계 정리 문서',
-      attachments: [],
-      permission: 'none',
-      isReadOnly: false,
-    },
-    state: { isLoading: false, isError: false },
-  },
-  {
-    id: 'mat-3',
-    status: '추출 실패',
-    title: '트랜잭션 격리 수준',
-    study: { id: 'backend-master', name: '백엔드 마스터' },
-    week: '3주차',
-    uploader: '김스토',
-    date: '07.15',
-    detail: {
-      content: '트랜잭션 격리 수준 비교표',
-      attachments: [
-        { name: 'isolation.pdf', fileType: 'application/pdf', downloadUrl: '/downloads/3' },
-      ],
-      permission: 'read',
-      isReadOnly: false,
-    },
-    state: { isLoading: false, isError: true },
-  },
-  {
-    id: 'mat-4',
-    status: '검토 필요',
-    title: '인덱스 성능 노트',
-    study: { id: 'algorithm', name: '알고리즘' },
-    week: '1주차',
-    uploader: '박도윤',
-    date: '07.15',
-    detail: {
-      content: 'B-Tree 인덱스 구조와 성능 비교',
-      attachments: [
-        {
-          name: 'index-perf.xlsx',
-          fileType: 'application/vnd.ms-excel',
-          downloadUrl: '/downloads/4',
-        },
-      ],
-      permission: 'read',
-      isReadOnly: true,
-    },
-    state: { isLoading: false, isError: false },
-  },
-];
-
-export const useMaterialTodos = () => {
+export function useMaterialTodos(activeStudyIds: readonly string[]) {
   const [filter, setFilter] = useState<MaterialTodoFilter>('전체');
 
-  const filteredItems = useMemo(() => {
-    if (filter === '검토') {
-      return MOCK_MATERIALS.filter((item) => item.status === '검토 필요');
-    }
-    if (filter === '재업로드 필요') {
-      return MOCK_MATERIALS.filter((item) => item.status === '추출 실패');
-    }
-    return MOCK_MATERIALS;
-  }, [filter]);
+  const materialsQuery = useQuery({
+    queryKey: ['home', 'materials'],
+    queryFn: ({ signal }) => homeApi.getMaterials(undefined, signal),
+  });
 
-  const counts = useMemo(() => {
-    const reviewCount = MOCK_MATERIALS.filter((item) => item.status === '검토 필요').length;
-    const reuploadCount = MOCK_MATERIALS.filter((item) => item.status === '추출 실패').length;
-    return {
-      전체: MOCK_MATERIALS.length,
-      검토: reviewCount,
-      '재업로드 필요': reuploadCount,
-    };
-  }, []);
+  const isLoading = materialsQuery.isLoading;
+  const error = materialsQuery.error;
+
+  const items = useMemo(() => {
+    const activeStudyIdSet = new Set(activeStudyIds);
+    const apiItems = (materialsQuery.data?.materials ?? []).filter((material) =>
+      activeStudyIdSet.has(String(material.studyId)),
+    );
+
+    const mapped: MaterialTodoItem[] = apiItems.map((s) => {
+      const dateObj = new Date(s.uploadedDate);
+      const isValidDate = !isNaN(dateObj.getTime());
+      const formattedDate = isValidDate
+        ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
+        : '';
+
+      return {
+        id: String(s.studyMaterialId),
+        status: s.dataState === 'EXTRACTIONFAILED' ? '재업로드 필요' : '검토 필요',
+        title: s.dataTitle,
+        study: { id: String(s.studyId), name: s.studyName },
+        week: `${s.week}주차`,
+        uploader: s.uploaderName,
+        date: formattedDate,
+        rawDate: isValidDate ? dateObj.getTime() : 0,
+      };
+    });
+
+    // 원시 타임스탬프 기준 최신순 정렬
+    return mapped.sort((a, b) => b.rawDate - a.rawDate);
+  }, [activeStudyIds, materialsQuery.data]);
+
+  const filteredItems = useMemo(() => {
+    if (filter === '전체') return items;
+    const status = filter === '검토' ? '검토 필요' : '재업로드 필요';
+    return items.filter((item) => item.status === status);
+  }, [items, filter]);
+
+  const counts = useMemo(
+    () => ({
+      전체: items.length,
+      검토: items.filter((item) => item.status === '검토 필요').length,
+      '재업로드 필요': items.filter((item) => item.status === '재업로드 필요').length,
+    }),
+    [items],
+  );
+
+  const refetch = () => {
+    void materialsQuery.refetch();
+  };
 
   return {
     filter,
     setFilter,
     items: filteredItems,
     counts,
+    isLoading,
+    error,
+    refetch,
   };
-};
+}

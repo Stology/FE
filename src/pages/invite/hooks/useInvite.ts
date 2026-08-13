@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 
-import { getMockStudyById } from '@/shared/mocks/studies';
+import { httpClient } from '@/shared/api/http_client';
+import type { ApiResponse } from '@/shared/api/types';
 import type { Study } from '@/shared/types/stology';
+
+// 스웨거 GET /api/study/invitation/{token} 응답 형태
+interface GetInvitationTokenRes {
+  studyId: number;
+  name: string;
+  leader: string;
+  memberCount: number;
+}
 
 export const useInvite = (token?: string) => {
   const [study, setStudy] = useState<Study | null>(null);
@@ -22,31 +31,26 @@ export const useInvite = (token?: string) => {
     const loadStudy = async () => {
       try {
         setIsLoading(true);
-        // API 연동 전 임시로 토큰 검증 API 호출 모방 (네트워크 지연 모방)
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const res = await httpClient.get<ApiResponse<GetInvitationTokenRes>>(
+          `/api/study/invitation/${token}`,
+          { signal: controller.signal },
+        );
 
-        // 성공을 허용할 토큰 화이트리스트 (INV001-0100 피드백 반영)
-        const allowedTokens = ['valid-token', 'fail-token'];
-
-        if (!allowedTokens.includes(token)) {
-          throw new Error('invalid-token');
-        }
-
-        const mockStudy = getMockStudyById('spring-study');
-        if (!mockStudy) {
-          throw new Error('not-found');
-        }
-
-        setStudy(mockStudy);
+        const data = res.data.result;
+        setStudy({
+          id: String(data.studyId),
+          name: data.name,
+          currentWeek: 0,
+          isNew: false,
+          memberCount: data.memberCount,
+          members: [],
+          startedAt: '',
+          status: 'active',
+        });
         setError(null);
       } catch (err: unknown) {
         if ((err as { name?: string }).name !== 'CanceledError') {
-          const allowedTokens = ['valid-token', 'fail-token'];
-          if (!allowedTokens.includes(token)) {
-            setError(new Error('만료되었거나 유효하지 않은 초대 토큰입니다.'));
-          } else {
-            setError(new Error('초대된 스터디 정보를 찾을 수 없습니다.'));
-          }
+          setError(new Error('만료되었거나 유효하지 않은 초대 링크입니다.'));
         }
       } finally {
         setIsLoading(false);
@@ -65,16 +69,7 @@ export const useInvite = (token?: string) => {
 
     try {
       setIsJoining(true);
-
-      // API 연동 전 임시로 토큰 검증 API 호출 모방 (네트워크 지연 모방)
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      if (token === 'fail-token') {
-        throw new Error('스터디 인원이 가득 찼거나 만료되었습니다.');
-      }
-      // 실제 통신 부분 주석 처리 (SPA fallback 방지)
-      // await httpClient.post(`/api/invites/${token}/accept`);
-
+      await httpClient.post<ApiResponse<void>>(`/api/study/invitation/${token}/accept`);
       setJoinError(null);
       return true;
     } catch (err) {

@@ -5,16 +5,18 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { Material } from '@/shared/types/stology';
+
 import { MaterialUploadPage } from './MaterialUploadPage';
 
 afterEach(cleanup);
 
-const selectFile = (fileName = 'jwt.md') => {
+function selectFile(fileName = 'jwt.md') {
   const input = screen.getByLabelText(/드롭존 \/ 파일 선택/);
   const file = new File(['# JWT'], fileName, { type: 'text/markdown' });
 
   fireEvent.change(input, { target: { files: [file] } });
-};
+}
 
 describe('MaterialUploadPage', () => {
   it('대기 중인 자료의 목록 정보를 표시한다', () => {
@@ -28,10 +30,10 @@ describe('MaterialUploadPage', () => {
     expect(screen.getByText('추출 중')).toBeInTheDocument();
   });
 
-  it('현재 진행 주차 귀속 안내를 표시한다', () => {
-    render(<MaterialUploadPage currentWeek={3} />);
+  it('업로드 주차 선택을 표시하지 않는다', () => {
+    render(<MaterialUploadPage />);
 
-    expect(screen.getByText('3주차에 자동 귀속됩니다')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: '주차 선택' })).not.toBeInTheDocument();
   });
 
   it('제목 없이 등록하면 검증 메시지를 표시하고 제출하지 않는다', async () => {
@@ -72,6 +74,7 @@ describe('MaterialUploadPage', () => {
     expect(handleSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ fileName: 'jwt.md', mode: 'file', title: 'JWT 정리' }),
     );
+    expect(handleSubmit.mock.calls[0]?.[0]).not.toHaveProperty('week');
     expect(
       screen.getByText(/‘JWT 정리’ 자료를 등록했습니다. AI 추출이 시작됩니다./),
     ).toBeInTheDocument();
@@ -111,17 +114,51 @@ describe('MaterialUploadPage', () => {
   });
 
   it('본인의 검토 대기 자료에만 자료 수정 액션을 노출한다', () => {
-    const handleMaterialEdit = vi.fn();
-
-    render(<MaterialUploadPage onMaterialEdit={handleMaterialEdit} />);
+    render(<MaterialUploadPage />);
     const editButtons = screen.getAllByRole('button', { name: '자료 수정' });
 
     expect(editButtons).toHaveLength(1);
+  });
 
-    fireEvent.click(editButtons[0]);
+  it('자료 수정 모달에서 제출하면 수정 내용을 전달한다', async () => {
+    const handleMaterialEdit = vi.fn();
 
+    render(<MaterialUploadPage onMaterialEdit={handleMaterialEdit} />);
+    fireEvent.click(screen.getByRole('button', { name: '자료 수정' }));
+
+    fireEvent.change(screen.getByRole('textbox', { name: '자료 제목 수정 *' }), {
+      target: { value: '토큰 재발급 정리' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(handleMaterialEdit).toHaveBeenCalledOnce());
     expect(handleMaterialEdit).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'token-reissue' }),
+      expect.objectContaining({ title: '토큰 재발급 정리' }),
+    );
+  });
+
+  it('본인의 추출 실패 자료에는 재분석 액션을 노출하고, 누르면 요청을 전달한다', () => {
+    const handleMaterialReanalyze = vi.fn();
+    const materials: Material[] = [
+      {
+        id: 'failed-own',
+        isOwn: true,
+        status: 'extract_failed',
+        title: '실패한 자료',
+        uploadedAt: '2026-03-16',
+        uploaderName: '김철수',
+        week: 3,
+      },
+    ];
+
+    render(
+      <MaterialUploadPage materials={materials} onMaterialReanalyze={handleMaterialReanalyze} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '재분석' }));
+
+    expect(handleMaterialReanalyze).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'failed-own' }),
     );
   });
 
@@ -131,14 +168,14 @@ describe('MaterialUploadPage', () => {
     expect(screen.queryByRole('button', { name: '등록' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '자료 수정' })).not.toBeInTheDocument();
     expect(
-      screen.getByText('종료된 스터디입니다. 자료를 등록하거나 수정할 수 없습니다.'),
+      screen.getByText('종료된 스터디에서는 자료 업로드와 검토가 불가능합니다.'),
     ).toBeInTheDocument();
   });
 
   it('자료가 없으면 빈 상태를 표시한다', () => {
     render(<MaterialUploadPage materials={[]} />);
 
-    expect(screen.getByText('대기 중인 자료가 없습니다')).toBeInTheDocument();
+    expect(screen.getByText('검토 대기 중인 자료가 없습니다.')).toBeInTheDocument();
   });
 
   it('오류가 있으면 오류와 다시 시도를 표시한다', () => {

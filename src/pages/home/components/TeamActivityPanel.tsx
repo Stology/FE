@@ -1,7 +1,8 @@
+import { useRef, useCallback } from 'react';
 import { useActivityClick } from '../hooks/useActivityClick';
 
 import { cn } from '@/shared/lib/cn';
-import { Toast } from '@/shared/ui/Toast';
+import { Select, Toast } from '@/shared/ui';
 import type { TeamActivityItem, TeamActivityType } from '../mocks';
 
 export type { TeamActivityItem, TeamActivityType };
@@ -67,18 +68,19 @@ interface StudyFilterProps {
 }
 
 const StudyFilter = ({ onChange, selected, studies }: StudyFilterProps) => (
-  <select
+  <Select
+    aria-label="스터디 필터"
+    className="h-auto w-auto rounded-[4px] border-stology-text-light px-2 py-1 text-[11px] focus:ring-0"
     value={selected}
     onChange={(e) => onChange(e.target.value)}
-    className="rounded-[4px] border border-stology-text-light bg-white px-2 py-1 text-[11px] font-medium text-stology-text-dark focus:outline-none"
   >
-    <option value="all">전체 스터디 ▾</option>
+    <option value="all">전체 스터디</option>
     {studies.map((s) => (
       <option key={s.id} value={s.id}>
         {s.name}
       </option>
     ))}
-  </select>
+  </Select>
 );
 
 // ─── Panel ───────────────────────────────────────────────────────────────────
@@ -89,6 +91,11 @@ interface TeamActivityPanelProps {
   selectedStudy: string;
   onStudyChange: (id: string) => void;
   onRemove?: (id: string) => void;
+  hasNextPage?: boolean;
+  fetchNextPage?: () => void;
+  isFetchingNextPage?: boolean;
+  isLoading?: boolean;
+  error?: Error | null;
 }
 
 export const TeamActivityPanel = ({
@@ -97,11 +104,32 @@ export const TeamActivityPanel = ({
   selectedStudy,
   studies,
   onRemove,
+  hasNextPage,
+  fetchNextPage,
+  isFetchingNextPage,
+  isLoading,
+  error,
 }: TeamActivityPanelProps) => {
   const { handleItemClick, setToastMessage, toastMessage } = useActivityClick(onRemove);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+      if (!node || isFetchingNextPage || !hasNextPage || !fetchNextPage) return;
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            fetchNextPage();
+          }
+        },
+        { rootMargin: '120px' },
+      );
+      observerRef.current.observe(node);
+    },
+    [isFetchingNextPage, hasNextPage, fetchNextPage],
+  );
 
-  const filtered =
-    selectedStudy === 'all' ? items : items.filter((item) => item.id.startsWith(selectedStudy));
+  const filtered = items;
 
   return (
     <section className="flex min-h-[420px] w-full flex-col rounded-[6px] border border-stology-text-light bg-white p-5 relative">
@@ -123,14 +151,9 @@ export const TeamActivityPanel = ({
         <StudyFilter studies={studies} selected={selectedStudy} onChange={onStudyChange} />
       </div>
 
-      {/* 정책 안내 */}
-      <p className="mt-3 rounded-[3px] border border-dashed border-stology-border-light bg-stology-off-white px-3 py-2 text-[11px] text-stology-text-light">
-        전체 스터디 필터 · 최신순 단일 세로 스크롤
-      </p>
-
       {/* 필드 헤더 */}
       <div
-        className="mt-3 grid items-center gap-3 rounded-[2px] border border-stology-border-light bg-stology-off-white px-3 py-1.5 text-[10px] font-bold text-stology-text-light"
+        className="mt-4 grid items-center gap-3 rounded-[2px] border border-stology-border-light bg-stology-off-white px-3 py-1.5 text-[10px] font-bold text-stology-text-light"
         style={{ gridTemplateColumns: '48px 1fr 92px 42px 20px' }}
       >
         <span>유형</span>
@@ -141,16 +164,31 @@ export const TeamActivityPanel = ({
       </div>
 
       {/* 항목 목록 */}
-      {filtered.length > 0 ? (
-        <ul className="mt-1 flex flex-col gap-1">
-          {filtered.map((item) => (
-            <TeamActivityRow key={item.id} item={item} onClick={handleItemClick} />
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-4 rounded-[2px] border border-dashed border-stology-border-light px-3 py-1 text-[10px] text-stology-text-light">
-          빈 상태: 아직 팀 활동이 없습니다.
+      {isLoading ? (
+        <p className="mt-4 text-center text-[10px] text-stology-text-light">불러오는 중...</p>
+      ) : error ? (
+        <p className="mt-4 rounded-[2px] border border-dashed border-red-200 px-3 py-1 text-[10px] text-red-500">
+          팀 활동을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
         </p>
+      ) : (
+        <div className="mt-1 max-h-[320px] overflow-y-auto">
+          {filtered.length > 0 ? (
+            <ul className="flex flex-col gap-1">
+              {filtered.map((item) => (
+                <TeamActivityRow key={item.id} item={item} onClick={handleItemClick} />
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-4 rounded-[2px] border border-dashed border-stology-border-light px-3 py-1 text-[10px] text-stology-text-light">
+              빈 상태: 아직 팀 활동이 없습니다.
+            </p>
+          )}
+          {/* 무한 스크롤 옵저버 타겟 */}
+          <div ref={loadMoreRef} className="h-4" />
+          {isFetchingNextPage && (
+            <p className="text-center text-[10px] text-stology-text-light py-2">불러오는 중...</p>
+          )}
+        </div>
       )}
     </section>
   );

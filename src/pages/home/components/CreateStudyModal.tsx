@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Search } from 'lucide-react';
 import { z } from 'zod';
 
+import { httpClient } from '@/shared/api/http_client';
+import type { ApiResponse } from '@/shared/api/types';
 import { Button, Input, Modal, Textarea } from '@/shared/ui';
 
 import { OntologySearchModal, type OntologyTemplate } from './OntologySearchModal';
@@ -27,8 +30,6 @@ const createStudySchema = z.object({
 
 export type CreateStudyFormValues = z.infer<typeof createStudySchema>;
 
-const WEEKDAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-
 // 현지 날짜를 YYYY-MM-DD 형식으로 포맷팅하는 헬퍼 (toISOString 사용 시 UTC 시차로 인한 저녁 시간대 날짜 왜곡 방지)
 const getLocalDateString = (): string => {
   const today = new Date();
@@ -38,35 +39,8 @@ const getLocalDateString = (): string => {
   return `${year}-${month}-${day}`;
 };
 
-// YYYY-MM-DD 분해 및 Date.UTC() / getUTCDay() 기반 KST 요일 계산 (미국 등 UTC보다 느린 타임존 오프셋 영향 방지)
-const getReportScheduleText = (startDateStr: string): string => {
-  if (!startDateStr) {
-    return '기본 리포트  매주 화요일 24:00 (KST)';
-  }
-
-  const parts = startDateStr.split('-');
-  if (parts.length !== 3) {
-    return '기본 리포트  매주 화요일 24:00 (KST)';
-  }
-
-  const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10);
-  const day = parseInt(parts[2], 10);
-
-  if (isNaN(year) || isNaN(month) || isNaN(day)) {
-    return '기본 리포트  매주 화요일 24:00 (KST)';
-  }
-
-  // Date.UTC()로 파싱하여 타임존 오프셋 영향 방지
-  const utcDate = new Date(Date.UTC(year, month - 1, day));
-  // 시작일 선택 시 전날 24:00을 기본 주차 종료/리포트 생성 시각으로 안내
-  const prevDayIndex = (utcDate.getUTCDay() + 6) % 7;
-  const prevWeekday = WEEKDAYS[prevDayIndex];
-
-  return `기본 리포트  매주 ${prevWeekday} 24:00 (KST)`;
-};
-
 export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModalProps) => {
+  const queryClient = useQueryClient();
   const [selectedTemplate, setSelectedTemplate] = useState<OntologyTemplate | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
@@ -75,7 +49,6 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
     register,
     handleSubmit,
     setValue,
-    watch,
     reset,
     formState: { errors, isSubmitting, isValid },
   } = useForm<CreateStudyFormValues>({
@@ -102,8 +75,6 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
     },
   });
 
-  const startedAt = watch('startedAt');
-
   // 제출 중(isSubmitting)에는 모달 닫기 차단
   const handleClose = () => {
     if (!isSubmitting) {
@@ -115,22 +86,30 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
 
   const onSubmit = async (data: CreateStudyFormValues) => {
     try {
-      // Simulate API call for study creation (HOME-CRT-01)
-      await new Promise((resolve) => setTimeout(resolve, 400));
-
-      const mockInviteToken = `inv_${Math.random().toString(36).substring(2, 9)}`;
-      const createdStudy = {
-        id: `study-${Date.now()}`,
+      // 1단계: 스터디 생성 (POST /api/study)
+      const createRes = await httpClient.post<ApiResponse<number>>('/api/study', {
         name: data.name.trim(),
-        inviteToken: mockInviteToken,
-      };
+        templateId: Number(data.templateId),
+        startDate: data.startedAt,
+        description: data.description?.trim() || undefined,
+      });
+
+      const studyId = createRes.data.result;
+
+      await queryClient.invalidateQueries({ queryKey: ['myStudies'] });
+
+      // 2단계: 초대 토큰 발급 (POST /api/study/{studyId}/invitation)
+      const inviteRes = await httpClient.post<ApiResponse<string>>(
+        `/api/study/${studyId}/invitation`,
+      );
+      const inviteToken = inviteRes.data.result;
 
       reset();
       setSelectedTemplate(null);
       onClose();
 
       if (onSuccess) {
-        onSuccess(createdStudy);
+        onSuccess({ id: String(studyId), name: data.name.trim(), inviteToken });
       }
     } catch {
       alert('스터디 생성 중 오류가 발생했습니다.');
@@ -143,16 +122,16 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
         isOpen={isOpen}
         onClose={handleClose}
         title="스터디 생성"
-        description="HOM001-0100 · 스터디 생성 및 기본 리포트 일정 확정"
+        description="새로운 스터디 정보를 입력해주세요."
         showCloseButton
-        className="max-w-[460px]"
+        className="max-w-[440px]"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* 스터디 이름 * */}
+          {/* 스터디 이름 */}
           <div>
             <Input
               id="study-name"
-              label="스터디 이름 *"
+              label="스터디 이름"
               placeholder="예: 백엔드 마스터, CS 스터디"
               disabled={isSubmitting}
               maxLength={20}
@@ -163,8 +142,11 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
 
           {/* ── HOM001-0101: 온톨로지 템플릿 검색/선택 트리거 ── */}
           <div>
-            <label className="block text-caption font-bold mb-1.5 text-stology-text-dark">
-              온톨로지 템플릿 검색/선택 *
+            <label
+              className="mb-2 block text-label text-stology-text-dark"
+              htmlFor="study-template-trigger"
+            >
+              온톨로지 템플릿 검색/선택
             </label>
             <div>
               <button
@@ -202,20 +184,16 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
             </div>
           </div>
 
-          {/* 시작일 YYYY-MM-DD * */}
+          {/* 시작일 */}
           <div>
             <Input
               id="study-started-at"
               type="date"
-              label="시작일 YYYY-MM-DD *"
+              label="시작일"
               disabled={isSubmitting}
               error={errors.startedAt?.message}
               {...register('startedAt')}
             />
-            {/* 기본 리포트 일정 안내 */}
-            <p className="mt-1.5 text-caption font-medium text-stology-text-light">
-              {getReportScheduleText(startedAt)}
-            </p>
           </div>
 
           {/* 설명 (선택) */}
@@ -223,7 +201,7 @@ export const CreateStudyModal = ({ isOpen, onClose, onSuccess }: CreateStudyModa
             <Textarea
               id="study-description"
               label="설명 (선택)"
-              placeholder="스터디 목표나 전달사항을 입력해주세요."
+              placeholder="스터디에 대한 설명을 입력해주세요"
               disabled={isSubmitting}
               maxLength={100}
               {...register('description')}

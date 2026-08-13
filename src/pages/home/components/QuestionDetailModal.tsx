@@ -7,6 +7,7 @@ import { useQuestionTodos, type QuestionTodoItem } from '../hooks/useQuestionTod
 export interface QuestionDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
+  activeStudyIds: readonly string[];
 }
 
 const FilterButton = ({
@@ -24,7 +25,7 @@ const FilterButton = ({
     type="button"
     onClick={onClick}
     className={cn(
-      'flex h-[38px] w-[150px] items-center justify-center rounded-[19px] border text-[12px] font-bold transition-colors',
+      'flex h-[38px] w-[150px] items-center justify-center rounded-[13px] border text-[12px] font-bold transition-colors',
       active
         ? 'border-stology-text-dark bg-stology-text-dark text-white'
         : 'border-stology-border-light bg-white text-stology-text-dark hover:bg-stology-off-white',
@@ -68,18 +69,22 @@ const DetailRow = ({
   </div>
 );
 
-export const QuestionDetailModal = ({ isOpen, onClose }: QuestionDetailModalProps) => {
+export const QuestionDetailModal = ({
+  activeStudyIds,
+  isOpen,
+  onClose,
+}: QuestionDetailModalProps) => {
   const navigate = useNavigate();
-  const { items, filter, setFilter, counts, markAsRead } = useQuestionTodos();
+  const { items, filter, setFilter, counts, markAsRead } = useQuestionTodos(activeStudyIds);
 
-  const handleActionClick = (item: QuestionTodoItem) => {
+  function handleActionClick(item: QuestionTodoItem) {
     // 1. 해당 알림을 읽음 처리
     markAsRead(item.to);
     // 2. 모달 닫기
     onClose();
     // 3. 해당 페이지로 이동
     navigate(item.to);
-  };
+  }
 
   return (
     <Modal
@@ -88,9 +93,9 @@ export const QuestionDetailModal = ({ isOpen, onClose }: QuestionDetailModalProp
       title="질문함 상세"
       description="새 질문과 내 질문의 새 답글을 확인하세요."
       showCloseButton
-      className="max-w-[1010px]"
+      className="max-w-[1010px] p-7"
     >
-      <div className="mt-7 flex flex-col gap-6">
+      <div className="flex flex-col gap-[27px]">
         {/* 필터 그룹 */}
         <div className="flex gap-4">
           <FilterButton
@@ -127,21 +132,10 @@ export const QuestionDetailModal = ({ isOpen, onClose }: QuestionDetailModalProp
 
           {/* List Body */}
           <div className="flex max-h-[350px] flex-col gap-2 overflow-y-auto pr-2">
-            {items.length === 0 ? (
-              <div className="flex h-[42px] items-center rounded-[3px] border border-stology-border-light bg-stology-off-white pl-[15px] text-[11px] text-stology-text-light">
-                빈 상태: 내용 없음
-              </div>
-            ) : (
-              items.map((item) => (
-                <DetailRow key={item.id} item={item} onClickAction={handleActionClick} />
-              ))
-            )}
+            {items.map((item) => (
+              <DetailRow key={item.id} item={item} onClickAction={handleActionClick} />
+            ))}
           </div>
-        </div>
-
-        {/* 하단 안내 텍스트 */}
-        <div className="mt-4 text-[11px] font-medium text-stology-text-light">
-          대상 삭제·상태 변경·권한 상실: 이동 차단 → 토스트 → 목록 새로고침/행 제거/숫자 재계산
         </div>
       </div>
     </Modal>

@@ -1,115 +1,74 @@
 import { useMemo, useState } from 'react';
 import { LockKeyhole, RotateCcw } from 'lucide-react';
 
-import { mockConceptGraph, mockConceptGraphWeeks } from '@/shared/mocks/conceptGraph';
-import type {
-  ConceptGraph,
-  ConceptNode,
-  ConceptRelationType,
-  WeeklyRecordMaterial,
-} from '@/shared/types/stology';
-import { Button, EmptyState, ErrorMessage, Loading, SearchInput, Select } from '@/shared/ui';
+import { mockKnowledgeGraph, mockKnowledgeGraphWeeks } from '@/shared/mocks/knowledgeGraph';
+import type { KnowledgeGraph, KnowledgeNode, WeeklyRecordMaterial } from '@/shared/types/stology';
+import { Button, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
-import { ConceptGraphCanvas } from './ConceptGraphCanvas';
-import { ConceptNodePanel } from './ConceptNodePanel';
+import { KnowledgeGraphCanvas } from './components/KnowledgeGraphCanvas';
+import { KnowledgeGraphToolbar } from './components/KnowledgeGraphToolbar';
+import { KnowledgeNodeInspector } from './components/KnowledgeNodeInspector';
+import { useKnowledgeNodeMaterials } from './hooks';
+import {
+  filterConceptNodes,
+  type KnowledgeActivityFilter,
+  type KnowledgeWeekFilter,
+} from './model/knowledge_mapper';
+import { buildRelationOptions } from './model/knowledge_relations';
 
 interface KnowledgeGraphPageProps {
   availableWeeks?: number[];
   errorMessage?: string | null;
-  graph?: ConceptGraph;
+  graph?: KnowledgeGraph;
   isLoading?: boolean;
   isReadOnly?: boolean;
   onMaterialOpen?: (material: WeeklyRecordMaterial) => void;
   onRetry?: () => void;
+  /** 주어지면 선택 노드의 관련 자료를 노드 상세 API로 불러온다(그래프 목록엔 자료가 없음, 3-2 결정). */
+  studyId?: string;
 }
 
-type ActivityFilter = 'all' | 'active';
-
-const emptyConnections: Record<ConceptRelationType, ConceptNode[]> = {
-  base: [],
-  context: [],
-  extension: [],
-  contrast: [],
-};
-
 export const KnowledgeGraphPage = ({
-  availableWeeks = mockConceptGraphWeeks,
+  availableWeeks = mockKnowledgeGraphWeeks,
   errorMessage,
-  graph = mockConceptGraph,
+  graph = mockKnowledgeGraph,
   isLoading = false,
   isReadOnly = false,
   onMaterialOpen,
   onRetry,
+  studyId,
 }: KnowledgeGraphPageProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
-  const [weekFilter, setWeekFilter] = useState<'all' | number>('all');
+  const [activityFilter, setActivityFilter] = useState<KnowledgeActivityFilter>('all');
+  const [weekFilter, setWeekFilter] = useState<KnowledgeWeekFilter>('all');
   const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>();
+  const nodeMaterialsQuery = useKnowledgeNodeMaterials(studyId, selectedNodeId);
+
+  const nodesById = useMemo(
+    () => new Map<string, KnowledgeNode>(graph.nodes.map((node) => [node.id, node])),
+    [graph.nodes],
+  );
 
   const visibleNodes = useMemo(
-    () =>
-      graph.nodes.filter((node) => {
-        if (activityFilter === 'active' && !node.isActive) return false;
-        if (weekFilter !== 'all' && node.weekStatus === undefined) return false;
-        return true;
-      }),
-    [activityFilter, graph.nodes, weekFilter],
+    () => filterConceptNodes(graph, activityFilter, weekFilter),
+    [activityFilter, graph, weekFilter],
   );
 
-  const visibleIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes]);
+  const selectedNode = selectedNodeId
+    ? graph.nodes.find(
+        (node): node is Extract<KnowledgeNode, { type: 'concept' }> =>
+          node.id === selectedNodeId && node.type === 'concept',
+      )
+    : undefined;
 
-  const visibleRelations = useMemo(
-    () =>
-      graph.relations.filter(
-        (relation) => visibleIds.has(relation.fromId) && visibleIds.has(relation.toId),
-      ),
-    [graph.relations, visibleIds],
-  );
+  const connectedIds = useMemo(() => {
+    if (!selectedNode) return [];
 
-  /** 검색은 필터와 무관하게 전체 온톨로지 노드를 대상으로 한다. */
-  const searchResults = useMemo(() => {
-    const keyword = searchTerm.trim().toLowerCase();
-    if (keyword === '') return [];
-    return graph.nodes.filter((node) => node.name.toLowerCase().includes(keyword));
-  }, [graph.nodes, searchTerm]);
-
-  const selectedNode = graph.nodes.find((node) => node.id === selectedNodeId);
-
-  const connectedNodes = useMemo(() => {
-    if (!selectedNode) return emptyConnections;
-
-    return graph.relations.reduce<Record<ConceptRelationType, ConceptNode[]>>(
-      (accumulator, relation) => {
-        const counterpartId =
-          relation.fromId === selectedNode.id
-            ? relation.toId
-            : relation.toId === selectedNode.id
-              ? relation.fromId
-              : undefined;
-
-        if (counterpartId === undefined) return accumulator;
-
-        const counterpart = graph.nodes.find((node) => node.id === counterpartId);
-        if (counterpart) accumulator[relation.type].push(counterpart);
-
-        return accumulator;
-      },
-      { base: [], context: [], extension: [], contrast: [] },
+    return buildRelationOptions(selectedNode.id, graph.edges, nodesById).flatMap((option) =>
+      option.nodes.map((node) => node.id),
     );
-  }, [graph.nodes, graph.relations, selectedNode]);
+  }, [graph.edges, nodesById, selectedNode]);
 
-  const connectedIds = useMemo(
-    () =>
-      Object.values(connectedNodes)
-        .flat()
-        .map((node) => node.id),
-    [connectedNodes],
-  );
-
-  const handleNodeSelect = (nodeId: string) => {
-    setSelectedNodeId(nodeId);
-    setSearchTerm('');
-  };
+  const handleNodeSelect = (nodeId: string | undefined) => setSelectedNodeId(nodeId);
 
   const renderGraphContent = () => {
     if (isLoading) {
@@ -150,18 +109,14 @@ export const KnowledgeGraphPage = ({
     }
 
     return (
-      <>
-        <ConceptGraphCanvas
-          connectedIds={connectedIds}
-          nodes={visibleNodes}
-          onNodeSelect={handleNodeSelect}
-          relations={visibleRelations}
-          selectedNodeId={selectedNodeId}
-        />
-        <p className="mt-3 text-caption text-stology-text-light">
-          선택 노드/연결 노드 강조 · 신규 활성/보강 구분 · 자료 수가 많을수록 진한 색
-        </p>
-      </>
+      <KnowledgeGraphCanvas
+        activityFilter={activityFilter}
+        connectedIds={connectedIds}
+        graph={graph}
+        onNodeSelect={handleNodeSelect}
+        selectedNodeId={selectedNodeId}
+        weekFilter={weekFilter}
+      />
     );
   };
 
@@ -184,71 +139,28 @@ export const KnowledgeGraphPage = ({
           </div>
         ) : null}
 
-        <div className="mb-5 flex flex-wrap items-end gap-4">
-          <div className="relative min-w-[240px] flex-1">
-            <SearchInput
-              aria-label="노드 검색"
-              onChange={setSearchTerm}
-              placeholder="노드명을 검색하세요"
-              value={searchTerm}
-            />
-            {searchResults.length > 0 ? (
-              <ul
-                aria-label="노드 검색 결과"
-                className="absolute z-10 mt-1 w-full overflow-hidden rounded border border-stology-border-light bg-white shadow-sm"
-              >
-                {searchResults.map((node) => (
-                  <li key={node.id}>
-                    <button
-                      className="block w-full px-3 py-2 text-left text-[13px] leading-5 text-stology-text-dark transition hover:bg-stology-off-white"
-                      onClick={() => handleNodeSelect(node.id)}
-                      type="button"
-                    >
-                      {node.name}
-                      {!node.isActive ? (
-                        <span className="ml-2 text-caption text-stology-text-light">비활성</span>
-                      ) : null}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-
-          <Select
-            className="w-48"
-            label="필터"
-            onChange={(event) => setActivityFilter(event.target.value as ActivityFilter)}
-            value={activityFilter}
-          >
-            <option value="all">전체 노드 보기</option>
-            <option value="active">활성 노드만 보기</option>
-          </Select>
-
-          <Select
-            className="w-40"
-            label="주차별 필터"
-            onChange={(event) =>
-              setWeekFilter(event.target.value === 'all' ? 'all' : Number(event.target.value))
-            }
-            value={weekFilter}
-          >
-            <option value="all">전체 주차</option>
-            {availableWeeks.map((week) => (
-              <option key={week} value={week}>
-                {week}주차
-              </option>
-            ))}
-          </Select>
-        </div>
+        <KnowledgeGraphToolbar
+          activityFilter={activityFilter}
+          availableWeeks={availableWeeks}
+          graph={graph}
+          onActivityFilterChange={setActivityFilter}
+          onSearchSelect={handleNodeSelect}
+          onWeekFilterChange={setWeekFilter}
+          weekFilter={weekFilter}
+        />
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <div>{renderGraphContent()}</div>
-          <ConceptNodePanel
-            connectedNodes={connectedNodes}
+          <KnowledgeNodeInspector
+            graph={graph}
+            materials={studyId ? nodeMaterialsQuery.data : undefined}
+            materialsError={studyId ? nodeMaterialsQuery.isError : false}
+            materialsIsLoading={studyId ? nodeMaterialsQuery.isLoading : false}
             node={selectedNode}
-            onConnectedNodeSelect={handleNodeSelect}
             onMaterialOpen={onMaterialOpen}
+            onMaterialsRetry={studyId ? () => nodeMaterialsQuery.refetch() : undefined}
+            onNodeSelect={handleNodeSelect}
+            weekFilter={weekFilter}
           />
         </div>
       </div>

@@ -45,7 +45,12 @@ describe('WeeklyReportPage', () => {
   });
 
   it('완료된 주차의 리포트를 표시한다', () => {
-    render(<WeeklyReportPage availableWeeks={[4]} selectedWeek={4} />);
+    const report = getMockWeeklyReport(4);
+
+    expect(report).toBeDefined();
+    if (!report) throw new Error('4주차 목 리포트가 필요합니다.');
+
+    render(<WeeklyReportPage availableWeeks={[4]} report={report} selectedWeek={4} />);
 
     expect(screen.getByRole('heading', { level: 1, name: '4주차 리포트' })).toBeInTheDocument();
     expect(

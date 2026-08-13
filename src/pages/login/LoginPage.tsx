@@ -1,20 +1,18 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import stologyIcon from '@/shared/assets/stology-icon.png';
 import { useAuthStore } from '@/shared/stores/useAuthStore';
 
-import { InviteNoticeCard } from './components/InviteNoticeCard';
 import { KakaoSymbolIcon } from './components/KakaoSymbolIcon';
+
+const TEST_TOKEN =
+  'eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI0OTc2OTIyODY0Iiwicm9sZSI6IiIsInNvY2lhbF90eXBlIjoiS0FLQU8iLCJpYXQiOjE3ODY2MjEwMDIsImV4cCI6MTgxODE1NzAwMn0.cHbtGFGa_oumeu8cKtZtnvBwdAUpmOZEQJC0Gs7WBExHTxgkjmIkRsgj7Mbxgkjl';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const login = useAuthStore((state) => state.login);
   const redirectUrl = searchParams.get('redirect') || searchParams.get('redirect_url');
-  const inviteToken = searchParams.get('invite') || searchParams.get('token');
-
-  const hasInviteContext = Boolean(inviteToken || redirectUrl?.includes('/invite/'));
-  const extractedToken =
-    inviteToken || (redirectUrl ? (redirectUrl.match(/\/invite\/([^/?]+)/)?.[1] ?? null) : null);
 
   const handleKakaoLogin = () => {
     const kakaoAuthUrl = import.meta.env.VITE_KAKAO_AUTH_URL || '#';
@@ -35,42 +33,45 @@ export const LoginPage = () => {
     );
   };
 
+  const handleTestLogin = () => {
+    login(TEST_TOKEN);
+    navigate(getSafeRedirectPath(redirectUrl), { replace: true });
+  };
+
   return (
-    <main className="min-h-screen bg-stology-off-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Ambient background decoration */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="w-full max-w-md flex flex-col items-center text-center space-y-8 z-10">
-        {/* Brand Header */}
-        <div className="space-y-3">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-[#5B5CF6] tracking-tight font-sans">
-            Stology
+    <main className="flex min-h-screen items-center justify-center bg-stology-off-white p-6">
+      <div className="flex flex-col items-center text-center">
+        <div className="flex flex-col items-center gap-2.5 pb-8">
+          <img alt="" className="size-14" height="56" src={stologyIcon} width="56" />
+          <h1 className="text-[36px] font-bold leading-[54px] text-stology-deep-navy">
+            <span>St</span>
+            <span className="text-stology-electric-blue">o</span>
+            <span>logy</span>
           </h1>
-          <p className="text-lg md:text-xl font-medium text-stology-text-dark">
-            당신의 활동이 소중한 자산이 되도록
-          </p>
         </div>
 
-        {/* Kakao Social Login CTA */}
-        <div className="w-full space-y-3">
-          <button
-            type="button"
-            onClick={handleKakaoLogin}
-            className="w-full py-3.5 px-6 bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] text-[#191919] font-bold text-base rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3 cursor-pointer"
-          >
-            <KakaoSymbolIcon className="w-5 h-5 text-[#191919]" />
-            <span>카카오로 시작하기</span>
-          </button>
-        </div>
+        <p className="pb-8 text-base font-medium leading-6 text-stology-text-dark">
+          당신의 활동이 소중한 자산이 되도록
+        </p>
 
-        {/* Invite Link Context Guidance Card (Figma LGN001 Spec Callout 3) */}
-        {hasInviteContext ? <InviteNoticeCard token={extractedToken} /> : <InviteNoticeCard />}
+        <button
+          type="button"
+          onClick={handleKakaoLogin}
+          className="flex min-w-48 cursor-pointer items-center justify-center gap-2 rounded-[4.5px] bg-[#FEE500] px-6 py-3 text-sm font-semibold text-[#191919] transition-colors hover:bg-[#FADA0A]"
+        >
+          <KakaoSymbolIcon className="size-4 text-[#191919]" />
+          <span>카카오로 시작하기</span>
+        </button>
+
+        {/* 테스트 로그인 */}
+        <button
+          type="button"
+          onClick={handleTestLogin}
+          className="mt-4 text-xs font-medium text-stology-text-light underline transition-colors hover:text-stology-text-dark"
+        >
+          테스트 계정으로 시작하기
+        </button>
       </div>
-
-      <footer className="absolute bottom-6 text-xs text-stology-text-light">
-        © {new Date().getFullYear()} Stology. All rights reserved.
-      </footer>
     </main>
   );
 };

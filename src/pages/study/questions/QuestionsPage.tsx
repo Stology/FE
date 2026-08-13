@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PenLine, RotateCcw } from 'lucide-react';
 
-import { mockQuestionDetails, mockQuestions } from '@/shared/mocks/questions';
 import type { QuestionDetail, QuestionReply, QuestionSummary } from '@/shared/types/stology';
 import { Button, ConfirmDialog, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
@@ -9,28 +8,44 @@ import { QuestionDetailPanel } from './QuestionDetailPanel';
 import { QuestionFormModal, type QuestionFormValues } from './QuestionFormModal';
 import { QuestionListItem } from './QuestionListItem';
 import { QuestionPagination } from './QuestionPagination';
+import { stripQuestionImageTokens } from './model/question_mutation_content';
 
 interface QuestionsPageProps {
+  canMutate?: boolean;
   errorMessage?: string | null;
+  initialExpandedQuestionIds?: string[];
+  initialQuestionDetails?: Record<string, QuestionDetail>;
+  initialQuestions?: QuestionSummary[];
   isLoading?: boolean;
   isReadOnly?: boolean;
   onPageChange?: (page: number) => void;
-  onQuestionCreate?: (values: QuestionFormValues) => void;
-  onQuestionDelete?: (questionId: string) => void;
+  onQuestionCreate?: (values: QuestionFormValues) => Promise<void> | void;
+  onQuestionDelete?: (questionId: string) => Promise<void> | void;
   onQuestionSelect?: (questionId: string) => void;
-  onQuestionUpdate?: (questionId: string, values: QuestionFormValues) => void;
-  onReplyDelete?: (questionId: string, replyId: string) => void;
+  onQuestionUpdate?: (questionId: string, values: QuestionFormValues) => Promise<void> | void;
+  onReplyCreate?: (questionId: string, content: string, images: File[]) => Promise<void> | void;
+  onReplyDelete?: (questionId: string, replyId: string) => Promise<void> | void;
+  onReplyUpdate?: (questionId: string, replyId: string, content: string) => Promise<void> | void;
   onRetry?: () => void;
   page?: number;
   pageSize?: number;
+  questionDetailStates?: Record<
+    string,
+    { errorMessage?: string | null; isLoading: boolean; onRetry?: () => void }
+  >;
   questionDetails?: Record<string, QuestionDetail>;
   questions?: QuestionSummary[];
+  totalPages?: number;
 }
 
 const DEFAULT_PAGE_SIZE = 3;
 
 export const QuestionsPage = ({
+  canMutate = true,
   errorMessage,
+  initialExpandedQuestionIds = [],
+  initialQuestionDetails = {},
+  initialQuestions = [],
   isLoading = false,
   isReadOnly = false,
   onPageChange,
@@ -38,16 +53,21 @@ export const QuestionsPage = ({
   onQuestionDelete,
   onQuestionSelect,
   onQuestionUpdate,
+  onReplyCreate,
   onReplyDelete,
+  onReplyUpdate,
   onRetry,
   page,
   pageSize = DEFAULT_PAGE_SIZE,
+  questionDetailStates = {},
   questionDetails: controlledQuestionDetails,
   questions: controlledQuestions,
+  totalPages: controlledTotalPages,
 }: QuestionsPageProps) => {
+  const isMutationDisabled = isReadOnly || !canMutate;
   const validPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
-  const [internalQuestions, setInternalQuestions] = useState(mockQuestions);
-  const [internalQuestionDetails, setInternalQuestionDetails] = useState(mockQuestionDetails);
+  const [internalQuestions, setInternalQuestions] = useState(initialQuestions);
+  const [internalQuestionDetails, setInternalQuestionDetails] = useState(initialQuestionDetails);
   const [questionForm, setQuestionForm] = useState<
     { mode: 'create' } | { mode: 'edit'; questionId: string } | null
   >(null);
@@ -56,12 +76,15 @@ export const QuestionsPage = ({
     | { questionId: string; replyId: string; type: 'reply' }
     | null
   >(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const questions = controlledQuestions ?? internalQuestions;
   const questionDetails = controlledQuestionDetails ?? internalQuestionDetails;
-  const totalPages = Math.ceil(questions.length / validPageSize);
+  const totalPages = controlledTotalPages ?? Math.ceil(questions.length / validPageSize);
   const lastPage = Math.max(1, totalPages);
   const [internalPage, setInternalPage] = useState(1);
-  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(() => new Set());
+  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(
+    () => new Set(initialExpandedQuestionIds),
+  );
   const [repliesByQuestion, setRepliesByQuestion] = useState<Record<string, QuestionReply[]>>(() =>
     Object.fromEntries(
       Object.entries(questionDetails).map(([questionId, detail]) => [questionId, detail.replies]),
@@ -69,10 +92,10 @@ export const QuestionsPage = ({
   );
   const requestedPage = page ?? internalPage;
   const activePage = Math.min(Math.max(requestedPage, 1), lastPage);
-  const visibleQuestions = questions.slice(
-    (activePage - 1) * validPageSize,
-    activePage * validPageSize,
-  );
+  const visibleQuestions =
+    controlledTotalPages === undefined
+      ? questions.slice((activePage - 1) * validPageSize, activePage * validPageSize)
+      : questions;
 
   useEffect(() => {
     if (page !== undefined) return;
@@ -94,75 +117,97 @@ export const QuestionsPage = ({
     onQuestionSelect?.(questionId);
   };
 
-  const handleReplyCreate = (questionId: string, content: string) => {
-    setRepliesByQuestion((currentReplies) => ({
-      ...currentReplies,
-      [questionId]: [
-        ...(currentReplies[questionId] ?? []),
-        {
-          id: `${questionId}-reply-${crypto.randomUUID()}`,
-          authorName: '김스토',
-          content,
-          createdAt: new Date().toISOString().slice(0, 10),
-          isMine: true,
-        },
-      ],
-    }));
-  };
+  async function handleReplyCreate(questionId: string, content: string, images: File[]) {
+    await onReplyCreate?.(questionId, content, images);
 
-  const handleReplyUpdate = (questionId: string, replyId: string, content: string) => {
-    setRepliesByQuestion((currentReplies) => ({
-      ...currentReplies,
-      [questionId]: (currentReplies[questionId] ?? []).map((reply) =>
-        reply.id === replyId ? { ...reply, content } : reply,
-      ),
-    }));
-  };
-
-  const handleDeleteConfirm = () => {
-    if (!deleteTarget) return;
-
-    if (deleteTarget.type === 'reply') {
-      const { questionId, replyId } = deleteTarget;
+    if (controlledQuestionDetails === undefined) {
       setRepliesByQuestion((currentReplies) => ({
         ...currentReplies,
-        [questionId]: (currentReplies[questionId] ?? []).filter((reply) => reply.id !== replyId),
+        [questionId]: [
+          ...(currentReplies[questionId] ?? questionDetails[questionId]?.replies ?? []),
+          {
+            id: `${questionId}-reply-${crypto.randomUUID()}`,
+            authorName: '김스토',
+            content,
+            createdAt: new Date().toISOString().slice(0, 10),
+            isMine: true,
+          },
+        ],
       }));
-      onReplyDelete?.(questionId, replyId);
-      setDeleteTarget(null);
-      return;
     }
+  }
 
-    const { questionId } = deleteTarget;
-    if (controlledQuestions === undefined) {
-      setInternalQuestions((currentQuestions) =>
-        currentQuestions.filter((question) => question.id !== questionId),
-      );
-    }
+  async function handleReplyUpdate(questionId: string, replyId: string, content: string) {
+    await onReplyUpdate?.(questionId, replyId, content);
+
     if (controlledQuestionDetails === undefined) {
-      setInternalQuestionDetails((currentDetails) => {
-        const nextDetails = { ...currentDetails };
-        delete nextDetails[questionId];
-        return nextDetails;
-      });
+      setRepliesByQuestion((currentReplies) => ({
+        ...currentReplies,
+        [questionId]: (
+          currentReplies[questionId] ??
+          questionDetails[questionId]?.replies ??
+          []
+        ).map((reply) => (reply.id === replyId ? { ...reply, content } : reply)),
+      }));
     }
-    setRepliesByQuestion((currentReplies) => {
-      const nextReplies = { ...currentReplies };
-      delete nextReplies[questionId];
-      return nextReplies;
-    });
-    setExpandedQuestionIds((currentIds) => {
-      const nextIds = new Set(currentIds);
-      nextIds.delete(questionId);
-      return nextIds;
-    });
-    onQuestionDelete?.(questionId);
-    setDeleteTarget(null);
-  };
+  }
 
-  const handleQuestionSubmit = (values: QuestionFormValues) => {
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === 'reply') {
+        const { questionId, replyId } = deleteTarget;
+        await onReplyDelete?.(questionId, replyId);
+        if (controlledQuestionDetails === undefined) {
+          setRepliesByQuestion((currentReplies) => ({
+            ...currentReplies,
+            [questionId]: (currentReplies[questionId] ?? []).filter(
+              (reply) => reply.id !== replyId,
+            ),
+          }));
+        }
+        setDeleteTarget(null);
+        return;
+      }
+
+      const { questionId } = deleteTarget;
+      await onQuestionDelete?.(questionId);
+      if (controlledQuestions === undefined) {
+        setInternalQuestions((currentQuestions) =>
+          currentQuestions.filter((question) => question.id !== questionId),
+        );
+      }
+      if (controlledQuestionDetails === undefined) {
+        setInternalQuestionDetails((currentDetails) => {
+          const nextDetails = { ...currentDetails };
+          delete nextDetails[questionId];
+          return nextDetails;
+        });
+        setRepliesByQuestion((currentReplies) => {
+          const nextReplies = { ...currentReplies };
+          delete nextReplies[questionId];
+          return nextReplies;
+        });
+      }
+      setExpandedQuestionIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(questionId);
+        return nextIds;
+      });
+      setDeleteTarget(null);
+    } catch {
+      // The mutation layer reports the error. Keep the dialog open for retry.
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  async function handleQuestionSubmit(values: QuestionFormValues) {
     if (questionForm?.mode === 'edit') {
       const { questionId } = questionForm;
+      await onQuestionUpdate?.(questionId, values);
 
       if (controlledQuestions === undefined) {
         setInternalQuestions((currentQuestions) =>
@@ -188,9 +233,10 @@ export const QuestionsPage = ({
           },
         }));
       }
-      onQuestionUpdate?.(questionId, values);
       return;
     }
+
+    await onQuestionCreate?.(values);
 
     const questionId = `question-${crypto.randomUUID()}`;
     const createdAt = new Date().toISOString().slice(0, 10);
@@ -219,8 +265,7 @@ export const QuestionsPage = ({
     }
     setRepliesByQuestion((currentReplies) => ({ ...currentReplies, [questionId]: [] }));
     if (page === undefined) setInternalPage(1);
-    onQuestionCreate?.(values);
-  };
+  }
 
   const editingQuestion =
     questionForm?.mode === 'edit' ? questionDetails[questionForm.questionId] : undefined;
@@ -255,9 +300,8 @@ export const QuestionsPage = ({
 
     return (
       <>
-        <div className="mb-2.5 flex items-center justify-between gap-4">
-          <p className="text-[11px] leading-[16.5px] text-stology-text-light">최신순 고정 정렬</p>
-          {!isReadOnly ? (
+        <div className="mb-2.5 flex items-center justify-end gap-4">
+          {!isMutationDisabled ? (
             <Button
               className="bg-stology-deep-navy hover:bg-stology-royal-blue"
               leftIcon={<PenLine aria-hidden size={14} />}
@@ -279,19 +323,25 @@ export const QuestionsPage = ({
                   key={question.id}
                   onSelect={handleQuestionToggle}
                   question={question}
-                  replyCount={(repliesByQuestion[question.id] ?? []).length}
+                  replyCount={
+                    repliesByQuestion[question.id]?.length ??
+                    questionDetails[question.id]?.replies.length ??
+                    question.replyCount
+                  }
                 >
                   {questionDetails[question.id] ? (
                     <QuestionDetailPanel
                       detail={questionDetails[question.id]}
-                      isReadOnly={isReadOnly}
+                      isReadOnly={isMutationDisabled}
                       onQuestionDelete={() =>
                         setDeleteTarget({ questionId: question.id, type: 'question' })
                       }
                       onQuestionEdit={() =>
                         setQuestionForm({ mode: 'edit', questionId: question.id })
                       }
-                      onReplyCreate={(content) => handleReplyCreate(question.id, content)}
+                      onReplyCreate={(content, images) =>
+                        handleReplyCreate(question.id, content, images)
+                      }
                       onReplyDelete={(replyId) =>
                         setDeleteTarget({
                           questionId: question.id,
@@ -302,8 +352,28 @@ export const QuestionsPage = ({
                       onReplyUpdate={(replyId, content) =>
                         handleReplyUpdate(question.id, replyId, content)
                       }
-                      replies={repliesByQuestion[question.id] ?? []}
+                      replies={
+                        repliesByQuestion[question.id] ?? questionDetails[question.id].replies
+                      }
                     />
+                  ) : questionDetailStates[question.id]?.isLoading ? (
+                    <Loading className="min-h-36" label="질문 상세를 불러오는 중입니다" />
+                  ) : questionDetailStates[question.id]?.errorMessage ? (
+                    <div className="flex min-h-36 flex-col items-center justify-center gap-3 px-5 py-4">
+                      <ErrorMessage
+                        message={questionDetailStates[question.id].errorMessage ?? ''}
+                        title="질문 상세를 불러오지 못했습니다"
+                      />
+                      {questionDetailStates[question.id].onRetry ? (
+                        <Button
+                          onClick={questionDetailStates[question.id].onRetry}
+                          size="sm"
+                          variant="outline"
+                        >
+                          다시 시도
+                        </Button>
+                      ) : null}
+                    </div>
                   ) : null}
                 </QuestionListItem>
               ))}
@@ -333,7 +403,10 @@ export const QuestionsPage = ({
       <QuestionFormModal
         initialValues={
           editingQuestion
-            ? { content: editingQuestion.content, title: editingQuestion.title }
+            ? {
+                content: stripQuestionImageTokens(editingQuestion.content),
+                title: editingQuestion.title,
+              }
             : undefined
         }
         isOpen={questionForm !== null}
@@ -350,6 +423,7 @@ export const QuestionsPage = ({
             ? '질문과 연결된 답글이 함께 삭제되며 복구할 수 없습니다.'
             : '삭제한 답글은 복구할 수 없습니다.'
         }
+        isLoading={isDeleting}
         isOpen={deleteTarget !== null}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}

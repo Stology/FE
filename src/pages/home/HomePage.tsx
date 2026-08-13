@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { AppLayout, ErrorMessage, Loading } from '@/shared/ui';
+import { AppLayout, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
 import {
   CreateStudyCard,
@@ -11,6 +11,7 @@ import {
   StudyCard,
   TeamActivityPanel,
   QuestionDetailModal,
+  ReportDetailModal,
 } from './components';
 import { useMyStudies, useMyTodo, useTeamActivity } from './hooks';
 
@@ -19,6 +20,7 @@ export const HomePage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isQuestionDetailModalOpen, setIsQuestionDetailModalOpen] = useState(false);
   const [isMaterialDetailModalOpen, setIsMaterialDetailModalOpen] = useState(false);
+  const [isReportDetailModalOpen, setIsReportDetailModalOpen] = useState(false);
   const [createdStudyInfo, setCreatedStudyInfo] = useState<{
     name: string;
     inviteToken: string;
@@ -26,9 +28,22 @@ export const HomePage = () => {
 
   const { error: studiesError, isLoading: isStudiesLoading, studies } = useMyStudies();
   const { items: todoItems, removeItem: removeTodoItem } = useMyTodo();
-  const { items: activityItems, removeItem: removeActivityItem } = useTeamActivity(selectedStudy);
+  const {
+    items: activityItems,
+    removeItem: removeActivityItem,
+    isLoading: isActivityLoading,
+    error: activityError,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useTeamActivity(selectedStudy);
 
-  const isStudiesEmpty = !isStudiesLoading && !studiesError && studies.length === 0;
+  const activeStudies = useMemo(
+    () => studies.filter((study) => study.status === 'active'),
+    [studies],
+  );
+  const activeStudyIds = useMemo(() => activeStudies.map((study) => study.id), [activeStudies]);
+  const isStudiesEmpty = !isStudiesLoading && !studiesError && activeStudies.length === 0;
 
   return (
     <AppLayout>
@@ -49,12 +64,13 @@ export const HomePage = () => {
           ) : (
             <>
               {isStudiesEmpty && (
-                <div className="flex items-center justify-center rounded-[8px] border border-dashed border-stology-border-light bg-stology-off-white px-6 py-4 text-body text-stology-text-light">
-                  참여 중인 스터디가 없습니다.
-                </div>
+                <EmptyState
+                  className="min-h-0 w-full max-w-md px-6 py-4"
+                  title="참여 중인 스터디가 없습니다."
+                />
               )}
-              {studies.map((study) => (
-                <StudyCard key={study.id} study={study} />
+              {activeStudies.map((study) => (
+                <StudyCard key={study.id} study={study} hasNew={study.isNew} />
               ))}
               {/* + 스터디 생성 카드 */}
               <CreateStudyCard onClick={() => setIsCreateModalOpen(true)} />
@@ -73,15 +89,22 @@ export const HomePage = () => {
               setIsQuestionDetailModalOpen(true);
             } else if (item.section === '자료') {
               setIsMaterialDetailModalOpen(true);
+            } else if (item.section === '리포트') {
+              setIsReportDetailModalOpen(true);
             }
           }}
         />
         <TeamActivityPanel
           items={activityItems}
-          studies={studies}
+          studies={activeStudies}
           selectedStudy={selectedStudy}
           onStudyChange={setSelectedStudy}
           onRemove={removeActivityItem}
+          hasNextPage={hasNextPage}
+          fetchNextPage={fetchNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          isLoading={isActivityLoading}
+          error={activityError}
         />
       </section>
 
@@ -96,10 +119,17 @@ export const HomePage = () => {
       <QuestionDetailModal
         isOpen={isQuestionDetailModalOpen}
         onClose={() => setIsQuestionDetailModalOpen(false)}
+        activeStudyIds={activeStudyIds}
       />
       <MaterialDetailModal
         isOpen={isMaterialDetailModalOpen}
         onClose={() => setIsMaterialDetailModalOpen(false)}
+        activeStudyIds={activeStudyIds}
+      />
+      <ReportDetailModal
+        isOpen={isReportDetailModalOpen}
+        onClose={() => setIsReportDetailModalOpen(false)}
+        activeStudyIds={activeStudyIds}
       />
 
       {/* ── 초대 링크 모달 ───────────────────────────────────── */}
