@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { studyApi } from '@/shared/api/study';
 import type { UpdateStudyReq, UpdateReviewerCountReq } from '@/shared/api/study';
 
-export const useStudySettings = (studyId: string | undefined, isReviewerCountEnabled = false) => {
+export function useStudySettings(studyId: string | undefined, isReviewerCountEnabled = false) {
   const queryClient = useQueryClient();
   const parsedStudyId = studyId ? Number(studyId) : 0;
 
@@ -48,4 +48,4 @@ export const useStudySettings = (studyId: string | undefined, isReviewerCountEna
     getInvitationTokenMutation,
     reviewerCountQuery,
   };
-};
+}

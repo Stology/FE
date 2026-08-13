@@ -201,9 +201,42 @@ const HistoryControls = () => {
       <button onClick={() => navigate(1)} type="button">
         앞으로
       </button>
+      <button onClick={() => navigate('/studies/2/knowledge')} type="button">
+        스터디 2로 이동
+      </button>
     </>
   );
 };
+
+describe('StudyPage 종료 요약', () => {
+  it('studyId가 변경되면 이전 스터디의 종료 요약을 표시하지 않는다', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue(emptyGraphResponse);
+    vi.mocked(httpClient.patch).mockResolvedValue({
+      data: {
+        code: 'STUDY200_4',
+        errorDetail: null,
+        message: '',
+        result: { activeNodeCount: 8, questionCount: 3, uploadedMaterialCount: 5 },
+        success: true,
+      },
+    });
+    renderStudyRoute('/studies/1/knowledge');
+
+    fireEvent.click(await screen.findByRole('button', { name: '스터디 설정' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '스터디 종료' }));
+    fireEvent.click(screen.getByRole('button', { name: '예' }));
+    expect(
+      await screen.findByRole('heading', { name: '스터디가 종료되었습니다' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '스터디 2로 이동' }));
+
+    expect(await screen.findByText('종료된 스터디')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: '스터디가 종료되었습니다' }),
+    ).not.toBeInTheDocument();
+  });
+});
 
 describe('StudyPage route validation', () => {
   it('존재하지 않는 숫자형 studyId가 404를 반환하면 홈으로 이동한다', async () => {

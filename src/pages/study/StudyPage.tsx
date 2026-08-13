@@ -52,7 +52,10 @@ export const StudyPage = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [endedSummary, setEndedSummary] = useState<CloseStudyRes | null>(null);
+  const [endedStudy, setEndedStudy] = useState<{
+    studyId: string;
+    summary: CloseStudyRes;
+  } | null>(null);
 
   const { data: studyData, isLoading, error, refetch } = useStudyDetail(studyId);
 
@@ -117,8 +120,8 @@ export const StudyPage = () => {
     return <Navigate to="/" replace />;
   }
 
-  if (endedSummary) {
-    return <StudyEndedSummary onGoHome={() => navigate('/')} summary={endedSummary} />;
+  if (endedStudy?.studyId === studyId) {
+    return <StudyEndedSummary onGoHome={() => navigate('/')} summary={endedStudy.summary} />;
   }
 
   const study: Study = {
@@ -147,7 +150,10 @@ export const StudyPage = () => {
           actions={
             isLeader && study.status === 'active' ? (
               <div className="flex items-center gap-2">
-                <StudySettingsMenu onStudyClosed={setEndedSummary} studyId={study.id} />
+                <StudySettingsMenu
+                  onStudyClosed={(summary) => setEndedStudy({ studyId: study.id, summary })}
+                  studyId={study.id}
+                />
                 <Button
                   variant="outline"
                   size="sm"
