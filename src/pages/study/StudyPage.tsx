@@ -366,9 +366,8 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const reportStudyId = /^\d+$/.test(study.id) ? study.id : undefined;
   const requestedWeek = Number(searchParams.get('week'));
-  const initialWeek =
+  const selectedWeek =
     Number.isInteger(requestedWeek) && requestedWeek > 0 ? requestedWeek : undefined;
-  const [selectedWeek, setSelectedWeek] = useState<number | undefined>(initialWeek);
   const reportQuery = useWeeklyReport(reportStudyId, selectedWeek);
   const availableWeeks = useMemo(
     () =>
@@ -383,8 +382,7 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
     isAxiosError(reportQuery.error) && reportQuery.error.response?.status === 404;
 
   function handleWeekChange(week: number) {
-    setSelectedWeek(week);
-    setSearchParams({ week: String(week) }, { replace: true });
+    setSearchParams({ week: String(week) });
   }
 
   return (
@@ -452,6 +450,22 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
       ];
     }),
   );
+  const questions = useMemo(() => {
+    const listedQuestions = questionsQuery.data?.questions ?? [];
+    if (!initialQuestionId || listedQuestions.some(({ id }) => id === initialQuestionId)) {
+      return listedQuestions;
+    }
+
+    const deepLinkedQuestion = questionDetails[initialQuestionId];
+    return deepLinkedQuestion ? [deepLinkedQuestion, ...listedQuestions] : listedQuestions;
+  }, [initialQuestionId, questionDetails, questionsQuery.data?.questions]);
+
+  useEffect(() => {
+    const validQuestionId =
+      initialQuestionId && /^\d+$/.test(initialQuestionId) ? initialQuestionId : undefined;
+    setRequestedQuestionIds(validQuestionId ? [validQuestionId] : []);
+    setPage(1);
+  }, [initialQuestionId]);
 
   const handlePageChange = (nextPage: number) => {
     setRequestedQuestionIds([]);
@@ -542,7 +556,7 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
       pageSize={QUESTIONS_PAGE_SIZE}
       questionDetails={questionDetails}
       questionDetailStates={questionDetailStates}
-      questions={questionsQuery.data?.questions ?? []}
+      questions={questions}
       totalPages={questionsQuery.data?.totalPages ?? 0}
     />
   );
