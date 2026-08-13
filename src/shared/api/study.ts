@@ -28,6 +28,12 @@ export interface UpdateReviewerCountReq {
   reviewerCount: number;
 }
 
+export interface CloseStudyRes {
+  activeNodeCount: number;
+  questionCount: number;
+  uploadedMaterialCount: number;
+}
+
 export const studyApi = {
   deleteStudy: async (studyId: number): Promise<void> => {
     await httpClient.delete<ApiResponse<void>>(`/api/study/${studyId}`);
@@ -53,8 +59,9 @@ export const studyApi = {
     await httpClient.patch<ApiResponse<void>>(`/api/study/${studyId}/reviewer-count`, data);
   },
 
-  closeStudy: async (studyId: number): Promise<void> => {
-    await httpClient.patch<ApiResponse<void>>(`/api/study/${studyId}/close`);
+  closeStudy: async (studyId: number): Promise<CloseStudyRes> => {
+    const res = await httpClient.patch<ApiResponse<CloseStudyRes>>(`/api/study/${studyId}/close`);
+    return res.data.result;
   },
 
   getInvitationToken: async (studyId: number): Promise<string> => {

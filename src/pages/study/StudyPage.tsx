@@ -2,11 +2,11 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 
 import { useEffect, useMemo, useState } from 'react';
 import { isAxiosError } from 'axios';
-import { Settings } from 'lucide-react';
 
 import { useStudyDetail, useToast } from '@/shared/hooks';
 import { getMockStudyTabById, mockStudyTabs } from '@/shared/mocks/studies';
 import { studyApi } from '@/shared/api/study';
+import type { CloseStudyRes } from '@/shared/api/study';
 import type { Study } from '@/shared/types/stology';
 import {
   AppLayout,
@@ -20,7 +20,8 @@ import {
   PagePlaceholder,
   Tabs,
 } from '@/shared/ui';
-import { StudySettingsModal } from './components/StudySettingsModal';
+import { StudyEndedSummary } from './components/StudyEndedSummary';
+import { StudySettingsMenu } from './components/StudySettingsMenu';
 
 import { useKnowledgeGraph } from './knowledge/hooks';
 import { KnowledgeGraphPage } from './knowledge/KnowledgeGraphPage';
@@ -51,7 +52,10 @@ export const StudyPage = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [endedStudy, setEndedStudy] = useState<{
+    studyId: string;
+    summary: CloseStudyRes;
+  } | null>(null);
 
   const { data: studyData, isLoading, error, refetch } = useStudyDetail(studyId);
 
@@ -116,6 +120,10 @@ export const StudyPage = () => {
     return <Navigate to="/" replace />;
   }
 
+  if (endedStudy?.studyId === studyId) {
+    return <StudyEndedSummary onGoHome={() => navigate('/')} summary={endedStudy.summary} />;
+  }
+
   const study: Study = {
     id: String(studyData.studyId),
     name: studyData.name,
@@ -142,15 +150,10 @@ export const StudyPage = () => {
           actions={
             isLeader && study.status === 'active' ? (
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="flex items-center gap-1.5"
-                >
-                  <Settings className="w-4 h-4" />
-                  설정
-                </Button>
+                <StudySettingsMenu
+                  onStudyClosed={(summary) => setEndedStudy({ studyId: study.id, summary })}
+                  studyId={study.id}
+                />
                 <Button
                   variant="outline"
                   size="sm"
@@ -232,18 +235,6 @@ export const StudyPage = () => {
           code={meta.code}
           className="min-h-[calc(100vh-260px)]"
           title={meta.label}
-        />
-      )}
-
-      {isSettingsOpen && (
-        <StudySettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          studyId={study.id}
-          studyName={study.name}
-          startDate={studyData.startDate}
-          description={studyData.description}
-          reviewerCount={studyData.reviewerCount}
         />
       )}
     </AppLayout>
