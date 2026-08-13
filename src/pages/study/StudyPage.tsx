@@ -264,7 +264,7 @@ export const StudyPage = () => {
         title="스터디 삭제"
       >
         <div className="space-y-5 text-[13px] leading-6 text-stology-text-dark">
-          <p>스터디를 삭제 하시겠습니까?</p>
+          <p>스터디를 삭제하시겠습니까?</p>
           <p>스터디를 삭제하면 모든 자료와 활동 기록을 다시 확인할 수 없습니다.</p>
         </div>
       </Modal>

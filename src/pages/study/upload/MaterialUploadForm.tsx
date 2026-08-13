@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import type { MaterialDraft, UploadMode } from '@/shared/types/stology';
 import { Button, FileUploader, Input, Select, Textarea } from '@/shared/ui';
@@ -11,12 +12,20 @@ interface MaterialUploadFormProps {
   onSubmit?: (draft: MaterialDraft) => void | Promise<void>;
 }
 
-interface MaterialFormValues {
-  content: string;
-  description: string;
-  title: string;
-  week: number;
+function createMaterialFormSchema(latestWeek: number) {
+  return z.object({
+    content: z.string(),
+    description: z.string(),
+    title: z.string().trim().min(1, '자료 제목을 입력해 주세요.'),
+    week: z
+      .number({ invalid_type_error: '주차를 선택해 주세요.' })
+      .int('주차는 정수여야 합니다.')
+      .min(1, '1주차 이상을 선택해 주세요.')
+      .max(latestWeek, `현재 주차인 ${latestWeek}주차 이하를 선택해 주세요.`),
+  });
 }
+
+type MaterialFormValues = z.infer<ReturnType<typeof createMaterialFormSchema>>;
 
 const uploadModes: { id: UploadMode; label: string }[] = [
   { id: 'file', label: '파일 업로드 선택' },
@@ -45,9 +54,23 @@ export const MaterialUploadForm = ({
     handleSubmit,
     register,
     reset,
+    setError,
     setValue,
   } = useForm<MaterialFormValues>({
     defaultValues: { content: '', description: '', title: '', week: latestWeek },
+    resolver: (values) => {
+      const result = createMaterialFormSchema(latestWeek).safeParse(values);
+      if (result.success) return { values: result.data, errors: {} };
+
+      const fieldErrors: Record<string, { type: string; message: string }> = {};
+      result.error.issues.forEach((issue) => {
+        const path = issue.path[0] as string;
+        if (path && !fieldErrors[path]) {
+          fieldErrors[path] = { type: 'validation', message: issue.message };
+        }
+      });
+      return { values: {}, errors: fieldErrors };
+    },
   });
 
   useEffect(() => {
@@ -65,6 +88,11 @@ export const MaterialUploadForm = ({
   }
 
   async function submitDraft(values: MaterialFormValues) {
+    if (mode === 'text' && !values.content.trim()) {
+      setError('content', { type: 'validation', message: '자료 본문을 입력해 주세요.' });
+      return;
+    }
+
     if (mode === 'file' && files.length === 0) {
       setFileError('마크다운 파일을 선택해 주세요.');
       return;
@@ -148,8 +176,9 @@ export const MaterialUploadForm = ({
         <div className="flex flex-col gap-4">
           <Select
             disabled={isDisabled}
+            error={errors.week?.message}
             label="주차 선택"
-            {...register('week', { required: true, valueAsNumber: true })}
+            {...register('week', { valueAsNumber: true })}
           >
             {availableWeeks.map((week) => (
               <option key={week} value={week}>
@@ -163,7 +192,6 @@ export const MaterialUploadForm = ({
             label="자료 제목 *"
             placeholder="자료 제목을 입력하세요"
             {...register('title', {
-              required: '자료 제목을 입력해 주세요.',
               setValueAs: (value: string) => value.trimStart(),
             })}
           />

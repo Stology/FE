@@ -39,6 +39,23 @@ describe('MaterialUploadPage', () => {
     expect(screen.getAllByRole('option')).toHaveLength(3);
   });
 
+  it('유효하지 않은 주차이면 검증 메시지를 표시하고 제출하지 않는다', async () => {
+    const handleSubmit = vi.fn();
+
+    render(<MaterialUploadPage currentWeek={3} onSubmit={handleSubmit} />);
+    fireEvent.change(screen.getByRole('combobox', { name: '주차 선택' }), {
+      target: { value: '0' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '자료 제목 *' }), {
+      target: { value: 'JWT 정리' },
+    });
+    selectFile();
+    fireEvent.click(screen.getByRole('button', { name: '등록' }));
+
+    expect(await screen.findByText('주차를 선택해 주세요.')).toBeInTheDocument();
+    expect(handleSubmit).not.toHaveBeenCalled();
+  });
+
   it('제목 없이 등록하면 검증 메시지를 표시하고 제출하지 않는다', async () => {
     const handleSubmit = vi.fn();
 
