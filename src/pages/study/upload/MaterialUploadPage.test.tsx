@@ -30,30 +30,10 @@ describe('MaterialUploadPage', () => {
     expect(screen.getByText('추출 중')).toBeInTheDocument();
   });
 
-  it('현재 주차를 기본값으로 주차 선택 목록을 표시한다', () => {
-    render(<MaterialUploadPage currentWeek={3} />);
+  it('업로드 주차 선택을 표시하지 않는다', () => {
+    render(<MaterialUploadPage />);
 
-    const weekSelect = screen.getByRole('combobox', { name: '주차 선택' });
-
-    expect(weekSelect).toHaveValue('3');
-    expect(screen.getAllByRole('option')).toHaveLength(3);
-  });
-
-  it('유효하지 않은 주차이면 검증 메시지를 표시하고 제출하지 않는다', async () => {
-    const handleSubmit = vi.fn();
-
-    render(<MaterialUploadPage currentWeek={3} onSubmit={handleSubmit} />);
-    fireEvent.change(screen.getByRole('combobox', { name: '주차 선택' }), {
-      target: { value: '0' },
-    });
-    fireEvent.change(screen.getByRole('textbox', { name: '자료 제목 *' }), {
-      target: { value: 'JWT 정리' },
-    });
-    selectFile();
-    fireEvent.click(screen.getByRole('button', { name: '등록' }));
-
-    expect(await screen.findByText('주차를 선택해 주세요.')).toBeInTheDocument();
-    expect(handleSubmit).not.toHaveBeenCalled();
+    expect(screen.queryByRole('combobox', { name: '주차 선택' })).not.toBeInTheDocument();
   });
 
   it('제목 없이 등록하면 검증 메시지를 표시하고 제출하지 않는다', async () => {
@@ -83,10 +63,7 @@ describe('MaterialUploadPage', () => {
   it('파일 업로드로 등록하면 입력값을 전달하고 등록 안내를 표시한다', async () => {
     const handleSubmit = vi.fn();
 
-    render(<MaterialUploadPage currentWeek={3} onSubmit={handleSubmit} />);
-    fireEvent.change(screen.getByRole('combobox', { name: '주차 선택' }), {
-      target: { value: '2' },
-    });
+    render(<MaterialUploadPage onSubmit={handleSubmit} />);
     fireEvent.change(screen.getByRole('textbox', { name: '자료 제목 *' }), {
       target: { value: 'JWT 정리' },
     });
@@ -95,8 +72,9 @@ describe('MaterialUploadPage', () => {
 
     await waitFor(() => expect(handleSubmit).toHaveBeenCalledOnce());
     expect(handleSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ fileName: 'jwt.md', mode: 'file', title: 'JWT 정리', week: 2 }),
+      expect.objectContaining({ fileName: 'jwt.md', mode: 'file', title: 'JWT 정리' }),
     );
+    expect(handleSubmit.mock.calls[0]?.[0]).not.toHaveProperty('week');
     expect(
       screen.getByText(/‘JWT 정리’ 자료를 등록했습니다. AI 추출이 시작됩니다./),
     ).toBeInTheDocument();
