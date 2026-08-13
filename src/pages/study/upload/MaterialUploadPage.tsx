@@ -10,7 +10,6 @@ import { MaterialUploadForm } from './MaterialUploadForm';
 import { PendingMaterialItem } from './PendingMaterialItem';
 
 interface MaterialUploadPageProps {
-  currentWeek?: number;
   errorMessage?: string | null;
   isEditSubmitting?: boolean;
   isLoading?: boolean;
@@ -25,7 +24,6 @@ interface MaterialUploadPageProps {
 }
 
 export const MaterialUploadPage = ({
-  currentWeek,
   errorMessage,
   isEditSubmitting = false,
   isLoading = false,
@@ -117,11 +115,7 @@ export const MaterialUploadPage = ({
             </p>
           </div>
         ) : (
-          <MaterialUploadForm
-            currentWeek={currentWeek}
-            isSubmitting={isSubmitting}
-            onSubmit={handleSubmit}
-          />
+          <MaterialUploadForm isSubmitting={isSubmitting} onSubmit={handleSubmit} />
         )}
 
         {submittedTitle ? (

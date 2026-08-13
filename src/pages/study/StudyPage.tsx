@@ -313,7 +313,6 @@ const MaterialUploadTab = ({ study }: MaterialUploadTabProps) => {
 
   return (
     <MaterialUploadPage
-      currentWeek={study.currentWeek}
       errorMessage={materialsQuery.error ? '대기 중인 자료를 불러오지 못했습니다.' : null}
       isEditSubmitting={updateMaterial.isPending}
       isLoading={materialsQuery.isLoading}

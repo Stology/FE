@@ -1,31 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import type { MaterialDraft, UploadMode } from '@/shared/types/stology';
-import { Button, FileUploader, Input, Select, Textarea } from '@/shared/ui';
+import { Button, FileUploader, Input, Textarea } from '@/shared/ui';
 
 interface MaterialUploadFormProps {
-  currentWeek?: number;
   isDisabled?: boolean;
   isSubmitting?: boolean;
   onSubmit?: (draft: MaterialDraft) => void | Promise<void>;
 }
 
-function createMaterialFormSchema(latestWeek: number) {
-  return z.object({
-    content: z.string(),
-    description: z.string(),
-    title: z.string().trim().min(1, '자료 제목을 입력해 주세요.'),
-    week: z
-      .number({ invalid_type_error: '주차를 선택해 주세요.' })
-      .int('주차는 정수여야 합니다.')
-      .min(1, '1주차 이상을 선택해 주세요.')
-      .max(latestWeek, `현재 주차인 ${latestWeek}주차 이하를 선택해 주세요.`),
-  });
-}
+const materialFormSchema = z.object({
+  content: z.string(),
+  description: z.string(),
+  title: z.string().trim().min(1, '자료 제목을 입력해 주세요.'),
+});
 
-type MaterialFormValues = z.infer<ReturnType<typeof createMaterialFormSchema>>;
+type MaterialFormValues = z.infer<typeof materialFormSchema>;
 
 const uploadModes: { id: UploadMode; label: string }[] = [
   { id: 'file', label: '파일 업로드 선택' },
@@ -39,13 +31,10 @@ function modeButtonClass(isSelected: boolean) {
 }
 
 export const MaterialUploadForm = ({
-  currentWeek,
   isDisabled = false,
   isSubmitting = false,
   onSubmit,
 }: MaterialUploadFormProps) => {
-  const latestWeek = Math.max(1, currentWeek ?? 1);
-  const availableWeeks = Array.from({ length: latestWeek }, (_, index) => index + 1);
   const [mode, setMode] = useState<UploadMode>('file');
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -55,11 +44,10 @@ export const MaterialUploadForm = ({
     register,
     reset,
     setError,
-    setValue,
   } = useForm<MaterialFormValues>({
-    defaultValues: { content: '', description: '', title: '', week: latestWeek },
+    defaultValues: { content: '', description: '', title: '' },
     resolver: (values) => {
-      const result = createMaterialFormSchema(latestWeek).safeParse(values);
+      const result = materialFormSchema.safeParse(values);
       if (result.success) return { values: result.data, errors: {} };
 
       const fieldErrors: Record<string, { type: string; message: string }> = {};
@@ -72,10 +60,6 @@ export const MaterialUploadForm = ({
       return { values: {}, errors: fieldErrors };
     },
   });
-
-  useEffect(() => {
-    setValue('week', latestWeek);
-  }, [latestWeek, setValue]);
 
   function handleModeChange(nextMode: UploadMode) {
     setMode(nextMode);
@@ -106,10 +90,9 @@ export const MaterialUploadForm = ({
         fileName: mode === 'file' ? files[0]?.name : undefined,
         mode,
         title: values.title.trim(),
-        week: values.week,
       });
 
-      reset({ content: '', description: '', title: '', week: latestWeek });
+      reset({ content: '', description: '', title: '' });
       setFiles([]);
       setFileError(null);
     } catch {
@@ -174,18 +157,6 @@ export const MaterialUploadForm = ({
         </div>
 
         <div className="flex flex-col gap-4">
-          <Select
-            disabled={isDisabled}
-            error={errors.week?.message}
-            label="주차 선택"
-            {...register('week', { valueAsNumber: true })}
-          >
-            {availableWeeks.map((week) => (
-              <option key={week} value={week}>
-                {week}주차
-              </option>
-            ))}
-          </Select>
           <Input
             disabled={isDisabled}
             error={errors.title?.message}

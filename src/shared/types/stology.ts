@@ -88,7 +88,6 @@ export interface MaterialDraft {
   fileName?: string;
   mode: UploadMode;
   title: string;
-  week: number;
 }
 
 export interface Study {
