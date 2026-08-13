@@ -41,6 +41,7 @@ export const useInvite = (token?: string) => {
           id: String(data.studyId),
           name: data.name,
           currentWeek: 0,
+          isNew: false,
           memberCount: data.memberCount,
           members: [],
           startedAt: '',

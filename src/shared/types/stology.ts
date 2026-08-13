@@ -94,6 +94,7 @@ export interface Study {
   id: string;
   name: string;
   currentWeek: number;
+  isNew: boolean;
   memberCount: number;
   members: string[];
   startedAt: string;
