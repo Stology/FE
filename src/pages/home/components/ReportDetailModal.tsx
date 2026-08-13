@@ -55,11 +55,11 @@ export const ReportDetailModal = ({ isOpen, onClose }: ReportDetailModalProps) =
   const navigate = useNavigate();
   const { items, counts } = useReportTodos();
 
-  const handleActionClick = (item: ReportTodoItem) => {
+  function handleActionClick(item: ReportTodoItem) {
     onClose();
-    // 리포트 상세 페이지로 이동 (예시 라우팅: /studies/:studyId/knowledge)
-    navigate(`/studies/${encodeURIComponent(item.study.id)}/knowledge`);
-  };
+    const params = new URLSearchParams({ week: String(item.reportWeek) });
+    navigate(`/studies/${encodeURIComponent(item.study.id)}/reports?${params.toString()}`);
+  }
 
   return (
     <Modal

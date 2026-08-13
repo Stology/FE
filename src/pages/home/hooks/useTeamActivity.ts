@@ -3,6 +3,25 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { homeApi } from '@/shared/api/home';
 import { type TeamActivityItem } from '../mocks';
 
+function formatRelativeTime(occurredAt: string, now = new Date()) {
+  const occurredDate = new Date(occurredAt);
+  const elapsedMilliseconds = now.getTime() - occurredDate.getTime();
+
+  if (Number.isNaN(occurredDate.getTime())) return '-';
+  if (elapsedMilliseconds < 60_000) return '방금';
+
+  const elapsedMinutes = Math.floor(elapsedMilliseconds / 60_000);
+  if (elapsedMinutes < 60) return `${elapsedMinutes}분`;
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours}시간`;
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  if (elapsedDays < 7) return `${elapsedDays}일`;
+
+  return occurredDate.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
+}
+
 interface UseTeamActivityResult {
   items: TeamActivityItem[];
   isLoading: boolean;
@@ -37,10 +56,16 @@ export const useTeamActivity = (studyId?: string): UseTeamActivityResult => {
             id: `${act.studyId}-${act.targetId}-${act.activityType}-${act.occurredAt}`,
             type: act.activityType === 'NODE' ? '구조' : '답글',
             summary: act.event,
-            detail: act.activityType === 'NODE' ? '지식 구조 변경' : '답글이 등록되었습니다',
-            target: act.targetId.toString(), // Mocked as string, might need real target text from event
-            timeAgo: new Date(act.occurredAt).toLocaleDateString(), // ToDo: convert to time ago format
-            to: `/studies/${act.studyId}/${act.activityType === 'NODE' ? 'knowledge' : 'questions'}`,
+            detail:
+              act.activityType === 'NODE'
+                ? `${act.studyName} · 지식 구조 반영`
+                : `${act.studyName} · 질문 답글`,
+            target: act.activityType === 'NODE' ? '지식 구조' : `질문 #${act.targetId}`,
+            timeAgo: formatRelativeTime(act.occurredAt),
+            to:
+              act.activityType === 'NODE'
+                ? `/studies/${act.studyId}/knowledge`
+                : `/studies/${act.studyId}/questions?questionId=${act.targetId}`,
           }) as TeamActivityItem,
       ),
     );

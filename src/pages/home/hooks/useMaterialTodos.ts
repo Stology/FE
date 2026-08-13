@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { homeApi } from '@/shared/api/home';
 
-export type MaterialTodoStatus = '검토 필요';
-// '재업로드 필요' 상태는 API 미지원으로 제거
-export type MaterialTodoFilter = '전체' | '검토';
+export type MaterialTodoStatus = '검토 필요' | '재업로드 필요';
+export type MaterialTodoFilter = '전체' | '검토' | '재업로드 필요';
 
 export interface MaterialDetailModel {
   content: string;
@@ -49,7 +48,7 @@ export const useMaterialTodos = () => {
     const apiItems = materialsQuery.data?.materials ?? [];
 
     const mapped: MaterialTodoItem[] = apiItems.map((s) => {
-      const dateObj = new Date(s.createdAt);
+      const dateObj = new Date(s.uploadedDate);
       const isValidDate = !isNaN(dateObj.getTime());
       const formattedDate = isValidDate
         ? `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
@@ -57,10 +56,10 @@ export const useMaterialTodos = () => {
 
       return {
         id: String(s.studyMaterialId),
-        status: '검토 필요',
+        status: s.dataState === 'EXTRACTIONFAILED' ? '재업로드 필요' : '검토 필요',
         title: s.dataTitle,
-        study: { id: '', name: '-' }, // API 미지원 필드
-        week: '-', // API 미지원 필드
+        study: { id: String(s.studyId), name: s.studyName },
+        week: `${s.week}주차`,
         uploader: s.uploaderName,
         date: formattedDate,
         rawDate: isValidDate ? dateObj.getTime() : 0,
@@ -80,6 +79,7 @@ export const useMaterialTodos = () => {
     () => ({
       전체: items.length,
       검토: items.filter((item) => item.status === '검토 필요').length,
+      '재업로드 필요': items.filter((item) => item.status === '재업로드 필요').length,
     }),
     [items],
   );

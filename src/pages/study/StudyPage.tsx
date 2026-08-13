@@ -1,4 +1,4 @@
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useEffect, useMemo, useState } from 'react';
 import { isAxiosError } from 'axios';
@@ -363,8 +363,12 @@ interface WeeklyReportTabProps {
 }
 
 const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const reportStudyId = /^\d+$/.test(study.id) ? study.id : undefined;
-  const [selectedWeek, setSelectedWeek] = useState<number | undefined>();
+  const requestedWeek = Number(searchParams.get('week'));
+  const initialWeek =
+    Number.isInteger(requestedWeek) && requestedWeek > 0 ? requestedWeek : undefined;
+  const [selectedWeek, setSelectedWeek] = useState<number | undefined>(initialWeek);
   const reportQuery = useWeeklyReport(reportStudyId, selectedWeek);
   const availableWeeks = useMemo(
     () =>
@@ -377,6 +381,11 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
 
   const isReportNotFound =
     isAxiosError(reportQuery.error) && reportQuery.error.response?.status === 404;
+
+  function handleWeekChange(week: number) {
+    setSelectedWeek(week);
+    setSearchParams({ week: String(week) }, { replace: true });
+  }
 
   return (
     <WeeklyReportPage
@@ -391,7 +400,7 @@ const WeeklyReportTab = ({ study }: WeeklyReportTabProps) => {
       isLoading={reportQuery.isLoading || reportQuery.isFetching}
       isReadOnly={study.status === 'ended'}
       onRetry={reportStudyId ? () => reportQuery.refetch() : undefined}
-      onWeekChange={setSelectedWeek}
+      onWeekChange={handleWeekChange}
       report={reportQuery.data?.report}
       selectedWeek={selectedWeek}
     />
@@ -405,9 +414,13 @@ interface QuestionsTabProps {
 const QUESTIONS_PAGE_SIZE = 10;
 
 const QuestionsTab = ({ study }: QuestionsTabProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const questionsStudyId = /^\d+$/.test(study.id) ? study.id : undefined;
+  const initialQuestionId = searchParams.get('questionId');
   const [page, setPage] = useState(1);
-  const [requestedQuestionIds, setRequestedQuestionIds] = useState<string[]>([]);
+  const [requestedQuestionIds, setRequestedQuestionIds] = useState<string[]>(() =>
+    initialQuestionId && /^\d+$/.test(initialQuestionId) ? [initialQuestionId] : [],
+  );
   const questionsQuery = useQuestions(questionsStudyId, page - 1, QUESTIONS_PAGE_SIZE);
   const detailQueries = useQuestionDetails(questionsStudyId, requestedQuestionIds);
   const {
@@ -442,6 +455,7 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
 
   const handlePageChange = (nextPage: number) => {
     setRequestedQuestionIds([]);
+    setSearchParams({}, { replace: true });
     setPage(nextPage);
   };
 
@@ -512,8 +526,9 @@ const QuestionsTab = ({ study }: QuestionsTabProps) => {
           : '주소의 스터디 ID를 확인해 주세요.'
       }
       isLoading={questionsQuery.isLoading || questionsQuery.isFetching}
+      initialExpandedQuestionIds={initialQuestionId ? [initialQuestionId] : []}
       isReadOnly={study.status === 'ended' || questionsQuery.data?.studyEnded === true}
-      key={page}
+      key={`${page}-${initialQuestionId ?? ''}`}
       onPageChange={handlePageChange}
       onQuestionCreate={handleQuestionCreate}
       onQuestionDelete={handleQuestionDelete}

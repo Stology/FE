@@ -287,6 +287,21 @@ describe('StudyPage knowledge route', () => {
 });
 
 describe('StudyPage reports route', () => {
+  it('URL의 주차를 선택한 상태로 리포트에 진입한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((_url: string, config) =>
+      Promise.resolve(createWeeklyReportResponse(config?.params?.week ?? 3)),
+    );
+
+    renderStudyRoute('/studies/1/reports?week=2');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '2주차 리포트' }),
+    ).toBeInTheDocument();
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/report/all', {
+      params: { week: 2 },
+    });
+  });
+
   it('최신 리포트를 조회하고 선택한 주차를 다시 조회한다', async () => {
     vi.mocked(httpClient.get).mockImplementation((_url: string, config) =>
       Promise.resolve(createWeeklyReportResponse(config?.params?.week ?? 3)),
@@ -463,6 +478,23 @@ describe('StudyPage weekly records route', () => {
 });
 
 describe('StudyPage questions route', () => {
+  it('URL의 질문을 펼치고 상세 내용을 조회한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string) =>
+      Promise.resolve(
+        url.endsWith('/question/10') ? questionDetailResponse : createQuestionsResponse(0),
+      ),
+    );
+
+    renderStudyRoute('/studies/1/questions?questionId=10');
+
+    expect(await screen.findByText('Refresh Token은 어디에 저장하나요?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /1페이지 질문/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question/10');
+  });
+
   it('질문 목록을 서버 페이지 기준으로 조회하고 페이지를 전환한다', async () => {
     vi.mocked(httpClient.get).mockImplementation((url: string, config) =>
       Promise.resolve(

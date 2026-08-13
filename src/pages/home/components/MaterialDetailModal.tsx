@@ -20,6 +20,7 @@ export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProp
   const FILTERS: { label: MaterialTodoFilter; count: number }[] = [
     { label: '전체', count: counts['전체'] },
     { label: '검토', count: counts['검토'] },
+    { label: '재업로드 필요', count: counts['재업로드 필요'] },
   ];
 
   return (
@@ -70,7 +71,9 @@ export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProp
           {/* 리스트 본문 (스크롤) */}
           <div className="mt-3 flex max-h-[300px] flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
             {items.length > 0 ? (
-              items.map((item) => <Hom001DetailRow key={item.id} item={item} />)
+              items.map((item) => (
+                <Hom001DetailRow key={item.id} item={item} onNavigate={onClose} />
+              ))
             ) : (
               <div className="flex h-[42px] items-center rounded-[3px] border border-stology-border-light bg-stology-off-white px-[15px] text-[11px] text-stology-text-light">
                 빈 상태: 내용 없음
@@ -85,20 +88,20 @@ export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProp
 
 interface Hom001DetailRowProps {
   item: MaterialTodoItem;
+  onNavigate: () => void;
 }
 
-const Hom001DetailRow = ({ item }: Hom001DetailRowProps) => {
+const Hom001DetailRow = ({ item, onNavigate }: Hom001DetailRowProps) => {
   const navigate = useNavigate();
 
-  const handleAction = () => {
+  function handleAction() {
+    onNavigate();
     if (item.status === '검토 필요') {
-      // 검토 REV001
       navigate(`/studies/${encodeURIComponent(item.study.id)}/review`);
     } else {
-      // 빈 업로드 UPL001
       navigate(`/studies/${encodeURIComponent(item.study.id)}/upload`);
     }
-  };
+  }
 
   const isPermissionDenied = item.detail?.permission === 'none';
   const isReadOnly = !!item.detail?.isReadOnly;
