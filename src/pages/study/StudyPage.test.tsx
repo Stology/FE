@@ -119,8 +119,58 @@ function createHttpStatusError(status: number) {
 
 const createQueryClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
-const renderStudyRoute = (path: string) =>
-  render(
+function createStudyDetailResponse(path: string) {
+  const routeStudyId = path.split('/')[2];
+  const studyId = Number(routeStudyId);
+  const isEnded = studyId === 2;
+
+  return {
+    data: {
+      code: 'STUDY200_1',
+      errorDetail: null,
+      message: '스터디 정보를 조회했습니다.',
+      result: {
+        currentWeek: 3,
+        description: '테스트 스터디입니다.',
+        isActive: !isEnded,
+        isLeader: true,
+        members: ['김스토', '이영희'],
+        name: isEnded ? '종료된 스터디' : '백엔드 마스터',
+        reviewerCount: 2,
+        startDate: '2026-03-01',
+        studyId,
+      },
+      success: true,
+    },
+  };
+}
+
+const renderStudyRoute = (path: string) => {
+  const getMock = vi.mocked(httpClient.get);
+  const existingImplementation = getMock.getMockImplementation();
+  const detailRequestPattern = /^\/api\/study\/(?:NaN|\d+)$/;
+
+  getMock.mockImplementation((url: string, config) => {
+    if (detailRequestPattern.test(url)) {
+      const requestedStudyId = Number(url.split('/').at(-1));
+      if (requestedStudyId === 999) {
+        return Promise.reject(createHttpStatusError(404));
+      }
+
+      const detailPath = Number.isInteger(requestedStudyId)
+        ? `/studies/${requestedStudyId}/knowledge`
+        : path;
+      return Promise.resolve(createStudyDetailResponse(detailPath));
+    }
+
+    if (existingImplementation) {
+      return existingImplementation(url, config);
+    }
+
+    return Promise.reject(new Error(`Unexpected request: ${url}`));
+  });
+
+  return render(
     <QueryClientProvider client={createQueryClient()}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
@@ -131,6 +181,7 @@ const renderStudyRoute = (path: string) =>
       </MemoryRouter>
     </QueryClientProvider>,
   );
+};
 
 const LocationProbe = () => {
   const location = useLocation();
@@ -139,21 +190,21 @@ const LocationProbe = () => {
 };
 
 describe('StudyPage route validation', () => {
-  it('mock 목록에 없는 studyId는 홈으로 보내지 않고 API 오류로 표시한다', async () => {
-    renderStudyRoute('/studies/unknown-study/knowledge');
+  it('존재하지 않는 숫자형 studyId가 404를 반환하면 홈으로 이동한다', async () => {
+    renderStudyRoute('/studies/999/knowledge');
 
-    expect(screen.queryByText('홈 화면')).not.toBeInTheDocument();
-    expect(await screen.findByText('지식 구조를 불러오지 못했습니다')).toBeInTheDocument();
+    expect(await screen.findByText('홈 화면')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent('/');
   });
 
-  it('지원하지 않는 탭은 지식 구조로 이동한다', () => {
+  it('지원하지 않는 탭은 지식 구조로 이동한다', async () => {
     vi.mocked(httpClient.get).mockResolvedValue(emptyGraphResponse);
 
-    renderStudyRoute('/studies/spring-study/missing-tab');
+    renderStudyRoute('/studies/1/missing-tab');
 
-    expect(screen.getByRole('region', { name: '지식 구조' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: '지식 구조' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(
-      '/studies/spring-study/knowledge',
+      '/studies/1/knowledge',
     );
   });
 });
@@ -219,7 +270,7 @@ describe('StudyPage knowledge route', () => {
       });
     });
 
-    renderStudyRoute('/studies/spring-study/knowledge');
+    renderStudyRoute('/studies/1/knowledge');
 
     await waitFor(() => screen.getByRole('button', { name: 'JWT 노드' }));
     fireEvent.click(screen.getByRole('button', { name: 'JWT 노드' }));
@@ -228,9 +279,9 @@ describe('StudyPage knowledge route', () => {
     fireEvent.click(screen.getByRole('button', { name: '[원본 자료 보기]' }));
     fireEvent.click(screen.getByRole('button', { name: '다운로드' }));
 
-    expect(screen.getByRole('region', { name: '자료 업로드' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: '자료 업로드' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(
-      '/studies/spring-study/upload?materialId=7',
+      '/studies/1/upload?materialId=7',
     );
   });
 });
@@ -261,7 +312,7 @@ describe('StudyPage reports route', () => {
   });
 
   it('숫자가 아닌 스터디 ID에서는 리포트를 요청하지 않는다', async () => {
-    renderStudyRoute('/studies/spring-study/reports');
+    renderStudyRoute('/studies/invalid-study/reports');
 
     expect(await screen.findByText('주소의 스터디 ID를 확인해 주세요.')).toBeInTheDocument();
     expect(
@@ -323,18 +374,20 @@ describe('StudyPage reports route', () => {
     ).toBeInTheDocument();
   });
 
-  it('종료된 스터디의 리포트를 읽기 전용으로 표시한다', () => {
-    renderStudyRoute('/studies/ended-study/reports');
+  it('종료된 스터디의 리포트를 읽기 전용으로 표시한다', async () => {
+    renderStudyRoute('/studies/2/reports');
 
     expect(
-      screen.getByText('종료된 스터디입니다. 주차별 리포트를 읽기 전용으로 확인할 수 있습니다.'),
+      await screen.findByText(
+        '종료된 스터디입니다. 주차별 리포트를 읽기 전용으로 확인할 수 있습니다.',
+      ),
     ).toBeInTheDocument();
   });
 });
 
 describe('StudyPage weekly records route', () => {
   it('does not request weekly records for a non-numeric study ID', async () => {
-    renderStudyRoute('/studies/spring-study/records');
+    renderStudyRoute('/studies/invalid-study/records');
 
     expect(await screen.findByText('유효하지 않은 스터디 ID입니다.')).toBeInTheDocument();
     expect(
@@ -390,7 +443,7 @@ describe('StudyPage weekly records route', () => {
     const nodeButton = await screen.findByRole('button', { name: /JWT/ });
 
     expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/active-nodes', {
-      params: { week: 1 },
+      params: { week: 3 },
     });
 
     fireEvent.click(nodeButton);
@@ -475,7 +528,7 @@ describe('StudyPage questions route', () => {
   });
 
   it('숫자가 아닌 스터디 ID에서는 질문을 요청하지 않는다', async () => {
-    renderStudyRoute('/studies/spring-study/questions');
+    renderStudyRoute('/studies/invalid-study/questions');
 
     expect(await screen.findByText('주소의 스터디 ID를 확인해 주세요.')).toBeInTheDocument();
     expect(
