@@ -238,6 +238,32 @@ describe('StudyPage 종료 요약', () => {
   });
 });
 
+describe('StudyPage 스터디 삭제', () => {
+  it('삭제 버튼을 누르면 확인 모달을 열고 확인 후 스터디를 삭제한다', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue(emptyGraphResponse);
+    vi.mocked(httpClient.delete).mockResolvedValue({
+      data: {
+        code: 'STUDY200_3',
+        errorDetail: null,
+        message: '스터디를 삭제했습니다.',
+        result: null,
+        success: true,
+      },
+    });
+    renderStudyRoute('/studies/1/knowledge');
+
+    fireEvent.click(await screen.findByRole('button', { name: '스터디 삭제' }));
+
+    expect(screen.getByRole('dialog', { name: '스터디 삭제' })).toBeInTheDocument();
+    expect(httpClient.delete).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '예' }));
+
+    await waitFor(() => expect(httpClient.delete).toHaveBeenCalledWith('/api/study/1'));
+    expect(await screen.findByText('홈 화면')).toBeInTheDocument();
+  });
+});
+
 describe('StudyPage route validation', () => {
   it('존재하지 않는 숫자형 studyId가 404를 반환하면 홈으로 이동한다', async () => {
     renderStudyRoute('/studies/999/knowledge');

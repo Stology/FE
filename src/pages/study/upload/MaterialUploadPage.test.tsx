@@ -11,12 +11,12 @@ import { MaterialUploadPage } from './MaterialUploadPage';
 
 afterEach(cleanup);
 
-const selectFile = (fileName = 'jwt.md') => {
+function selectFile(fileName = 'jwt.md') {
   const input = screen.getByLabelText(/드롭존 \/ 파일 선택/);
   const file = new File(['# JWT'], fileName, { type: 'text/markdown' });
 
   fireEvent.change(input, { target: { files: [file] } });
-};
+}
 
 describe('MaterialUploadPage', () => {
   it('대기 중인 자료의 목록 정보를 표시한다', () => {
@@ -30,10 +30,30 @@ describe('MaterialUploadPage', () => {
     expect(screen.getByText('추출 중')).toBeInTheDocument();
   });
 
-  it('현재 진행 주차 귀속 안내를 표시한다', () => {
+  it('현재 주차를 기본값으로 주차 선택 목록을 표시한다', () => {
     render(<MaterialUploadPage currentWeek={3} />);
 
-    expect(screen.getByText('3주차에 자동 귀속됩니다')).toBeInTheDocument();
+    const weekSelect = screen.getByRole('combobox', { name: '주차 선택' });
+
+    expect(weekSelect).toHaveValue('3');
+    expect(screen.getAllByRole('option')).toHaveLength(3);
+  });
+
+  it('유효하지 않은 주차이면 검증 메시지를 표시하고 제출하지 않는다', async () => {
+    const handleSubmit = vi.fn();
+
+    render(<MaterialUploadPage currentWeek={3} onSubmit={handleSubmit} />);
+    fireEvent.change(screen.getByRole('combobox', { name: '주차 선택' }), {
+      target: { value: '0' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: '자료 제목 *' }), {
+      target: { value: 'JWT 정리' },
+    });
+    selectFile();
+    fireEvent.click(screen.getByRole('button', { name: '등록' }));
+
+    expect(await screen.findByText('주차를 선택해 주세요.')).toBeInTheDocument();
+    expect(handleSubmit).not.toHaveBeenCalled();
   });
 
   it('제목 없이 등록하면 검증 메시지를 표시하고 제출하지 않는다', async () => {
@@ -63,7 +83,10 @@ describe('MaterialUploadPage', () => {
   it('파일 업로드로 등록하면 입력값을 전달하고 등록 안내를 표시한다', async () => {
     const handleSubmit = vi.fn();
 
-    render(<MaterialUploadPage onSubmit={handleSubmit} />);
+    render(<MaterialUploadPage currentWeek={3} onSubmit={handleSubmit} />);
+    fireEvent.change(screen.getByRole('combobox', { name: '주차 선택' }), {
+      target: { value: '2' },
+    });
     fireEvent.change(screen.getByRole('textbox', { name: '자료 제목 *' }), {
       target: { value: 'JWT 정리' },
     });
@@ -72,7 +95,7 @@ describe('MaterialUploadPage', () => {
 
     await waitFor(() => expect(handleSubmit).toHaveBeenCalledOnce());
     expect(handleSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ fileName: 'jwt.md', mode: 'file', title: 'JWT 정리' }),
+      expect.objectContaining({ fileName: 'jwt.md', mode: 'file', title: 'JWT 정리', week: 2 }),
     );
     expect(
       screen.getByText(/‘JWT 정리’ 자료를 등록했습니다. AI 추출이 시작됩니다./),
@@ -167,14 +190,14 @@ describe('MaterialUploadPage', () => {
     expect(screen.queryByRole('button', { name: '등록' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '자료 수정' })).not.toBeInTheDocument();
     expect(
-      screen.getByText('종료된 스터디입니다. 자료를 등록하거나 수정할 수 없습니다.'),
+      screen.getByText('종료된 스터디에서는 자료 업로드와 검토가 불가능합니다.'),
     ).toBeInTheDocument();
   });
 
   it('자료가 없으면 빈 상태를 표시한다', () => {
     render(<MaterialUploadPage materials={[]} />);
 
-    expect(screen.getByText('대기 중인 자료가 없습니다')).toBeInTheDocument();
+    expect(screen.getByText('검토 대기 중인 자료가 없습니다.')).toBeInTheDocument();
   });
 
   it('오류가 있으면 오류와 다시 시도를 표시한다', () => {

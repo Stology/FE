@@ -15,7 +15,7 @@ export interface ReportTodoItem {
   rawDate: number;
 }
 
-export const useReportTodos = () => {
+export function useReportTodos(activeStudyIds: readonly string[]) {
   const reportsQuery = useQuery({
     queryKey: ['home', 'reports'],
     queryFn: ({ signal }) => homeApi.getReports(undefined, signal),
@@ -25,7 +25,10 @@ export const useReportTodos = () => {
   const error = reportsQuery.error;
 
   const items = useMemo(() => {
-    const apiItems = reportsQuery.data?.reports ?? [];
+    const activeStudyIdSet = new Set(activeStudyIds);
+    const apiItems = (reportsQuery.data?.reports ?? []).filter((report) =>
+      activeStudyIdSet.has(String(report.studyId)),
+    );
 
     const mapped: ReportTodoItem[] = apiItems.map((r) => {
       const dateObj = new Date(r.createdAt);
@@ -54,7 +57,7 @@ export const useReportTodos = () => {
       if (a.status === '생성 전' && b.status === '생성 완료') return 1;
       return b.rawDate - a.rawDate;
     });
-  }, [reportsQuery.data]);
+  }, [activeStudyIds, reportsQuery.data]);
 
   const counts = useMemo(
     () => ({
@@ -75,4 +78,4 @@ export const useReportTodos = () => {
     error,
     refetch,
   };
-};
+}

@@ -10,7 +10,7 @@ export function useStudySettings(studyId: string | undefined, isReviewerCountEna
     mutationFn: (data: UpdateStudyReq) => studyApi.updateStudy(parsedStudyId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['study', studyId] });
-      void queryClient.invalidateQueries({ queryKey: ['studies'] });
+      void queryClient.invalidateQueries({ queryKey: ['myStudies'] });
     },
   });
 
@@ -33,7 +33,7 @@ export function useStudySettings(studyId: string | undefined, isReviewerCountEna
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['study', studyId] }),
-        queryClient.invalidateQueries({ queryKey: ['studies'] }),
+        queryClient.invalidateQueries({ queryKey: ['myStudies'] }),
       ]),
   });
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { AppLayout, EmptyState, ErrorMessage, Loading } from '@/shared/ui';
 
@@ -38,7 +38,11 @@ export const HomePage = () => {
     isFetchingNextPage,
   } = useTeamActivity(selectedStudy);
 
-  const activeStudies = studies.filter((study) => study.status === 'active');
+  const activeStudies = useMemo(
+    () => studies.filter((study) => study.status === 'active'),
+    [studies],
+  );
+  const activeStudyIds = useMemo(() => activeStudies.map((study) => study.id), [activeStudies]);
   const isStudiesEmpty = !isStudiesLoading && !studiesError && activeStudies.length === 0;
 
   return (
@@ -115,14 +119,17 @@ export const HomePage = () => {
       <QuestionDetailModal
         isOpen={isQuestionDetailModalOpen}
         onClose={() => setIsQuestionDetailModalOpen(false)}
+        activeStudyIds={activeStudyIds}
       />
       <MaterialDetailModal
         isOpen={isMaterialDetailModalOpen}
         onClose={() => setIsMaterialDetailModalOpen(false)}
+        activeStudyIds={activeStudyIds}
       />
       <ReportDetailModal
         isOpen={isReportDetailModalOpen}
         onClose={() => setIsReportDetailModalOpen(false)}
+        activeStudyIds={activeStudyIds}
       />
 
       {/* ── 초대 링크 모달 ───────────────────────────────────── */}

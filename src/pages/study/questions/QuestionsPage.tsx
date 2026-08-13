@@ -300,8 +300,7 @@ export const QuestionsPage = ({
 
     return (
       <>
-        <div className="mb-2.5 flex items-center justify-between gap-4">
-          <p className="text-[11px] leading-[16.5px] text-stology-text-light">최신순 고정 정렬</p>
+        <div className="mb-2.5 flex items-center justify-end gap-4">
           {!isMutationDisabled ? (
             <Button
               className="bg-stology-deep-navy hover:bg-stology-royal-blue"

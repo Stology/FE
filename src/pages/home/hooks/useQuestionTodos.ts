@@ -11,6 +11,7 @@ export interface QuestionTodoItem {
   status: QuestionTodoStatus;
   title: string;
   study: string;
+  studyId: string;
   author: string;
   createdAt: string;
   rawDate: number;
@@ -34,7 +35,7 @@ function buildQuestionPath(studyId: number, questionId: number) {
   return `/studies/${studyId}/questions?${params.toString()}`;
 }
 
-export const useQuestionTodos = () => {
+export function useQuestionTodos(activeStudyIds: readonly string[]) {
   const [filter, setFilter] = useState<'전체' | '새 질문' | '새 답글'>('전체');
   const { readItemIds, markAsRead } = useHomeTodoStore();
 
@@ -52,8 +53,13 @@ export const useQuestionTodos = () => {
   const error = questionsQuery.error ?? answersQuery.error;
 
   const items = useMemo(() => {
-    const qItems = questionsQuery.data?.questions ?? [];
-    const aItems = answersQuery.data?.answers ?? [];
+    const activeStudyIdSet = new Set(activeStudyIds);
+    const qItems = (questionsQuery.data?.questions ?? []).filter((question) =>
+      activeStudyIdSet.has(String(question.studyId)),
+    );
+    const aItems = (answersQuery.data?.answers ?? []).filter((answer) =>
+      activeStudyIdSet.has(String(answer.studyId)),
+    );
 
     const mappedQuestions: QuestionTodoItem[] = qItems.map((q) => {
       const id = `q-${q.questionId}`;
@@ -63,6 +69,7 @@ export const useQuestionTodos = () => {
         status: isRead ? '읽음' : '새 질문',
         title: q.questionTitle,
         study: q.studyName,
+        studyId: String(q.studyId),
         author: q.writerName,
         createdAt: formatDateTime(q.createdAt),
         rawDate: new Date(q.createdAt).getTime(),
@@ -80,6 +87,7 @@ export const useQuestionTodos = () => {
         status: isRead ? '읽음' : '새 답글',
         title: a.questionTitle,
         study: a.studyName,
+        studyId: String(a.studyId),
         author: a.writerName,
         createdAt: formatDateTime(a.createdAt),
         rawDate: new Date(a.createdAt).getTime(),
@@ -91,7 +99,7 @@ export const useQuestionTodos = () => {
 
     // 원시 타임스탬프 기준 최신순 정렬
     return [...mappedQuestions, ...mappedAnswers].sort((a, b) => b.rawDate - a.rawDate);
-  }, [questionsQuery.data, answersQuery.data, readItemIds]);
+  }, [activeStudyIds, questionsQuery.data, answersQuery.data, readItemIds]);
 
   const filteredItems = useMemo(() => {
     if (filter === '전체') return items;
@@ -122,4 +130,4 @@ export const useQuestionTodos = () => {
     error,
     refetch,
   };
-};
+}

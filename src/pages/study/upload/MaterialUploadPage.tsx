@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LockKeyhole, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 import { mockMaterials } from '@/shared/mocks/materials';
 import type { Material, MaterialDraft } from '@/shared/types/stology';
@@ -41,18 +41,18 @@ export const MaterialUploadPage = ({
   const [submittedTitle, setSubmittedTitle] = useState<string | null>(null);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
 
-  const handleSubmit = async (draft: MaterialDraft) => {
+  async function handleSubmit(draft: MaterialDraft) {
     await onSubmit?.(draft);
     setSubmittedTitle(draft.title);
-  };
+  }
 
-  const handleEditSubmit = async (payload: MaterialEditPayload) => {
+  async function handleEditSubmit(payload: MaterialEditPayload) {
     if (!editingMaterial) return;
     await onMaterialEdit?.(editingMaterial, payload);
     setEditingMaterial(null);
-  };
+  }
 
-  const renderPendingContent = () => {
+  function renderPendingContent() {
     if (isLoading) {
       return (
         <div aria-live="polite" role="status">
@@ -81,13 +81,7 @@ export const MaterialUploadPage = ({
     }
 
     if (materials.length === 0) {
-      return (
-        <EmptyState
-          className="min-h-40"
-          description="자료를 등록하면 AI 추출이 시작됩니다."
-          title="대기 중인 자료가 없습니다"
-        />
-      );
+      return <EmptyState className="min-h-40" title="검토 대기 중인 자료가 없습니다." />;
     }
 
     return (
@@ -104,7 +98,7 @@ export const MaterialUploadPage = ({
         ))}
       </ul>
     );
-  };
+  }
 
   return (
     <section
@@ -112,15 +106,14 @@ export const MaterialUploadPage = ({
       aria-label="자료 업로드"
       className="min-h-[520px] rounded-b-lg border border-stology-border-light bg-white px-4 py-6 sm:px-6 lg:px-10 lg:pb-10 lg:pt-10"
     >
-      <div className="w-full max-w-[1120px] space-y-6">
+      <div className="w-full space-y-5">
         {isReadOnly ? (
           <div
-            className="flex items-start gap-2.5 border-y border-stology-border-light bg-stology-off-white px-4 py-3 text-stology-text-light"
+            className="flex min-h-[86px] items-center justify-center rounded-lg border border-stology-border-light bg-stology-off-white px-4 py-5 text-center text-stology-text-dark"
             role="status"
           >
-            <LockKeyhole aria-hidden className="mt-0.5 size-4 shrink-0" />
-            <p className="text-[13px] leading-5">
-              종료된 스터디입니다. 자료를 등록하거나 수정할 수 없습니다.
+            <p className="text-[14px] font-semibold leading-5">
+              종료된 스터디에서는 자료 업로드와 검토가 불가능합니다.
             </p>
           </div>
         ) : (
@@ -141,8 +134,8 @@ export const MaterialUploadPage = ({
           </p>
         ) : null}
 
-        <div className="rounded-lg border border-stology-border-light bg-white p-6">
-          <h3 className="mb-4 text-heading-2 text-stology-text-dark">대기 중인 자료</h3>
+        <div className="min-h-[300px] rounded-lg border border-stology-border-light bg-white p-6">
+          <h3 className="mb-4 text-heading-2 text-stology-text-dark">등록된 자료</h3>
           {renderPendingContent()}
         </div>
       </div>

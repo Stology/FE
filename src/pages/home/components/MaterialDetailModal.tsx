@@ -12,10 +12,15 @@ import {
 interface MaterialDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
+  activeStudyIds: readonly string[];
 }
 
-export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProps) => {
-  const { filter, setFilter, items, counts } = useMaterialTodos();
+export const MaterialDetailModal = ({
+  activeStudyIds,
+  isOpen,
+  onClose,
+}: MaterialDetailModalProps) => {
+  const { filter, setFilter, items, counts } = useMaterialTodos(activeStudyIds);
 
   const FILTERS: { label: MaterialTodoFilter; count: number }[] = [
     { label: '전체', count: counts['전체'] },
@@ -44,7 +49,7 @@ export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProp
                 aria-pressed={isActive}
                 onClick={() => setFilter(label)}
                 className={cn(
-                  'flex h-[38px] w-[150px] items-center justify-center whitespace-pre-wrap rounded-[19px] border text-[12px] font-bold transition-colors',
+                  'flex h-[38px] w-[150px] items-center justify-center whitespace-pre-wrap rounded-[13px] border text-[12px] font-bold transition-colors',
                   isActive
                     ? 'border-stology-text-dark bg-stology-text-dark text-white'
                     : 'border-stology-border-light bg-white text-stology-text-dark hover:bg-stology-off-white',
@@ -70,15 +75,9 @@ export const MaterialDetailModal = ({ isOpen, onClose }: MaterialDetailModalProp
 
           {/* 리스트 본문 (스크롤) */}
           <div className="mt-3 flex max-h-[300px] flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
-            {items.length > 0 ? (
-              items.map((item) => (
-                <Hom001DetailRow key={item.id} item={item} onNavigate={onClose} />
-              ))
-            ) : (
-              <div className="flex h-[42px] items-center rounded-[3px] border border-stology-border-light bg-stology-off-white px-[15px] text-[11px] text-stology-text-light">
-                빈 상태: 내용 없음
-              </div>
-            )}
+            {items.map((item) => (
+              <Hom001DetailRow key={item.id} item={item} onNavigate={onClose} />
+            ))}
           </div>
         </div>
       </div>

@@ -151,14 +151,9 @@ export const TeamActivityPanel = ({
         <StudyFilter studies={studies} selected={selectedStudy} onChange={onStudyChange} />
       </div>
 
-      {/* 정책 안내 */}
-      <p className="mt-3 rounded-[3px] border border-dashed border-stology-border-light bg-stology-off-white px-3 py-2 text-[11px] text-stology-text-light">
-        전체 스터디 필터 · 최신순 단일 세로 스크롤
-      </p>
-
       {/* 필드 헤더 */}
       <div
-        className="mt-3 grid items-center gap-3 rounded-[2px] border border-stology-border-light bg-stology-off-white px-3 py-1.5 text-[10px] font-bold text-stology-text-light"
+        className="mt-4 grid items-center gap-3 rounded-[2px] border border-stology-border-light bg-stology-off-white px-3 py-1.5 text-[10px] font-bold text-stology-text-light"
         style={{ gridTemplateColumns: '48px 1fr 92px 42px 20px' }}
       >
         <span>유형</span>
