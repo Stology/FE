@@ -4,7 +4,7 @@ import '@testing-library/jest-dom/vitest';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { httpClient } from '@/shared/api/http_client';
@@ -178,6 +178,7 @@ const renderStudyRoute = (path: string) => {
           <Route element={<StudyPage />} path="/studies/:studyId/:tab" />
         </Routes>
         <LocationProbe />
+        <HistoryControls />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -187,6 +188,21 @@ const LocationProbe = () => {
   const location = useLocation();
 
   return <output aria-label="현재 경로">{`${location.pathname}${location.search}`}</output>;
+};
+
+const HistoryControls = () => {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <button onClick={() => navigate(-1)} type="button">
+        뒤로
+      </button>
+      <button onClick={() => navigate(1)} type="button">
+        앞으로
+      </button>
+    </>
+  );
 };
 
 describe('StudyPage route validation', () => {
@@ -287,6 +303,42 @@ describe('StudyPage knowledge route', () => {
 });
 
 describe('StudyPage reports route', () => {
+  it('URL의 주차를 선택한 상태로 리포트에 진입한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((_url: string, config) =>
+      Promise.resolve(createWeeklyReportResponse(config?.params?.week ?? 3)),
+    );
+
+    renderStudyRoute('/studies/1/reports?week=2');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '2주차 리포트' }),
+    ).toBeInTheDocument();
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/report/all', {
+      params: { week: 2 },
+    });
+  });
+
+  it('브라우저 탐색으로 URL의 주차가 바뀌면 선택 주차를 동기화한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((_url: string, config) =>
+      Promise.resolve(createWeeklyReportResponse(config?.params?.week ?? 3)),
+    );
+
+    renderStudyRoute('/studies/1/reports?week=2');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '2주차 리포트' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '3주차' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '3주차 리포트' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '뒤로' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '2주차 리포트' }),
+    ).toBeInTheDocument();
+  });
+
   it('최신 리포트를 조회하고 선택한 주차를 다시 조회한다', async () => {
     vi.mocked(httpClient.get).mockImplementation((_url: string, config) =>
       Promise.resolve(createWeeklyReportResponse(config?.params?.week ?? 3)),
@@ -463,6 +515,51 @@ describe('StudyPage weekly records route', () => {
 });
 
 describe('StudyPage questions route', () => {
+  it('URL의 질문을 펼치고 상세 내용을 조회한다', async () => {
+    vi.mocked(httpClient.get).mockImplementation((url: string) =>
+      Promise.resolve(
+        url.endsWith('/question/10') ? questionDetailResponse : createQuestionsResponse(0),
+      ),
+    );
+
+    renderStudyRoute('/studies/1/questions?questionId=10');
+
+    expect(await screen.findByText('Refresh Token은 어디에 저장하나요?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /1페이지 질문/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question/10');
+  });
+
+  it('첫 페이지에 없는 URL의 질문도 상세 응답으로 행을 구성해 펼친다', async () => {
+    const deepLinkedQuestionResponse = {
+      ...questionDetailResponse,
+      data: {
+        ...questionDetailResponse.data,
+        result: {
+          ...questionDetailResponse.data.result,
+          questionId: 99,
+          title: '첫 페이지 밖 질문',
+        },
+      },
+    };
+    vi.mocked(httpClient.get).mockImplementation((url: string) =>
+      Promise.resolve(
+        url.endsWith('/question/99') ? deepLinkedQuestionResponse : createQuestionsResponse(0),
+      ),
+    );
+
+    renderStudyRoute('/studies/1/questions?questionId=99');
+
+    expect(await screen.findByText('첫 페이지 밖 질문')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /첫 페이지 밖 질문/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(httpClient.get).toHaveBeenCalledWith('/api/study/1/question/99');
+  });
+
   it('질문 목록을 서버 페이지 기준으로 조회하고 페이지를 전환한다', async () => {
     vi.mocked(httpClient.get).mockImplementation((url: string, config) =>
       Promise.resolve(

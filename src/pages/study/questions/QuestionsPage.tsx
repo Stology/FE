@@ -13,6 +13,7 @@ import { stripQuestionImageTokens } from './model/question_mutation_content';
 interface QuestionsPageProps {
   canMutate?: boolean;
   errorMessage?: string | null;
+  initialExpandedQuestionIds?: string[];
   initialQuestionDetails?: Record<string, QuestionDetail>;
   initialQuestions?: QuestionSummary[];
   isLoading?: boolean;
@@ -42,6 +43,7 @@ const DEFAULT_PAGE_SIZE = 3;
 export const QuestionsPage = ({
   canMutate = true,
   errorMessage,
+  initialExpandedQuestionIds = [],
   initialQuestionDetails = {},
   initialQuestions = [],
   isLoading = false,
@@ -80,7 +82,9 @@ export const QuestionsPage = ({
   const totalPages = controlledTotalPages ?? Math.ceil(questions.length / validPageSize);
   const lastPage = Math.max(1, totalPages);
   const [internalPage, setInternalPage] = useState(1);
-  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(() => new Set());
+  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(
+    () => new Set(initialExpandedQuestionIds),
+  );
   const [repliesByQuestion, setRepliesByQuestion] = useState<Record<string, QuestionReply[]>>(() =>
     Object.fromEntries(
       Object.entries(questionDetails).map(([questionId, detail]) => [questionId, detail.replies]),

@@ -68,11 +68,13 @@ export interface AnswerDetailRes {
 
 export interface MaterialInfo {
   studyMaterialId: number;
+  studyId: number;
+  dataState: 'READY' | 'NEEDREVIEW' | 'EXTRACTIONFAILED' | 'EXTRACTING';
   dataTitle: string;
-  presignedUrl: string;
+  studyName: string;
+  week: number;
   uploaderName: string;
-  createdAt: string;
-  updatedAt: string;
+  uploadedDate: string;
 }
 
 export interface MaterialDetailRes {

@@ -72,14 +72,14 @@ export const QuestionDetailModal = ({ isOpen, onClose }: QuestionDetailModalProp
   const navigate = useNavigate();
   const { items, filter, setFilter, counts, markAsRead } = useQuestionTodos();
 
-  const handleActionClick = (item: QuestionTodoItem) => {
+  function handleActionClick(item: QuestionTodoItem) {
     // 1. 해당 알림을 읽음 처리
     markAsRead(item.to);
     // 2. 모달 닫기
     onClose();
     // 3. 해당 페이지로 이동
     navigate(item.to);
-  };
+  }
 
   return (
     <Modal

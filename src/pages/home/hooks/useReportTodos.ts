@@ -10,6 +10,7 @@ export interface ReportTodoItem {
     name: string;
   };
   reportName: string;
+  reportWeek: number;
   createdAt: string;
   rawDate: number;
 }
@@ -41,6 +42,7 @@ export const useReportTodos = () => {
           name: r.studyName,
         },
         reportName: r.generated ? `${r.reportWeek}주차 커버리지 리포트` : '-',
+        reportWeek: r.reportWeek,
         createdAt: r.generated ? formattedDate : '-',
         rawDate: isValidDate ? dateObj.getTime() : 0,
       };

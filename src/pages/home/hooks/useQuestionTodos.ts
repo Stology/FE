@@ -19,7 +19,7 @@ export interface QuestionTodoItem {
   to: string;
 }
 
-const formatDateTime = (dateStr: string) => {
+function formatDateTime(dateStr: string) {
   const dateObj = new Date(dateStr);
   if (isNaN(dateObj.getTime())) return '';
   const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -27,7 +27,12 @@ const formatDateTime = (dateStr: string) => {
   const hh = String(dateObj.getHours()).padStart(2, '0');
   const min = String(dateObj.getMinutes()).padStart(2, '0');
   return `${mm}.${dd} ${hh}:${min}`;
-};
+}
+
+function buildQuestionPath(studyId: number, questionId: number) {
+  const params = new URLSearchParams({ questionId: String(questionId) });
+  return `/studies/${studyId}/questions?${params.toString()}`;
+}
 
 export const useQuestionTodos = () => {
   const [filter, setFilter] = useState<'전체' | '새 질문' | '새 답글'>('전체');
@@ -63,7 +68,7 @@ export const useQuestionTodos = () => {
         rawDate: new Date(q.createdAt).getTime(),
         action: '질문 보기',
         isRead,
-        to: `/studies/${q.studyId}/questions/${q.questionId}`,
+        to: buildQuestionPath(q.studyId, q.questionId),
       };
     });
 
@@ -80,7 +85,7 @@ export const useQuestionTodos = () => {
         rawDate: new Date(a.createdAt).getTime(),
         action: '답글 보기',
         isRead,
-        to: `/studies/${a.studyId}/questions/${a.questionId}`,
+        to: buildQuestionPath(a.studyId, a.questionId),
       };
     });
 
