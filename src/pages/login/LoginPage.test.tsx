@@ -34,7 +34,7 @@ describe('LoginPage', () => {
   it('Mock 로그인 후 기존 내부 목적지로 이동한다', () => {
     renderLoginPage('/login?redirect=%2Fstudies%2Fstudy-2%2Fquestions');
 
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
 
     expect(screen.getByText('질문함 화면')).toBeInTheDocument();
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
@@ -44,7 +44,7 @@ describe('LoginPage', () => {
   it('외부 redirect 주소는 무시하고 홈으로 이동한다', () => {
     renderLoginPage('/login?redirect=%2F%2Fevil.example');
 
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
 
     expect(screen.getByText('홈 화면')).toBeInTheDocument();
   });
@@ -54,7 +54,7 @@ describe('LoginPage', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
     renderLoginPage('/login');
 
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
 
     expect(alertSpy).toHaveBeenCalledOnce();
     expect(screen.getByRole('main')).toBeInTheDocument();
