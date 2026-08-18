@@ -36,7 +36,8 @@ httpClient.interceptors.response.use(
       error.response?.status !== 401 ||
       !request ||
       request._retry ||
-      isReissueRequest(request.url)
+      isReissueRequest(request.url) ||
+      useAuthStore.getState().isTestAuth
     ) {
       return Promise.reject(error);
     }
@@ -54,12 +55,7 @@ httpClient.interceptors.response.use(
       request.headers.Authorization = `Bearer ${accessToken}`;
       return httpClient(request);
     } catch (reissueError) {
-      useAuthStore.setState({
-        accessToken: null,
-        isAuthenticated: false,
-        isInitialized: true,
-        memberId: null,
-      });
+      await useAuthStore.getState().logout();
       return Promise.reject(reissueError);
     }
   },

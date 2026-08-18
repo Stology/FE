@@ -7,7 +7,9 @@ import { useAuthStore } from '@/shared/stores/useAuthStore';
 import { KakaoSymbolIcon } from './components/KakaoSymbolIcon';
 
 const TEST_TOKEN =
-  'eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI0OTc2OTIyODY0Iiwicm9sZSI6IiIsInNvY2lhbF90eXBlIjoiS0FLQU8iLCJpYXQiOjE3ODY2MjEwMDIsImV4cCI6MTgxODE1NzAwMn0.cHbtGFGa_oumeu8cKtZtnvBwdAUpmOZEQJC0Gs7WBExHTxgkjmIkRsgj7Mbxgkjl';
+  'eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI0OTc2OTIyODY0Iiwicm9sZSI6IiIsInNvY2lhbF90eXBlIjoiS0FLQU8iLCJpYXQiOjE3ODY4NjcyNjksImV4cCI6MTc4OTQ1OTI2OX0.lpb3y5GOJ6cPS3lA_m6alUw-krngmedKm2KloYAtAjEU2mfQw37f5BNsJmR2Ei9K';
+
+const TEST_AUTH_URL = import.meta.env.VITE_TEST_AUTH_URL;
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -36,6 +38,13 @@ export const LoginPage = () => {
   };
 
   const handleTestLogin = () => {
+    if (TEST_AUTH_URL) {
+      const redirect = getSafeRedirectPath(redirectUrl);
+      window.location.href = `${TEST_AUTH_URL}${encodeURIComponent(redirect)}`;
+      return;
+    }
+
+    // VITE_TEST_AUTH_URL 미설정 시 로컬 토큰 fallback
     login(TEST_TOKEN);
     navigate(getSafeRedirectPath(redirectUrl), { replace: true });
   };

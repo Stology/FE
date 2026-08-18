@@ -4,6 +4,7 @@ import { authApi } from '@/shared/api/auth';
 interface AuthState {
   isAuthenticated: boolean;
   isInitialized: boolean;
+  isTestAuth: boolean;
   accessToken: string | null;
   memberId: number | null;
   initialize: () => Promise<void>;
@@ -18,9 +19,11 @@ let isInitializing = false;
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isInitialized: false,
+  isTestAuth: false,
   accessToken: null,
   memberId: null,
   initialize: async () => {
+    if (useAuthStore.getState().isInitialized) return;
     if (isInitializing) return;
     isInitializing = true;
 
@@ -41,7 +44,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ accessToken, isAuthenticated: true, isInitialized: true, memberId: userId });
     } catch (error) {
       console.error('Reissue failed:', error);
-      set({ accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null });
+      // reissue 대기 중에 login()이 호출된 경우 덮어쓰지 않음
+      if (!useAuthStore.getState().isAuthenticated) {
+        set({ accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null });
+      }
     } finally {
       isInitializing = false;
     }
@@ -59,6 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         accessToken: token,
         isAuthenticated: true,
         isInitialized: true,
+        isTestAuth: true,
         memberId: parsedUserId,
       });
       return;
@@ -79,7 +86,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.error('Logout failed:', e);
     } finally {
       clearMockAuthSession();
-      set({ accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null });
+      set({
+        accessToken: null,
+        isAuthenticated: false,
+        isInitialized: true,
+        isTestAuth: false,
+        memberId: null,
+      });
     }
   },
 }));
