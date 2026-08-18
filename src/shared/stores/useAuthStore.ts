@@ -38,18 +38,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const { accessToken, userId } = await authApi.reissue();
-      set((state) => {
-        // login()이 initialize() 도중에 먼저 호출된 경우 덮어쓰지 않음
-        if (state.isAuthenticated) return {};
-        return { accessToken, isAuthenticated: true, isInitialized: true, memberId: userId };
-      });
+      set({ accessToken, isAuthenticated: true, isInitialized: true, memberId: userId });
     } catch (error) {
       console.error('Reissue failed:', error);
-      set((state) => {
-        // login()이 initialize() 도중에 먼저 호출된 경우 덮어쓰지 않음
-        if (state.isAuthenticated) return {};
-        return { accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null };
-      });
+      set({ accessToken: null, isAuthenticated: false, isInitialized: true, memberId: null });
     } finally {
       isInitializing = false;
     }
